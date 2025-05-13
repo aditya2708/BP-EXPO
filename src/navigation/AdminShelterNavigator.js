@@ -20,6 +20,8 @@ import PrestasiDetailScreen from '../features/adminShelter/screens/anakDetail/Pr
 import PrestasiFormScreen from '../features/adminShelter/screens/anakDetail/PrestasiFormScreen';
 import SuratScreen from '../features/adminShelter/screens/anakDetail/SuratScreen';
 import RiwayatScreen from '../features/adminShelter/screens/anakDetail/RiwayatScreen';
+import RiwayatDetailScreen from '../features/adminShelter/screens/anakDetail/RiwayatDetailScreen';
+import RiwayatFormScreen from '../features/adminShelter/screens/anakDetail/RiwayatFormScreen';
 import CeritaScreen from '../features/adminShelter/screens/anakDetail/CeritaScreen';
 import NilaiAnakScreen from '../features/adminShelter/screens/anakDetail/NilaiAnakScreen';
 import RaporShelterScreen from '../features/adminShelter/screens/anakDetail/RaporShelterScreen';
@@ -116,6 +118,19 @@ const ManagementStackNavigator = () => {
         component={RiwayatScreen} 
         options={{ headerTitle: 'Riwayat Anak' }}
       />
+      {/* Riwayat Screens */}
+<ManagementStack.Screen 
+  name="RiwayatDetail" 
+  component={RiwayatDetailScreen} 
+  options={{ headerTitle: 'Detail Riwayat' }}
+/>
+<ManagementStack.Screen 
+  name="RiwayatForm" 
+  component={RiwayatFormScreen} 
+  options={({ route }) => ({ 
+    headerTitle: route.params?.isEdit ? 'Edit Riwayat' : 'Tambah Riwayat'
+  })}
+/>
       <ManagementStack.Screen 
         name="Cerita" 
         component={CeritaScreen} 

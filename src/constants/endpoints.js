@@ -38,6 +38,14 @@ export const ADMIN_SHELTER_ENDPOINTS = {
   DETAIL: (childId, prestasiId) => `/admin-shelter/anak/${childId}/prestasi/${prestasiId}`,
   UPDATE: (childId, prestasiId) => `/admin-shelter/anak/${childId}/prestasi/${prestasiId}`, // Same as DETAIL
   DELETE: (childId, prestasiId) => `/admin-shelter/anak/${childId}/prestasi/${prestasiId}`  // Same as DETAIL
+},
+
+RIWAYAT: {
+  LIST: (childId) => `/admin-shelter/anak/${childId}/riwayat`,
+  CREATE: (childId) => `/admin-shelter/anak/${childId}/riwayat`,  // Same as LIST
+  DETAIL: (childId, riwayatId) => `/admin-shelter/anak/${childId}/riwayat/${riwayatId}`,
+  UPDATE: (childId, riwayatId) => `/admin-shelter/anak/${childId}/riwayat/${riwayatId}`, // Same as DETAIL
+  DELETE: (childId, riwayatId) => `/admin-shelter/anak/${childId}/riwayat/${riwayatId}`  // Same as DETAIL
 }
 };
 
