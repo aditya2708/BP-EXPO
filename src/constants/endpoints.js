@@ -6,9 +6,30 @@ export const AUTH_ENDPOINTS = {
 };
 
 // Admin Pusat endpoints
+// Add this to src/constants/endpoints.js
+
+// Admin Pusat endpoints
 export const ADMIN_PUSAT_ENDPOINTS = {
   DASHBOARD: '/admin-pusat/dashboard',
-  PROFILE: '/admin-pusat/profile'
+  PROFILE: '/admin-pusat/profile',
+  ANAK: {
+    LIST: '/admin-pusat/anak',
+    DETAIL: (id) => `/admin-pusat/anak/${id}`,
+    TOGGLE_STATUS: (id) => `/admin-pusat/anak/${id}/toggle-status`,
+    SUMMARY: '/admin-pusat/anak-summary'
+  },
+  RAPORT: {
+    LIST: (childId) => `/admin-pusat/anak/${childId}/raport`,
+    DETAIL: (childId, raportId) => `/admin-pusat/anak/${childId}/raport/${raportId}`
+  },
+  PRESTASI: {
+    LIST: (childId) => `/admin-pusat/anak/${childId}/prestasi`,
+    DETAIL: (childId, prestasiId) => `/admin-pusat/anak/${childId}/prestasi/${prestasiId}`
+  },
+  RIWAYAT: {
+    LIST: (childId) => `/admin-pusat/anak/${childId}/riwayat`,
+    DETAIL: (childId, riwayatId) => `/admin-pusat/anak/${childId}/riwayat/${riwayatId}`
+  }
 };
 
 // Admin Cabang endpoints
