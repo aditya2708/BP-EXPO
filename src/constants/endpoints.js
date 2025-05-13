@@ -32,10 +32,13 @@ export const ADMIN_SHELTER_ENDPOINTS = {
     DETAIL: (childId, raportId) => `/admin-shelter/anak/${childId}/raport/${raportId}`,
     UPDATE: (childId, raportId) => `/admin-shelter/anak/${childId}/raport/${raportId}/update`
   },
-  PRESTASI: {
-    LIST: (childId) => `/admin-shelter/anak/${childId}/prestasi`,
-    DETAIL: (childId, prestasiId) => `/admin-shelter/anak/${childId}/prestasi/${prestasiId}`
-  }
+ PRESTASI: {
+  LIST: (childId) => `/admin-shelter/anak/${childId}/prestasi`,
+  CREATE: (childId) => `/admin-shelter/anak/${childId}/prestasi`,  // Same as LIST
+  DETAIL: (childId, prestasiId) => `/admin-shelter/anak/${childId}/prestasi/${prestasiId}`,
+  UPDATE: (childId, prestasiId) => `/admin-shelter/anak/${childId}/prestasi/${prestasiId}`, // Same as DETAIL
+  DELETE: (childId, prestasiId) => `/admin-shelter/anak/${childId}/prestasi/${prestasiId}`  // Same as DETAIL
+}
 };
 
 // Donatur endpoints

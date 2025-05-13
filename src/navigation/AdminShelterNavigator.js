@@ -16,6 +16,8 @@ import RaportScreen from '../features/adminShelter/screens/anakDetail/RaportScre
 import AddRaportScreen from '../features/adminShelter/screens/anakDetail/AddRaportScreen';
 import RaportDetailScreen from '../features/adminShelter/screens/anakDetail/RaportDetailScreen';
 import PrestasiScreen from '../features/adminShelter/screens/anakDetail/PrestasiScreen';
+import PrestasiDetailScreen from '../features/adminShelter/screens/anakDetail/PrestasiDetailScreen';
+import PrestasiFormScreen from '../features/adminShelter/screens/anakDetail/PrestasiFormScreen';
 import SuratScreen from '../features/adminShelter/screens/anakDetail/SuratScreen';
 import RiwayatScreen from '../features/adminShelter/screens/anakDetail/RiwayatScreen';
 import CeritaScreen from '../features/adminShelter/screens/anakDetail/CeritaScreen';
@@ -79,17 +81,31 @@ const ManagementStackNavigator = () => {
         component={AddRaportScreen} 
         options={{ headerTitle: 'Tambah Raport' }}
       />
-    
       <ManagementStack.Screen 
         name="RaportDetail" 
         component={RaportDetailScreen} 
         options={{ headerTitle: 'Detail Raport' }}
       />
+      
+      {/* Prestasi Screens - Add these */}
       <ManagementStack.Screen 
         name="Prestasi" 
         component={PrestasiScreen} 
         options={{ headerTitle: 'Prestasi Anak' }}
       />
+      <ManagementStack.Screen 
+        name="PrestasiDetail" 
+        component={PrestasiDetailScreen} 
+        options={{ headerTitle: 'Detail Prestasi' }}
+      />
+      <ManagementStack.Screen 
+        name="PrestasiForm" 
+        component={PrestasiFormScreen} 
+        options={({ route }) => ({ 
+          headerTitle: route.params?.isEdit ? 'Edit Prestasi' : 'Tambah Prestasi'
+        })}
+      />
+      
       {/* <ManagementStack.Screen 
         name="Surat" 
         component={SuratScreen} 
