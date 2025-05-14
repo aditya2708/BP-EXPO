@@ -26,6 +26,12 @@ import CeritaScreen from '../features/adminShelter/screens/anakDetail/CeritaScre
 import NilaiAnakScreen from '../features/adminShelter/screens/anakDetail/NilaiAnakScreen';
 import RaporShelterScreen from '../features/adminShelter/screens/anakDetail/RaporShelterScreen';
 
+// Tutor Screens - Tambahkan import baru
+import TutorManagementScreen from '../features/adminShelter/screens/TutorManagementScreen';
+import TutorFormScreen from '../features/adminShelter/screens/TutorFormScreen';
+import TutorDetailScreen from '../features/adminShelter/screens/TutorDetailScreen';
+
+
 // Create navigators
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
@@ -145,6 +151,24 @@ const ManagementStackNavigator = () => {
         name="RaporShelter" 
         component={RaporShelterScreen} 
         options={{ headerTitle: 'Rapor Shelter' }}
+      />
+
+       <ManagementStack.Screen 
+        name="TutorManagement" 
+        component={TutorManagementScreen} 
+        options={{ headerTitle: 'Tutor Management' }}
+      />
+      <ManagementStack.Screen 
+        name="TutorForm" 
+        component={TutorFormScreen} 
+        options={({ route }) => ({ 
+          headerTitle: route.params?.tutor ? 'Edit Tutor' : 'Add New Tutor'
+        })}
+      />
+      <ManagementStack.Screen 
+        name="TutorDetail" 
+        component={TutorDetailScreen} 
+        options={{ headerTitle: 'Tutor Detail' }}
       />
     </ManagementStack.Navigator>
   );

@@ -1,9 +1,11 @@
 import { combineReducers } from '@reduxjs/toolkit';
 import authReducer from '../features/auth/redux/authSlice';
+import tutorReducer from '../features/adminShelter/redux/tutorSlice';
 
 // Create the root reducer
 const appReducer = combineReducers({
   auth: authReducer,
+  tutor: tutorReducer,
   // Add other feature reducers as they are developed
   // adminPusat: adminPusatReducer,
   // adminCabang: adminCabangReducer,

@@ -67,7 +67,13 @@ RIWAYAT: {
   DETAIL: (childId, riwayatId) => `/admin-shelter/anak/${childId}/riwayat/${riwayatId}`,
   UPDATE: (childId, riwayatId) => `/admin-shelter/anak/${childId}/riwayat/${riwayatId}`, // Same as DETAIL
   DELETE: (childId, riwayatId) => `/admin-shelter/anak/${childId}/riwayat/${riwayatId}`  // Same as DETAIL
-}
+},
+ TUTOR: {
+    LIST: '/admin-shelter/tutor',
+    DETAIL: (id) => `/admin-shelter/tutor/${id}`,
+    CREATE: '/admin-shelter/tutor',
+    UPDATE: (id) => `/admin-shelter/tutor/${id}`
+  },
 };
 
 // Donatur endpoints
