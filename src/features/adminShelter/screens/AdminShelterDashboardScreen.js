@@ -64,7 +64,7 @@ const AdminShelterDashboardScreen = () => {
   const navigateToAnakManagement = () => navigation.navigate('Management', { screen: 'AnakManagement' });
   const navigateToDonaturManagement = () => navigation.navigate('DonaturManagement');
   const navigateToProfile = () => navigation.navigate('ProfileTab');
-
+  const navigateToTutorManagement = () => navigation.navigate('Management', { screen: 'TutorManagement' });
   // Show loading indicator
   if (loading && !refreshing) {
     return <LoadingSpinner fullScreen message="Loading dashboard..." />;
@@ -119,40 +119,37 @@ const AdminShelterDashboardScreen = () => {
       </View>
 
       {/* Quick Actions */}
-      <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.quickActionsContainer}>
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={navigateToAnakManagement}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: '#e74c3c' }]}>
-              <Ionicons name="people" size={24} color="#ffffff" />
-            </View>
-            <Text style={styles.actionText}>Manage Children</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={navigateToDonaturManagement}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: '#9b59b6' }]}>
-              <Ionicons name="heart" size={24} color="#ffffff" />
-            </View>
-            <Text style={styles.actionText}>Manage Donatur</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={navigateToAttendance}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: '#3498db' }]}>
-              <Ionicons name="calendar" size={24} color="#ffffff" />
-            </View>
-            <Text style={styles.actionText}>Attendance</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+     <View style={styles.quickActionsContainer}>
+  <TouchableOpacity 
+    style={styles.actionButton}
+    onPress={navigateToAnakManagement}
+  >
+    <View style={[styles.actionIcon, { backgroundColor: '#e74c3c' }]}>
+      <Ionicons name="people" size={24} color="#ffffff" />
+    </View>
+    <Text style={styles.actionText}>Manage Children</Text>
+  </TouchableOpacity>
+  
+  <TouchableOpacity 
+    style={styles.actionButton}
+    onPress={navigateToTutorManagement}
+  >
+    <View style={[styles.actionIcon, { backgroundColor: '#2ecc71' }]}>
+      <Ionicons name="school" size={24} color="#ffffff" />
+    </View>
+    <Text style={styles.actionText}>Manage Tutors</Text>
+  </TouchableOpacity>
+  
+  <TouchableOpacity 
+    style={styles.actionButton}
+    onPress={navigateToDonaturManagement}
+  >
+    <View style={[styles.actionIcon, { backgroundColor: '#9b59b6' }]}>
+      <Ionicons name="heart" size={24} color="#ffffff" />
+    </View>
+    <Text style={styles.actionText}>Manage Donatur</Text>
+  </TouchableOpacity>
+</View>
 
       {/* Shelter Information */}
       {dashboardData?.shelter && (
