@@ -26,10 +26,11 @@ import CeritaScreen from '../features/adminShelter/screens/anakDetail/CeritaScre
 import NilaiAnakScreen from '../features/adminShelter/screens/anakDetail/NilaiAnakScreen';
 import RaporShelterScreen from '../features/adminShelter/screens/anakDetail/RaporShelterScreen';
 
-// Tutor Screens - Tambahkan import baru
+// Tutor Screens
 import TutorManagementScreen from '../features/adminShelter/screens/TutorManagementScreen';
 import TutorFormScreen from '../features/adminShelter/screens/TutorFormScreen';
 import TutorDetailScreen from '../features/adminShelter/screens/TutorDetailScreen';
+
 
 
 // Create navigators
@@ -95,7 +96,7 @@ const ManagementStackNavigator = () => {
         options={{ headerTitle: 'Detail Raport' }}
       />
       
-      {/* Prestasi Screens - Add these */}
+      {/* Prestasi Screens */}
       <ManagementStack.Screen 
         name="Prestasi" 
         component={PrestasiScreen} 
@@ -114,29 +115,25 @@ const ManagementStackNavigator = () => {
         })}
       />
       
-      {/* <ManagementStack.Screen 
-        name="Surat" 
-        component={SuratScreen} 
-        options={{ headerTitle: 'Surat Anak' }}
-      /> */}
+      {/* Riwayat Screens */}
       <ManagementStack.Screen 
         name="Riwayat" 
         component={RiwayatScreen} 
         options={{ headerTitle: 'Riwayat Anak' }}
       />
-      {/* Riwayat Screens */}
-<ManagementStack.Screen 
-  name="RiwayatDetail" 
-  component={RiwayatDetailScreen} 
-  options={{ headerTitle: 'Detail Riwayat' }}
-/>
-<ManagementStack.Screen 
-  name="RiwayatForm" 
-  component={RiwayatFormScreen} 
-  options={({ route }) => ({ 
-    headerTitle: route.params?.isEdit ? 'Edit Riwayat' : 'Tambah Riwayat'
-  })}
-/>
+      <ManagementStack.Screen 
+        name="RiwayatDetail" 
+        component={RiwayatDetailScreen} 
+        options={{ headerTitle: 'Detail Riwayat' }}
+      />
+      <ManagementStack.Screen 
+        name="RiwayatForm" 
+        component={RiwayatFormScreen} 
+        options={({ route }) => ({ 
+          headerTitle: route.params?.isEdit ? 'Edit Riwayat' : 'Tambah Riwayat'
+        })}
+      />
+      
       <ManagementStack.Screen 
         name="Cerita" 
         component={CeritaScreen} 
@@ -153,7 +150,8 @@ const ManagementStackNavigator = () => {
         options={{ headerTitle: 'Rapor Shelter' }}
       />
 
-       <ManagementStack.Screen 
+      {/* Tutor Screens */}
+      <ManagementStack.Screen 
         name="TutorManagement" 
         component={TutorManagementScreen} 
         options={{ headerTitle: 'Tutor Management' }}
@@ -170,6 +168,8 @@ const ManagementStackNavigator = () => {
         component={TutorDetailScreen} 
         options={{ headerTitle: 'Tutor Detail' }}
       />
+
+    
     </ManagementStack.Navigator>
   );
 };

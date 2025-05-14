@@ -6,6 +6,7 @@ import tutorReducer from '../features/adminShelter/redux/tutorSlice';
 const appReducer = combineReducers({
   auth: authReducer,
   tutor: tutorReducer,
+  
   // Add other feature reducers as they are developed
   // adminPusat: adminPusatReducer,
   // adminCabang: adminCabangReducer,
