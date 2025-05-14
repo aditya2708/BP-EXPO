@@ -1,5 +1,5 @@
 // API base URLs
-export const API_BASE_URL = 'http://192.168.8.105:8000/api';
+export const API_BASE_URL = 'http://192.168.1.20:8000/api';
 
 // Storage keys
 export const STORAGE_TOKEN_KEY = 'berbagipendidikan_token';
