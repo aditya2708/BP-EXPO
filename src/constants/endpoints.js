@@ -29,7 +29,14 @@ export const ADMIN_PUSAT_ENDPOINTS = {
   RIWAYAT: {
     LIST: (childId) => `/admin-pusat/anak/${childId}/riwayat`,
     DETAIL: (childId, riwayatId) => `/admin-pusat/anak/${childId}/riwayat/${riwayatId}`
-  }
+  },
+  KELUARGA: {
+  LIST: '/admin-pusat/keluarga',
+  DETAIL: (id) => `/admin-pusat/keluarga/${id}`,
+  DROPDOWN: '/admin-pusat/keluarga-dropdown',
+  WILBIN_BY_KACAB: (kacabId) => `/admin-pusat/keluarga-wilbin/${kacabId}`,
+  SHELTER_BY_WILBIN: (wilbinId) => `/admin-pusat/keluarga-shelter/${wilbinId}`
+}
 };
 
 // Admin Cabang endpoints
