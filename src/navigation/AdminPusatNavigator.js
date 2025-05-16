@@ -28,6 +28,9 @@ import RiwayatScreen from '../features/adminPusat/screens/anakDetail/RiwayatScre
 //import CeritaScreen from '../features/adminPusat/screens/anakDetail/CeritaScreen';
 //import NilaiAnakScreen from '../features/adminPusat/screens/anakDetail/NilaiAnakScreen';
 //import RaporShelterScreen from '../features/adminPusat/screens/anakDetail/RaporShelterScreen';
+import KeluargaManagement from '../features/adminPusat/screens/KeluargaManagementScreen';
+import KeluargaDetail from '../features/adminPusat/screens/KeluargaDetailScreen';
+import KeluargaForm from '../features/adminPusat/screens/KeluargaFormScreen';
 
 // Create navigators
 const Tab = createBottomTabNavigator();
@@ -128,6 +131,25 @@ const ManagementStackNavigator = () => {
         component={RiwayatScreen} 
         options={{ headerTitle: 'Riwayat Anak' }}
       />
+      <Stack.Screen 
+  name="KeluargaManagement" 
+  component={KeluargaManagementScreen} 
+  options={{ headerTitle: 'Family Management' }}
+/>
+<Stack.Screen 
+  name="KeluargaDetail" 
+  component={KeluargaDetailScreen} 
+  options={({ route }) => ({ 
+    headerTitle: route.params?.title || 'Family Detail'
+  })}
+/>
+<Stack.Screen 
+  name="KeluargaForm" 
+  component={KeluargaFormScreen} 
+  options={({ route }) => ({ 
+    headerTitle: route.params?.isEdit ? 'Edit Family' : 'Add New Family'
+  })}
+/>
       {/* <ManagementStack.Screen 
         name="RiwayatDetail" 
         component={RiwayatDetailScreen} 
