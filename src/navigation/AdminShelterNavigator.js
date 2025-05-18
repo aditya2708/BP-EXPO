@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 
+import TestExpoCameraScreen from '../features/adminShelter/screens/TestExpoCameraScreen';
 // Import existing screens
 import AdminShelterDashboardScreen from '../features/adminShelter/screens/AdminShelterDashboardScreen';
 import AdminShelterProfileScreen from '../features/adminShelter/screens/AdminShelterProfileScreen';
@@ -82,13 +83,18 @@ const HomeStackNavigator = () => {
         component={AttendanceScreen} 
         options={{ headerTitle: 'Attendance Records' }}
       />
-      
+       <HomeStack.Screen 
+        name="TestExpoCameraScreen" 
+        component={TestExpoCameraScreen} 
+        options={{ headerTitle: 'Camera Test' }}
+      />
       {/* Add attendance-related screens */}
       <HomeStack.Screen
         name="AttendanceStack"
         component={AttendanceStackNavigator}
         options={{ headerShown: false }}
       />
+
     </HomeStack.Navigator>
   );
 };
