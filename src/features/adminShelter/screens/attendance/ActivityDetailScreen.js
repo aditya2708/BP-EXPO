@@ -85,7 +85,10 @@ const ActivityDetailScreen = ({ navigation, route }) => {
     navigation.navigate('QrScanner', {
       id_aktivitas,
       activityName: activity.jenis_kegiatan,
-      activityDate: activity.tanggal ? format(new Date(activity.tanggal), 'EEEE, dd MMMM yyyy', { locale: id }) : null
+      activityDate: activity.tanggal ? format(new Date(activity.tanggal), 'EEEE, dd MMMM yyyy', { locale: id }) : null,
+      activityType: activity.jenis_kegiatan,
+      kelompokId: activity.selectedKelompokId || (kelompokDetail ? kelompokDetail.id_kelompok : null),
+      kelompokName: activity.nama_kelompok || null
     });
   };
   
@@ -94,7 +97,10 @@ const ActivityDetailScreen = ({ navigation, route }) => {
     navigation.navigate('ManualAttendance', {
       id_aktivitas,
       activityName: activity.jenis_kegiatan,
-      activityDate: activity.tanggal ? format(new Date(activity.tanggal), 'EEEE, dd MMMM yyyy', { locale: id }) : null
+      activityDate: activity.tanggal ? format(new Date(activity.tanggal), 'EEEE, dd MMMM yyyy', { locale: id }) : null,
+      activityType: activity.jenis_kegiatan,
+      kelompokId: activity.selectedKelompokId || (kelompokDetail ? kelompokDetail.id_kelompok : null),
+      kelompokName: activity.nama_kelompok || null
     });
   };
   

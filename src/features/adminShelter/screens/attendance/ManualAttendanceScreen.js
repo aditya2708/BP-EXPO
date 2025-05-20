@@ -7,7 +7,10 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +22,7 @@ import ErrorMessage from '../../../../common/components/ErrorMessage';
 
 // API Services
 import { adminShelterAnakApi } from '../../api/adminShelterAnakApi';
+import { adminShelterKelompokApi } from '../../api/adminShelterKelompokApi';
 
 // Redux
 import {
@@ -38,8 +42,15 @@ import NetInfo from '@react-native-community/netinfo';
 const ManualAttendanceScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   
-  // Get activity ID from route params
-  const { id_aktivitas, activityName, activityDate } = route.params || {};
+  // Get activity data from route params
+  const { 
+    id_aktivitas, 
+    activityName, 
+    activityDate, 
+    kelompokId, 
+    kelompokName,
+    activityType 
+  } = route.params || {};
   
   // Redux state
   const loading = useSelector(selectAttendanceLoading);
@@ -54,6 +65,7 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [studentError, setStudentError] = useState(null);
   const [isConnected, setIsConnected] = useState(true);
+  const [isBimbelActivity, setIsBimbelActivity] = useState(activityType === 'Bimbel');
   
   // Check network connectivity
   useEffect(() => {
@@ -64,24 +76,36 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
     return () => unsubscribe();
   }, []);
   
-  // Fetch students for the dropdown
+  // Determine activity type when component mounts
   useEffect(() => {
-    fetchStudents();
-  }, []);
+    setIsBimbelActivity(activityType === 'Bimbel');
+  }, [activityType]);
   
-  // Filter students based on search query
-  const filteredStudents = students.filter(student => 
-    student.full_name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Fetch students based on activity type and kelompok
+  useEffect(() => {
+    if (isBimbelActivity && kelompokId) {
+      fetchStudentsByKelompok(kelompokId);
+    } else {
+      fetchAllStudents();
+    }
+  }, [isBimbelActivity, kelompokId]);
   
-  // Fetch students from API
-  const fetchStudents = async () => {
+  // Fetch all students from API
+  const fetchAllStudents = async () => {
     setLoadingStudents(true);
     setStudentError(null);
     
     try {
       const response = await adminShelterAnakApi.getAllAnak();
-      setStudents(response.data.data || []);
+      if (response.data && response.data.data) {
+        // Filter for active students
+        const activeStudents = response.data.data.filter(
+          student => student.status_validasi === 'aktif'
+        );
+        setStudents(activeStudents);
+      } else {
+        setStudents([]);
+      }
     } catch (err) {
       console.error('Failed to fetch students:', err);
       setStudentError('Failed to load students. Please try again.');
@@ -89,6 +113,40 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
       setLoadingStudents(false);
     }
   };
+  
+  // Fetch students for a specific kelompok
+  const fetchStudentsByKelompok = async (kelompokId) => {
+    setLoadingStudents(true);
+    setStudentError(null);
+    
+    try {
+      const response = await adminShelterKelompokApi.getGroupChildren(kelompokId);
+      if (response.data && response.data.data) {
+        // Filter for active students
+        const activeStudents = response.data.data.filter(
+          student => student.status_validasi === 'aktif'
+        );
+        setStudents(activeStudents);
+      } else {
+        setStudents([]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch students by kelompok:', err);
+      setStudentError('Failed to load students from this group. Using all students instead.');
+      
+      // Fallback to all students if kelompok fetch fails
+      fetchAllStudents();
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+  
+  // Filter students by search query
+  const filteredStudents = students.filter(student => 
+    (student.full_name || student.nick_name || '')
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase())
+  );
   
   // Handle form submission
   const handleSubmit = async () => {
@@ -139,167 +197,187 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
   };
   
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      {/* Activity Info */}
-      <View style={styles.activityInfo}>
-        <Text style={styles.activityName}>{activityName || 'Activity'}</Text>
-        <Text style={styles.activityDate}>{activityDate || 'Date not specified'}</Text>
-      </View>
-      
-      {/* Network Status Indicator */}
-      {!isConnected && (
-        <View style={styles.offlineIndicator}>
-          <Ionicons name="cloud-offline" size={18} color="#fff" />
-          <Text style={styles.offlineText}>Offline Mode - Data will be synced later</Text>
-        </View>
-      )}
-      
-      {/* Error Message */}
-      {error && <ErrorMessage message={error} />}
-      {studentError && <ErrorMessage message={studentError} onRetry={fetchStudents} />}
-      
-      {/* Form */}
-      <View style={styles.formContainer}>
-        <Text style={styles.label}>Student</Text>
-        
-        {/* Student Search */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#7f8c8d" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search student..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            clearButtonMode="while-editing"
-          />
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        {/* Activity Info */}
+        <View style={styles.activityInfo}>
+          <Text style={styles.activityName}>{activityName || 'Activity'}</Text>
+          <Text style={styles.activityDate}>{activityDate || 'Date not specified'}</Text>
+          
+          {/* Show Kelompok info for Bimbel activities */}
+          {isBimbelActivity && kelompokName && (
+            <View style={styles.kelompokInfoContainer}>
+              <Text style={styles.kelompokInfo}>Group: {kelompokName}</Text>
+            </View>
+          )}
         </View>
         
-        {/* Student Picker */}
-        {loadingStudents ? (
-          <ActivityIndicator size="small" color="#3498db" style={styles.loadingIndicator} />
-        ) : (
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={selectedStudent?.id_anak}
-              onValueChange={(itemValue) => {
-                const student = students.find(s => s.id_anak === itemValue);
-                setSelectedStudent(student || null);
-              }}
-              style={styles.picker}
-            >
-              <Picker.Item label="Select a student" value={null} color="#95a5a6" />
-              {filteredStudents.map((student) => (
-                <Picker.Item 
-                  key={student.id_anak} 
-                  label={student.full_name} 
-                  value={student.id_anak} 
-                />
-              ))}
-            </Picker>
+        {/* Network Status Indicator */}
+        {!isConnected && (
+          <View style={styles.offlineIndicator}>
+            <Ionicons name="cloud-offline" size={18} color="#fff" />
+            <Text style={styles.offlineText}>Offline Mode - Data will be synced later</Text>
           </View>
         )}
         
-        {/* Status Selection */}
-        <Text style={styles.label}>Attendance Status</Text>
-        <View style={styles.statusButtons}>
-          <TouchableOpacity 
-            style={[
-              styles.statusButton,
-              selectedStatus === 'present' && styles.statusButtonActive,
-              { backgroundColor: selectedStatus === 'present' ? '#2ecc71' : '#f5f5f5' }
-            ]}
-            onPress={() => setSelectedStatus('present')}
-          >
-            <Ionicons 
-              name="checkmark-circle" 
-              size={24} 
-              color={selectedStatus === 'present' ? 'white' : '#7f8c8d'} 
+        {/* Error Message */}
+        {error && <ErrorMessage message={error} />}
+        {studentError && <ErrorMessage message={studentError} onRetry={fetchAllStudents} />}
+        
+        {/* Form */}
+        <View style={styles.formContainer}>
+          <Text style={styles.label}>Student{isBimbelActivity ? ` from ${kelompokName || 'this group'}` : ''}</Text>
+          
+          {/* Student Search */}
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={20} color="#7f8c8d" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search student..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              clearButtonMode="while-editing"
             />
-            <Text 
+          </View>
+          
+          {/* Student Picker */}
+          {loadingStudents ? (
+            <ActivityIndicator size="small" color="#3498db" style={styles.loadingIndicator} />
+          ) : (
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={selectedStudent?.id_anak}
+                onValueChange={(itemValue) => {
+                  const student = students.find(s => s.id_anak === itemValue);
+                  setSelectedStudent(student || null);
+                }}
+                style={styles.picker}
+              >
+                <Picker.Item label="Select a student" value={null} color="#95a5a6" />
+                {filteredStudents.map((student) => (
+                  <Picker.Item 
+                    key={student.id_anak} 
+                    label={student.full_name || student.nick_name || `Student ${student.id_anak}`} 
+                    value={student.id_anak} 
+                  />
+                ))}
+              </Picker>
+            </View>
+          )}
+          
+          {/* Status Selection */}
+          <Text style={styles.label}>Attendance Status</Text>
+          <View style={styles.statusButtons}>
+            <TouchableOpacity 
               style={[
-                styles.statusButtonText,
-                { color: selectedStatus === 'present' ? 'white' : '#7f8c8d' }
+                styles.statusButton,
+                selectedStatus === 'present' && styles.statusButtonActive,
+                { backgroundColor: selectedStatus === 'present' ? '#2ecc71' : '#f5f5f5' }
               ]}
+              onPress={() => setSelectedStatus('present')}
             >
-              Present
-            </Text>
+              <Ionicons 
+                name="checkmark-circle" 
+                size={24} 
+                color={selectedStatus === 'present' ? 'white' : '#7f8c8d'} 
+              />
+              <Text 
+                style={[
+                  styles.statusButtonText,
+                  { color: selectedStatus === 'present' ? 'white' : '#7f8c8d' }
+                ]}
+              >
+                Present
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[
+                styles.statusButton,
+                selectedStatus === 'absent' && styles.statusButtonActive,
+                { backgroundColor: selectedStatus === 'absent' ? '#e74c3c' : '#f5f5f5' }
+              ]}
+              onPress={() => setSelectedStatus('absent')}
+            >
+              <Ionicons 
+                name="close-circle" 
+                size={24} 
+                color={selectedStatus === 'absent' ? 'white' : '#7f8c8d'} 
+              />
+              <Text 
+                style={[
+                  styles.statusButtonText,
+                  { color: selectedStatus === 'absent' ? 'white' : '#7f8c8d' }
+                ]}
+              >
+                Absent
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
+          {/* Notes Input */}
+          <Text style={styles.label}>Verification Notes (Required)</Text>
+          <TextInput
+            style={styles.notesInput}
+            placeholder="Enter verification notes..."
+            value={notes}
+            onChangeText={setNotes}
+            multiline
+            numberOfLines={3}
+            textAlignVertical="top"
+          />
+          
+          {/* Submit Button */}
+          <TouchableOpacity 
+            style={styles.submitButton}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.submitButtonText}>Record Attendance</Text>
+            )}
           </TouchableOpacity>
           
+          {/* Cancel Button */}
           <TouchableOpacity 
-            style={[
-              styles.statusButton,
-              selectedStatus === 'absent' && styles.statusButtonActive,
-              { backgroundColor: selectedStatus === 'absent' ? '#e74c3c' : '#f5f5f5' }
-            ]}
-            onPress={() => setSelectedStatus('absent')}
+            style={styles.cancelButton}
+            onPress={() => navigation.goBack()}
+            disabled={loading}
           >
-            <Ionicons 
-              name="close-circle" 
-              size={24} 
-              color={selectedStatus === 'absent' ? 'white' : '#7f8c8d'} 
-            />
-            <Text 
-              style={[
-                styles.statusButtonText,
-                { color: selectedStatus === 'absent' ? 'white' : '#7f8c8d' }
-              ]}
-            >
-              Absent
-            </Text>
+            <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
         </View>
         
-        {/* Notes Input */}
-        <Text style={styles.label}>Verification Notes (Required)</Text>
-        <TextInput
-          style={styles.notesInput}
-          placeholder="Enter verification notes..."
-          value={notes}
-          onChangeText={setNotes}
-          multiline
-          numberOfLines={3}
-          textAlignVertical="top"
-        />
-        
-        {/* Submit Button */}
-        <TouchableOpacity 
-          style={styles.submitButton}
-          onPress={handleSubmit}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.submitButtonText}>Record Attendance</Text>
-          )}
-        </TouchableOpacity>
-        
-        {/* Cancel Button */}
-        <TouchableOpacity 
-          style={styles.cancelButton}
-          onPress={() => navigation.goBack()}
-          disabled={loading}
-        >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        {/* Loading Overlay */}
+        {loading && (
+          <LoadingSpinner 
+            fullScreen 
+            message="Recording attendance..."
+          />
+        )}
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   container: {
     flex: 1,
     backgroundColor: '#fff',
   },
-  contentContainer: {
-    padding: 16,
-  },
   activityInfo: {
     backgroundColor: '#3498db',
     padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
+    alignItems: 'center',
   },
   activityName: {
     fontSize: 18,
@@ -311,13 +389,22 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.8)',
     marginTop: 4,
   },
+  kelompokInfoContainer: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  kelompokInfo: {
+    fontSize: 14,
+    color: '#fff',
+  },
   offlineIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#e74c3c',
     padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    borderRadius: 0,
   },
   offlineText: {
     color: '#fff',
@@ -325,9 +412,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   formContainer: {
-    backgroundColor: '#f9f9f9',
+    flex: 1,
     padding: 16,
-    borderRadius: 8,
+    backgroundColor: '#f9f9f9',
   },
   label: {
     fontSize: 16,

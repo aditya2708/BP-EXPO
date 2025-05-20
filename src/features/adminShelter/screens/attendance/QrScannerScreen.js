@@ -33,12 +33,20 @@ import {
 
 // Utils
 import OfflineSync from '../../utils/offlineSync';
+import { adminShelterKelompokApi } from '../../api/adminShelterKelompokApi';
 
 const QrScannerScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   
   // Get params
-  const { id_aktivitas, activityName, activityDate } = route.params || {};
+  const { 
+    id_aktivitas, 
+    activityName, 
+    activityDate, 
+    activityType,
+    kelompokId,
+    kelompokName
+  } = route.params || {};
   
   // Redux state
   const tokenLoading = useSelector(selectQrTokenLoading);
@@ -51,6 +59,9 @@ const QrScannerScreen = ({ navigation, route }) => {
   const [isConnected, setIsConnected] = useState(true);
   const [showResultModal, setShowResultModal] = useState(false);
   const [processingResult, setProcessingResult] = useState(null);
+  const [isBimbelActivity, setIsBimbelActivity] = useState(activityType === 'Bimbel');
+  const [kelompokStudentIds, setKelompokStudentIds] = useState([]);
+  const [loadingKelompokData, setLoadingKelompokData] = useState(false);
   
   // Check connectivity
   useEffect(() => {
@@ -69,12 +80,63 @@ const QrScannerScreen = ({ navigation, route }) => {
     };
   }, [dispatch]);
   
+  // Determine activity type and load kelompok data if needed
+  useEffect(() => {
+    setIsBimbelActivity(activityType === 'Bimbel');
+    
+    if (activityType === 'Bimbel' && kelompokId) {
+      fetchKelompokStudents(kelompokId);
+    }
+  }, [activityType, kelompokId]);
+  
+  // Fetch students in kelompok for validation
+  const fetchKelompokStudents = async (kelompokId) => {
+    if (!kelompokId) return;
+    
+    setLoadingKelompokData(true);
+    
+    try {
+      const response = await adminShelterKelompokApi.getGroupChildren(kelompokId);
+      
+      if (response.data && response.data.data) {
+        // Extract student IDs for quick validation
+        const studentIds = response.data.data
+          .filter(student => student.status_validasi === 'aktif')
+          .map(student => student.id_anak);
+        
+        setKelompokStudentIds(studentIds);
+      }
+    } catch (error) {
+      console.error('Error fetching kelompok students:', error);
+      // Still continue - we'll just validate all students
+      setKelompokStudentIds([]);
+    } finally {
+      setLoadingKelompokData(false);
+    }
+  };
+  
   // Process validation result
   useEffect(() => {
     if (validationResult && validationResult.valid && validationResult.token && validationResult.anak) {
+      // For Bimbel activities, validate that student is in the kelompok
+      if (isBimbelActivity && kelompokStudentIds.length > 0) {
+        const studentId = validationResult.anak.id_anak;
+        
+        if (!kelompokStudentIds.includes(studentId)) {
+          // Student not in this kelompok
+          setProcessingResult({
+            success: false,
+            message: `This student is not in the ${kelompokName || 'selected'} group for this activity`
+          });
+          setShowResultModal(true);
+          return;
+        }
+      }
+      
+      // If passed validation, record attendance
       handleAttendanceRecording(validationResult.token.token, validationResult.anak.id_anak);
     }
-  }, [validationResult]);
+  }, [validationResult, isBimbelActivity, kelompokStudentIds]);
   
   // Handle QR scan
   const handleScan = (qrData) => {
@@ -145,7 +207,7 @@ const QrScannerScreen = ({ navigation, route }) => {
     setShowResultModal(false);
   };
   
-  const isLoading = tokenLoading || attendanceLoading;
+  const isLoading = tokenLoading || attendanceLoading || loadingKelompokData;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -159,6 +221,13 @@ const QrScannerScreen = ({ navigation, route }) => {
         <Text style={styles.activityName}>
           {activityName || 'No activity selected'}
         </Text>
+        
+        {/* Show Kelompok info for Bimbel activities */}
+        {isBimbelActivity && kelompokName && (
+          <Text style={styles.kelompokInfo}>
+            Group: {kelompokName}
+          </Text>
+        )}
         
         <View style={styles.statusSelector}>
           <Text style={styles.statusLabel}>Status:</Text>
@@ -276,7 +345,14 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     textAlign: 'center',
+    marginBottom: 6,
+  },
+  kelompokInfo: {
+    color: '#fff',
+    fontSize: 12,
+    textAlign: 'center',
     marginBottom: 10,
+    opacity: 0.8,
   },
   statusSelector: {
     flexDirection: 'row',
