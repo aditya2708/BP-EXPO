@@ -8,7 +8,8 @@ import {
   TouchableOpacity,
   Image,
   Alert,
-  Platform
+  Platform,
+  ActivityIndicator
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,6 +31,9 @@ import {
   selectAktivitasError
 } from '../../redux/aktivitasSlice';
 
+// API
+import { adminShelterKelompokApi } from '../../api/adminShelterKelompokApi';
+
 const ActivityFormScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   
@@ -50,7 +54,8 @@ const ActivityFormScreen = ({ navigation, route }) => {
     tanggal: new Date(),
     foto_1: null,
     foto_2: null,
-    foto_3: null
+    foto_3: null,
+    selectedKelompokId: null // Store selected kelompok ID for reference
   });
   
   // UI state
@@ -61,6 +66,11 @@ const ActivityFormScreen = ({ navigation, route }) => {
     foto_3: null
   });
   
+  // Kelompok data state
+  const [kelompokList, setKelompokList] = useState([]);
+  const [kelompokLoading, setKelompokLoading] = useState(false);
+  const [kelompokError, setKelompokError] = useState(null);
+  
   // Load activity data if editing
   useEffect(() => {
     if (isEditing && activity) {
@@ -70,6 +80,7 @@ const ActivityFormScreen = ({ navigation, route }) => {
         nama_kelompok: activity.nama_kelompok || '',
         materi: activity.materi || '',
         tanggal: activity.tanggal ? new Date(activity.tanggal) : new Date(),
+        selectedKelompokId: null // Will be set if we can match it in the kelompok list
       });
       
       // Set photo previews if available
@@ -78,8 +89,54 @@ const ActivityFormScreen = ({ navigation, route }) => {
         foto_2: activity.foto_2_url || null,
         foto_3: activity.foto_3_url || null
       });
+      
+      // If activity type is Bimbel, fetch kelompok data
+      if (activity.jenis_kegiatan === 'Bimbel') {
+        fetchKelompokData();
+      }
     }
   }, [isEditing, activity]);
+  
+  // Fetch kelompok data when Bimbel is selected
+  useEffect(() => {
+    if (formData.jenis_kegiatan === 'Bimbel') {
+      fetchKelompokData();
+    }
+  }, [formData.jenis_kegiatan]);
+  
+  // Fetch kelompok data from API
+  const fetchKelompokData = async () => {
+    setKelompokLoading(true);
+    setKelompokError(null);
+    
+    try {
+      const response = await adminShelterKelompokApi.getAllKelompok();
+      
+      if (response.data && response.data.data) {
+        setKelompokList(response.data.data);
+        
+        // If editing and we have nama_kelompok, try to find matching kelompok
+        if (isEditing && formData.nama_kelompok) {
+          const matchingKelompok = response.data.data.find(
+            k => k.nama_kelompok === formData.nama_kelompok
+          );
+          
+          if (matchingKelompok) {
+            setFormData(prev => ({
+              ...prev,
+              selectedKelompokId: matchingKelompok.id_kelompok,
+              level: matchingKelompok.level_anak_binaan?.nama_level_binaan || prev.level
+            }));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching kelompok data:', error);
+      setKelompokError('Failed to load group data. Please try again.');
+    } finally {
+      setKelompokLoading(false);
+    }
+  };
   
   // Handle form input changes
   const handleChange = (name, value) => {
@@ -94,6 +151,27 @@ const ActivityFormScreen = ({ navigation, route }) => {
     setShowDatePicker(false);
     if (selectedDate) {
       handleChange('tanggal', selectedDate);
+    }
+  };
+  
+  // Handle kelompok selection
+  const handleKelompokChange = (kelompokId) => {
+    const selectedKelompok = kelompokList.find(k => k.id_kelompok === kelompokId);
+    
+    if (selectedKelompok) {
+      setFormData({
+        ...formData,
+        selectedKelompokId: kelompokId,
+        nama_kelompok: selectedKelompok.nama_kelompok,
+        level: selectedKelompok.level_anak_binaan?.nama_level_binaan || ''
+      });
+    } else {
+      setFormData({
+        ...formData,
+        selectedKelompokId: null,
+        nama_kelompok: '',
+        level: ''
+      });
     }
   };
   
@@ -159,9 +237,15 @@ const ActivityFormScreen = ({ navigation, route }) => {
     
     // Add text fields
     data.append('jenis_kegiatan', formData.jenis_kegiatan);
-    data.append('level', formData.level);
-    data.append('nama_kelompok', formData.nama_kelompok);
-    data.append('materi', formData.materi);
+    
+    // Only include level and nama_kelompok if jenis_kegiatan is Bimbel
+    if (formData.jenis_kegiatan === 'Bimbel') {
+      data.append('level', formData.level || '');
+      data.append('nama_kelompok', formData.nama_kelompok || '');
+    }
+    
+    // Use empty string instead of null for materi
+    data.append('materi', formData.materi || '');
     data.append('tanggal', format(formData.tanggal, 'yyyy-MM-dd'));
     
     // Add photos if selected
@@ -185,6 +269,18 @@ const ActivityFormScreen = ({ navigation, route }) => {
     // Validate required fields
     if (!formData.jenis_kegiatan || !formData.tanggal) {
       Alert.alert('Validation Error', 'Activity type and date are required');
+      return;
+    }
+    
+    // If Bimbel is selected, validate kelompok selection
+    if (formData.jenis_kegiatan === 'Bimbel' && !formData.selectedKelompokId) {
+      Alert.alert('Validation Error', 'Please select a group for Bimbel activity');
+      return;
+    }
+    
+    // Validate materi field
+    if (!formData.materi) {
+      Alert.alert('Validation Error', 'Materi cannot be empty');
       return;
     }
     
@@ -214,56 +310,104 @@ const ActivityFormScreen = ({ navigation, route }) => {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       
-      
       {/* Error message */}
       {error && <ErrorMessage message={error} />}
       
-      {/* Activity Type */}
+      {/* Activity Type - Button Selection */}
       <View style={styles.inputGroup}>
-        <Text style={styles.label}>Tipe Aktivitas <Text style={styles.required}>*</Text></Text>
-        <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={formData.jenis_kegiatan}
-            onValueChange={(value) => handleChange('jenis_kegiatan', value)}
-            style={styles.picker}
+        <Text style={styles.label}>Tipe Aktivitas<Text style={styles.required}>*</Text></Text>
+        <View style={styles.activityTypeButtons}>
+          <TouchableOpacity
+            style={[
+              styles.typeButton,
+              formData.jenis_kegiatan === 'Bimbel' && styles.typeButtonActive
+            ]}
+            onPress={() => handleChange('jenis_kegiatan', 'Bimbel')}
           >
-            <Picker.Item label="Pilih Activitas" value="" />
-            <Picker.Item label="Bimbel" value="Bimbel" />
-            <Picker.Item label="Kegiatan" value="Kegiatan" />
-          </Picker>
+            <Text style={[
+              styles.typeButtonText,
+              formData.jenis_kegiatan === 'Bimbel' && styles.typeButtonTextActive
+            ]}>
+              Bimbel
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.typeButton,
+              formData.jenis_kegiatan === 'Kegiatan' && styles.typeButtonActive
+            ]}
+            onPress={() => handleChange('jenis_kegiatan', 'Kegiatan')}
+          >
+            <Text style={[
+              styles.typeButtonText,
+              formData.jenis_kegiatan === 'Kegiatan' && styles.typeButtonTextActive
+            ]}>
+              Kegiatan
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
       
-      {/* Level */}
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Tingkat</Text>
-        <TextInput
-          style={styles.input}
-          value={formData.level}
-          onChangeText={(value) => handleChange('level', value)}
-          placeholder=""
-        />
-      </View>
+      {/* Kelompok Picker - Only shown for Bimbel */}
+      {formData.jenis_kegiatan === 'Bimbel' && (
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Kelompok<Text style={styles.required}>*</Text></Text>
+          
+          {kelompokLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#3498db" />
+              <Text style={styles.loadingText}>Loading groups...</Text>
+            </View>
+          ) : kelompokError ? (
+            <ErrorMessage 
+              message={kelompokError} 
+              onRetry={fetchKelompokData}
+              style={styles.errorContainer} 
+            />
+          ) : (
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={formData.selectedKelompokId || ''}
+                onValueChange={handleKelompokChange}
+                style={styles.picker}
+                enabled={!loading}
+              >
+                <Picker.Item label="Select a group" value="" />
+                {kelompokList.map(kelompok => (
+                  <Picker.Item 
+                    key={kelompok.id_kelompok} 
+                    label={kelompok.nama_kelompok}
+                    value={kelompok.id_kelompok} 
+                  />
+                ))}
+              </Picker>
+            </View>
+          )}
+        </View>
+      )}
       
-      {/* Group Name */}
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Nama Kelompok</Text>
-        <TextInput
-          style={styles.input}
-          value={formData.nama_kelompok}
-          onChangeText={(value) => handleChange('nama_kelompok', value)}
-          placeholder="Masukan Nama Kelompok"
-        />
-      </View>
+      {/* Level - Only shown for Bimbel (read-only) */}
+      {formData.jenis_kegiatan === 'Bimbel' && (
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Tingkat</Text>
+          <TextInput
+            style={[styles.input, styles.disabledInput]}
+            value={formData.level}
+            editable={false}
+            placeholder="Level will be filled automatically"
+          />
+        </View>
+      )}
       
       {/* Materials */}
       <View style={styles.inputGroup}>
-        <Text style={styles.label}>Materi</Text>
+        <Text style={styles.label}>Materi<Text style={styles.required}>*</Text></Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           value={formData.materi}
           onChangeText={(value) => handleChange('materi', value)}
-          placeholder="Deskripsi materi"
+          placeholder="Deskripsi Materi"
           multiline
           numberOfLines={4}
           textAlignVertical="top"
@@ -272,7 +416,7 @@ const ActivityFormScreen = ({ navigation, route }) => {
       
       {/* Date */}
       <View style={styles.inputGroup}>
-        <Text style={styles.label}>Tanggal <Text style={styles.required}>*</Text></Text>
+        <Text style={styles.label}>Tanggal<Text style={styles.required}>*</Text></Text>
         <TouchableOpacity 
           style={styles.datePickerButton}
           onPress={() => setShowDatePicker(true)}
@@ -372,7 +516,7 @@ const ActivityFormScreen = ({ navigation, route }) => {
       {/* Submit Button */}
       <View style={styles.buttonContainer}>
         <Button
-          title={isEditing ? 'Update Aktivitas' : 'Buat Aktivitas'}
+          title={isEditing ? 'Update Activitas' : 'Buat Activity'}
           onPress={handleSubmit}
           loading={loading}
           disabled={loading}
@@ -428,6 +572,33 @@ const styles = StyleSheet.create({
   required: {
     color: '#e74c3c',
   },
+  activityTypeButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  typeButton: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  typeButtonActive: {
+    backgroundColor: '#3498db',
+    borderColor: '#3498db',
+  },
+  typeButtonText: {
+    fontSize: 16,
+    color: '#34495e',
+    fontWeight: '500',
+  },
+  typeButtonTextActive: {
+    color: '#fff',
+  },
   input: {
     backgroundColor: '#f9f9f9',
     borderWidth: 1,
@@ -436,6 +607,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
+  },
+  disabledInput: {
+    backgroundColor: '#f0f0f0',
+    color: '#7f8c8d',
   },
   textArea: {
     minHeight: 100,
@@ -516,6 +691,23 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     marginTop: 12,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  loadingText: {
+    marginLeft: 8,
+    color: '#7f8c8d',
+  },
+  errorContainer: {
+    marginVertical: 0,
   },
 });
 
