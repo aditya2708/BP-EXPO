@@ -103,6 +103,21 @@ const ActivityDetailScreen = ({ navigation, route }) => {
       activityDate: activity.tanggal ? format(new Date(activity.tanggal), 'dd MMM yyyy') : null
     });
   };
+
+  // Handle QR code generation button
+  const handleGenerateQrCodes = () => {
+    navigation.navigate('QrTokenGeneration', {
+      id_aktivitas,
+      activityName: activity.jenis_kegiatan,
+      activityDate: activity.tanggal ? format(new Date(activity.tanggal), 'dd MMM yyyy') : null,
+      activityType: activity.jenis_kegiatan,
+      kelompokId: activity.jenis_kegiatan === 'Bimbel' && activity.selectedKelompokId ? 
+        activity.selectedKelompokId : null,
+      kelompokName: activity.nama_kelompok || null,
+      level: activity.level || null,
+      completeActivity: activity // Pass the complete activity object for context
+    });
+  };
   
   // Show loading spinner while fetching data
   if (loading && !activity) {
@@ -206,17 +221,6 @@ const ActivityDetailScreen = ({ navigation, route }) => {
             >
               <Ionicons name="trash-outline" size={24} color="#e74c3c" />
             </TouchableOpacity>
-            <TouchableOpacity 
-  style={[styles.attendanceButton, styles.qrButton]}
-  onPress={() => navigation.navigate('QrTokenGeneration', {
-    id_aktivitas: id_aktivitas,
-    activityName: activity.jenis_kegiatan,
-    activityDate: activity.tanggal ? format(new Date(activity.tanggal), 'dd MMM yyyy') : null
-  })}
->
-  <Ionicons name="qr-code" size={24} color="#fff" />
-  <Text style={styles.attendanceButtonText}>Generate QR Codes</Text>
-</TouchableOpacity>
           </View>
         </View>
         
@@ -266,6 +270,15 @@ const ActivityDetailScreen = ({ navigation, route }) => {
             <Text style={styles.attendanceButtonText}>View Records</Text>
           </TouchableOpacity>
         </View>
+
+        {/* QR Code Generation Button */}
+        <TouchableOpacity 
+          style={[styles.attendanceButton, styles.qrButton, styles.fullWidthButton]}
+          onPress={handleGenerateQrCodes}
+        >
+          <Ionicons name="qr-code" size={24} color="#fff" />
+          <Text style={styles.attendanceButtonText}>Generate QR Codes</Text>
+        </TouchableOpacity>
         
         {/* Attendees List */}
         <View style={styles.attendeesSection}>
@@ -408,6 +421,13 @@ const styles = StyleSheet.create({
   recordsButton: {
     backgroundColor: '#2ecc71',
   },
+  qrButton: {
+    backgroundColor: '#f1c40f',
+    marginBottom: 16,
+  },
+  fullWidthButton: {
+    marginHorizontal: 0,
+  },
   attendanceButtonText: {
     color: '#fff',
     marginLeft: 4,
@@ -425,9 +445,6 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  qrButton: {
-  backgroundColor: '#f1c40f',
-},
 });
 
 export default ActivityDetailScreen;

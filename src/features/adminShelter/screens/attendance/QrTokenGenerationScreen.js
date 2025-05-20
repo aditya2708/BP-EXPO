@@ -38,7 +38,16 @@ const QrTokenGenerationScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   
   // Get activity data from route params
-  const { id_aktivitas, activityName, activityDate } = route.params || {};
+  const { 
+    id_aktivitas, 
+    activityName, 
+    activityDate,
+    activityType,
+    kelompokId,
+    kelompokName,
+    level,
+    completeActivity
+  } = route.params || {};
   
   // Redux state
   const tokenLoading = useSelector(selectQrTokenLoading);
@@ -55,23 +64,37 @@ const QrTokenGenerationScreen = ({ navigation, route }) => {
   
   // Kelompok state
   const [kelompokList, setKelompokList] = useState([]);
-  const [selectedKelompokId, setSelectedKelompokId] = useState('');
+  const [selectedKelompokId, setSelectedKelompokId] = useState(kelompokId || '');
   const [kelompokLoading, setKelompokLoading] = useState(false);
   const [kelompokError, setKelompokError] = useState(null);
+  const [isContextualMode, setIsContextualMode] = useState(!!id_aktivitas);
   
-  // Fetch kelompok list when component mounts
+  // Fetch kelompok list when component mounts if not in contextual mode
   useEffect(() => {
-    fetchKelompokList();
-  }, []);
+    if (!isContextualMode || (isContextualMode && activityType !== 'Bimbel')) {
+      fetchKelompokList();
+    }
+  }, [isContextualMode, activityType]);
   
-  // Fetch students when selected kelompok changes
+  // Load students based on activity context or selection
   useEffect(() => {
-    if (selectedKelompokId) {
-      fetchStudentsByKelompok(selectedKelompokId);
-    } else {
+    // If we have activity context with Bimbel type and kelompokId
+    if (isContextualMode && activityType === 'Bimbel' && kelompokId) {
+      fetchStudentsByKelompok(kelompokId);
+    } 
+    // If we have activity context but it's a general Kegiatan (no specific kelompok)
+    else if (isContextualMode && activityType === 'Kegiatan') {
       fetchAllStudents();
     }
-  }, [selectedKelompokId]);
+    // Regular case - respond to dropdown selection
+    else if (selectedKelompokId) {
+      fetchStudentsByKelompok(selectedKelompokId);
+    } 
+    // Default - show all students
+    else {
+      fetchAllStudents();
+    }
+  }, [isContextualMode, activityType, kelompokId, selectedKelompokId]);
   
   // Fetch kelompok list from API
   const fetchKelompokList = async () => {
@@ -92,7 +115,7 @@ const QrTokenGenerationScreen = ({ navigation, route }) => {
     }
   };
   
-  // Fetch all students (when no kelompok is selected)
+  // Fetch all students
   const fetchAllStudents = async () => {
     try {
       setLoading(true);
@@ -126,6 +149,7 @@ const QrTokenGenerationScreen = ({ navigation, route }) => {
         );
         
         setStudents(activeStudents);
+        setSelectedStudents([]);
         
         // Check for existing tokens
         activeStudents.forEach(student => {
@@ -141,39 +165,49 @@ const QrTokenGenerationScreen = ({ navigation, route }) => {
   };
   
   // Fetch students by kelompok
-const fetchStudentsByKelompok = async (kelompokId) => {
-  try {
-    setLoading(true);
-    setError(null);
-    
-    console.log(`Fetching students for kelompok ID: ${kelompokId}`);
-    const response = await adminShelterKelompokApi.getKelompokDetail(kelompokId);
-    
-    // Log the response to see what's being returned
-    console.log('Kelompok detail response:', response.data);
-    
-    if (response.data && response.data.data && Array.isArray(response.data.data.anak)) {
-      const kelompokStudents = response.data.data.anak;
-      console.log(`Found ${kelompokStudents.length} students in kelompok`);
+  const fetchStudentsByKelompok = async (kelompokId) => {
+    try {
+      setLoading(true);
+      setError(null);
       
-      setStudents(kelompokStudents);
-      setSelectedStudents([]);
+      console.log(`Fetching students for kelompok ID: ${kelompokId}`);
+      const response = await adminShelterKelompokApi.getGroupChildren(kelompokId);
       
-      // Check for existing tokens
-      kelompokStudents.forEach(student => {
-        dispatch(getActiveToken(student.id_anak));
-      });
-    } else {
-      console.error('Invalid response structure:', response.data);
-      setError('Students data structure is invalid. Please try a different group.');
+      // Log the response to see what's being returned
+      console.log('Kelompok children response:', response.data);
+      
+      if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        const kelompokStudents = response.data.data;
+        console.log(`Found ${kelompokStudents.length} students in kelompok`);
+        
+        // Filter for active students
+        const activeStudents = kelompokStudents.filter(
+          student => student.status_validasi === 'aktif'
+        );
+        
+        setStudents(activeStudents);
+        setSelectedStudents([]);
+        
+        // Check for existing tokens
+        activeStudents.forEach(student => {
+          dispatch(getActiveToken(student.id_anak));
+        });
+      } else {
+        console.error('Invalid response structure:', response.data);
+        setError('Students data structure is invalid. Please try a different group.');
+      }
+    } catch (error) {
+      console.error('Error fetching students by kelompok:', error);
+      setError(`Failed to load students: ${error.message}`);
+      
+      // If we get an error and we're in contextual mode, try to fall back to all students
+      if (isContextualMode) {
+        fetchAllStudents();
+      }
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error('Error fetching students by kelompok:', error);
-    setError(`Failed to load students: ${error.message}`);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
   
   // Handle kelompok selection change
   const handleKelompokChange = (kelompokId) => {
@@ -293,6 +327,14 @@ const fetchStudentsByKelompok = async (kelompokId) => {
           {activityDate && (
             <Text style={styles.activityDate}>{activityDate}</Text>
           )}
+          
+          {/* Display contextual info for Bimbel */}
+          {activityType === 'Bimbel' && kelompokName && (
+            <View style={styles.contextInfo}>
+              <Text style={styles.contextInfoText}>Group: {kelompokName}</Text>
+              {level && <Text style={styles.contextInfoText}>Level: {level}</Text>}
+            </View>
+          )}
         </View>
       )}
       
@@ -304,34 +346,38 @@ const fetchStudentsByKelompok = async (kelompokId) => {
         />
       )}
       
-      {/* Kelompok Selector */}
-      <View style={styles.kelompokContainer}>
-        <Text style={styles.kelompokLabel}>Filter by Group:</Text>
-        {kelompokLoading ? (
-          <View style={styles.pickerLoadingContainer}>
-            <ActivityIndicator size="small" color="#3498db" />
-            <Text style={styles.pickerLoadingText}>Loading groups...</Text>
-          </View>
-        ) : (
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={selectedKelompokId}
-              onValueChange={handleKelompokChange}
-              style={styles.picker}
-              enabled={!loading && !kelompokLoading}
-            >
-              <Picker.Item label="All Students" value="" />
-              {kelompokList.map(kelompok => (
-                <Picker.Item 
-                  key={kelompok.id_kelompok} 
-                  label={kelompok.nama_kelompok}
-                  value={kelompok.id_kelompok} 
-                />
-              ))}
-            </Picker>
-          </View>
-        )}
-      </View>
+      {/* Kelompok Selector - Only show if:
+          1. Not in contextual mode, OR
+          2. In contextual mode but activity is not Bimbel (general activity) */}
+      {(!isContextualMode || (isContextualMode && activityType !== 'Bimbel')) && (
+        <View style={styles.kelompokContainer}>
+          <Text style={styles.kelompokLabel}>Filter by Group:</Text>
+          {kelompokLoading ? (
+            <View style={styles.pickerLoadingContainer}>
+              <ActivityIndicator size="small" color="#3498db" />
+              <Text style={styles.pickerLoadingText}>Loading groups...</Text>
+            </View>
+          ) : (
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={selectedKelompokId}
+                onValueChange={handleKelompokChange}
+                style={styles.picker}
+                enabled={!loading && !kelompokLoading}
+              >
+                <Picker.Item label="All Students" value="" />
+                {kelompokList.map(kelompok => (
+                  <Picker.Item 
+                    key={kelompok.id_kelompok} 
+                    label={kelompok.nama_kelompok}
+                    value={kelompok.id_kelompok} 
+                  />
+                ))}
+              </Picker>
+            </View>
+          )}
+        </View>
+      )}
       
       {/* Search and Controls */}
       <View style={styles.controlsContainer}>
@@ -339,7 +385,7 @@ const fetchStudentsByKelompok = async (kelompokId) => {
           <Ionicons name="search" size={20} color="#7f8c8d" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Cari Anak..."
+            placeholder="Search students..."
             value={searchQuery}
             onChangeText={setSearchQuery}
             clearButtonMode="while-editing"
@@ -347,7 +393,7 @@ const fetchStudentsByKelompok = async (kelompokId) => {
         </View>
         
         <View style={styles.tokenControls}>
-          <Text style={styles.validDaysLabel}>Valid untuk (hari):</Text>
+          <Text style={styles.validDaysLabel}>Valid for (days):</Text>
           <TextInput
             style={styles.validDaysInput}
             value={validDays.toString()}
@@ -365,8 +411,8 @@ const fetchStudentsByKelompok = async (kelompokId) => {
         >
           <Text style={styles.selectAllText}>
             {selectedStudents.length === filteredStudents.length
-              ? 'batal'
-              : 'pilih semua'}
+              ? 'Unselect All'
+              : 'Select All'}
           </Text>
         </TouchableOpacity>
         
@@ -436,6 +482,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
     marginTop: 4,
+  },
+  contextInfo: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.3)',
+    alignItems: 'center',
+  },
+  contextInfoText: {
+    fontSize: 12,
+    color: '#fff',
+    marginVertical: 2,
   },
   kelompokContainer: {
     backgroundColor: '#fff',
