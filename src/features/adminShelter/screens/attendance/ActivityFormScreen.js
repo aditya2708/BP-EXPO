@@ -161,11 +161,22 @@ const ActivityFormScreen = ({ navigation, route }) => {
   
   // Handle form input changes
   const handleChange = (name, value) => {
+  if (name === 'jenis_kegiatan') {
+    // Clear level and kelompok data when switching activity types
+    setFormData({
+      ...formData,
+      [name]: value,
+      level: value === 'Bimbel' ? formData.level : '',
+      nama_kelompok: value === 'Bimbel' ? formData.nama_kelompok : '',
+      selectedKelompokId: value === 'Bimbel' ? formData.selectedKelompokId : null
+    });
+  } else {
     setFormData({
       ...formData,
       [name]: value
     });
-  };
+  }
+};
   
   // Handle date change
   const handleDateChange = (event, selectedDate) => {
@@ -307,52 +318,56 @@ const ActivityFormScreen = ({ navigation, route }) => {
   
   // Prepare form data for submission
   const prepareFormData = () => {
-    const data = new FormData();
-    
-    // Add text fields
-    data.append('jenis_kegiatan', formData.jenis_kegiatan);
-    
-    // Only include level and nama_kelompok if jenis_kegiatan is Bimbel
-    if (formData.jenis_kegiatan === 'Bimbel') {
-      data.append('level', formData.level || '');
-      data.append('nama_kelompok', formData.nama_kelompok || '');
-    }
-    
-    // Use empty string instead of null for materi
-    data.append('materi', formData.materi || '');
-    data.append('tanggal', format(formData.tanggal, 'yyyy-MM-dd'));
-    
-    // Add time information if available
-    if (formData.start_time) {
-      data.append('start_time', format(formData.start_time, 'HH:mm:ss'));
-    }
-    
-    if (formData.end_time) {
-      data.append('end_time', format(formData.end_time, 'HH:mm:ss'));
-    }
-    
-    // Add late threshold information
-    if (useCustomLateThreshold && formData.late_threshold) {
-      data.append('late_threshold', format(formData.late_threshold, 'HH:mm:ss'));
-    } else {
-      data.append('late_minutes_threshold', formData.late_minutes_threshold.toString());
-    }
-    
-    // Add photos if selected
-    if (formData.foto_1) {
-      data.append('foto_1', formData.foto_1);
-    }
-    
-    if (formData.foto_2) {
-      data.append('foto_2', formData.foto_2);
-    }
-    
-    if (formData.foto_3) {
-      data.append('foto_3', formData.foto_3);
-    }
-    
-    return data;
-  };
+  const data = new FormData();
+  
+  // Add text fields
+  data.append('jenis_kegiatan', formData.jenis_kegiatan);
+  
+  // Only include level and nama_kelompok if jenis_kegiatan is Bimbel
+  if (formData.jenis_kegiatan === 'Bimbel') {
+    data.append('level', formData.level || '');
+    data.append('nama_kelompok', formData.nama_kelompok || '');
+  } else {
+    // For Kegiatan, explicitly send empty strings
+    data.append('level', '');
+    data.append('nama_kelompok', '');
+  }
+  
+  // Use empty string instead of null for materi
+  data.append('materi', formData.materi || '');
+  data.append('tanggal', format(formData.tanggal, 'yyyy-MM-dd'));
+  
+  // Add time information if available
+  if (formData.start_time) {
+    data.append('start_time', format(formData.start_time, 'HH:mm:ss'));
+  }
+  
+  if (formData.end_time) {
+    data.append('end_time', format(formData.end_time, 'HH:mm:ss'));
+  }
+  
+  // Add late threshold information
+  if (useCustomLateThreshold && formData.late_threshold) {
+    data.append('late_threshold', format(formData.late_threshold, 'HH:mm:ss'));
+  } else {
+    data.append('late_minutes_threshold', formData.late_minutes_threshold.toString());
+  }
+  
+  // Add photos if selected
+  if (formData.foto_1) {
+    data.append('foto_1', formData.foto_1);
+  }
+  
+  if (formData.foto_2) {
+    data.append('foto_2', formData.foto_2);
+  }
+  
+  if (formData.foto_3) {
+    data.append('foto_3', formData.foto_3);
+  }
+  
+  return data;
+};
   
   // Handle form submission
   const handleSubmit = async () => {
