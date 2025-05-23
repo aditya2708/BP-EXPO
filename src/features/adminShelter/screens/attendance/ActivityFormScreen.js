@@ -187,36 +187,37 @@ const ActivityFormScreen = ({ navigation, route }) => {
   };
   
   // Handle start time change
-  const handleStartTimeChange = (event, selectedTime) => {
-    setShowStartTimePicker(false);
-    if (selectedTime) {
-      handleChange('start_time', selectedTime);
-      
-      // If end time is empty or earlier than start time, update it
-      if (!formData.end_time || selectedTime > formData.end_time) {
-        // Set end time to 1 hour after start time
-        const endTime = new Date(selectedTime);
-        endTime.setHours(endTime.getHours() + 1);
-        handleChange('end_time', endTime);
-      }
-    }
-  };
+ const handleStartTimeChange = (event, selectedTime) => {
+  setShowStartTimePicker(false);
+  if (selectedTime) {
+    setFormData(prevData => ({
+      ...prevData,
+      start_time: selectedTime
+    }));
+  }
+};
   
   // Handle end time change
-  const handleEndTimeChange = (event, selectedTime) => {
-    setShowEndTimePicker(false);
-    if (selectedTime) {
-      handleChange('end_time', selectedTime);
-    }
-  };
+ const handleEndTimeChange = (event, selectedTime) => {
+  setShowEndTimePicker(false);
+  if (selectedTime) {
+    setFormData(prevData => ({
+      ...prevData,
+      end_time: selectedTime
+    }));
+  }
+};
   
   // Handle late threshold change
-  const handleLateThresholdChange = (event, selectedTime) => {
-    setShowLateThresholdPicker(false);
-    if (selectedTime) {
-      handleChange('late_threshold', selectedTime);
-    }
-  };
+ const handleLateThresholdChange = (event, selectedTime) => {
+  setShowLateThresholdPicker(false);
+  if (selectedTime) {
+    setFormData(prevData => ({
+      ...prevData,
+      late_threshold: selectedTime
+    }));
+  }
+};
   
   // Handle kelompok selection
   const handleKelompokChange = (kelompokId) => {
