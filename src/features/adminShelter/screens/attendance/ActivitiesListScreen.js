@@ -1,0 +1,662 @@
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  TextInput,
+  RefreshControl,
+  Alert,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  Modal
+} from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { id } from 'date-fns/locale';
+
+// Components
+import ActivityCard from '../../components/ActivityCard';
+import LoadingSpinner from '../../../../common/components/LoadingSpinner';
+import ErrorMessage from '../../../../common/components/ErrorMessage';
+
+// Redux
+import {
+  fetchAllAktivitas,
+  deleteAktivitas,
+  selectAktivitasList,
+  selectAktivitasLoading,
+  selectAktivitasError,
+  selectAktivitasPagination,
+  resetAktivitasError
+} from '../../redux/aktivitasSlice';
+
+const ActivitiesListScreen = ({ navigation }) => {
+  const dispatch = useDispatch();
+  
+  // Redux state
+  const activities = useSelector(selectAktivitasList);
+  const loading = useSelector(selectAktivitasLoading);
+  const error = useSelector(selectAktivitasError);
+  const pagination = useSelector(selectAktivitasPagination);
+  
+  // Local state
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('all'); // 'all', 'Bimbel', 'Kegiatan'
+  const [showDateFilter, setShowDateFilter] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [isDateFilterActive, setIsDateFilterActive] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [allActivities, setAllActivities] = useState([]);
+  const [loadingMore, setLoadingMore] = useState(false);
+  
+  // Load activities on mount
+  useEffect(() => {
+    fetchActivities(1, true);
+    
+    return () => {
+      dispatch(resetAktivitasError());
+    };
+  }, [dispatch]);
+  
+  // Fetch activities data with pagination
+  const fetchActivities = async (page = 1, reset = false) => {
+    const params = {
+      page,
+      per_page: 20
+    };
+    
+    if (searchQuery) {
+      params.search = searchQuery;
+    }
+    
+    if (filterType !== 'all') {
+      params.jenis_kegiatan = filterType;
+    }
+    
+    if (isDateFilterActive) {
+      params.date_from = format(startOfMonth(selectedMonth), 'yyyy-MM-dd');
+      params.date_to = format(endOfMonth(selectedMonth), 'yyyy-MM-dd');
+    }
+    
+    try {
+      if (page > 1) {
+        setLoadingMore(true);
+      }
+      
+      await dispatch(fetchAllAktivitas(params)).unwrap();
+      
+      if (reset) {
+        setAllActivities(activities);
+        setCurrentPage(1);
+      } else {
+        setAllActivities(prev => page === 1 ? activities : [...prev, ...activities]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch activities:', err);
+    } finally {
+      setRefreshing(false);
+      setLoadingMore(false);
+    }
+  };
+  
+  // Handle refresh
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setCurrentPage(1);
+    fetchActivities(1, true);
+  };
+  
+  // Handle search
+  const handleSearch = () => {
+    setCurrentPage(1);
+    fetchActivities(1, true);
+  };
+  
+  // Handle type filter
+  const handleFilterChange = (type) => {
+    setFilterType(type);
+    setCurrentPage(1);
+    
+    const params = {
+      page: 1,
+      per_page: 20
+    };
+    
+    if (searchQuery) {
+      params.search = searchQuery;
+    }
+    
+    if (type !== 'all') {
+      params.jenis_kegiatan = type;
+    }
+    
+    if (isDateFilterActive) {
+      params.date_from = format(startOfMonth(selectedMonth), 'yyyy-MM-dd');
+      params.date_to = format(endOfMonth(selectedMonth), 'yyyy-MM-dd');
+    }
+    
+    dispatch(fetchAllAktivitas(params))
+      .unwrap()
+      .then(() => setAllActivities(activities))
+      .catch(err => console.error('Failed to fetch activities:', err));
+  };
+  
+  // Handle date filter
+  const applyDateFilter = () => {
+    setShowDateFilter(false);
+    setIsDateFilterActive(true);
+    setCurrentPage(1);
+    fetchActivities(1, true);
+  };
+  
+  // Clear date filter
+  const clearDateFilter = () => {
+    setIsDateFilterActive(false);
+    setSelectedMonth(new Date());
+    setShowDateFilter(false);
+    setCurrentPage(1);
+    fetchActivities(1, true);
+  };
+  
+  // Handle load more
+  const handleLoadMore = () => {
+    if (!loadingMore && currentPage < pagination.lastPage) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      fetchActivities(nextPage, false);
+    }
+  };
+  
+  // Handle activity selection
+  const handleSelectActivity = (activity) => {
+    navigation.navigate('ActivityDetail', { 
+      id_aktivitas: activity.id_aktivitas
+    });
+  };
+  
+  // Handle create new activity
+  const handleCreateActivity = () => {
+    navigation.navigate('ActivityForm');
+  };
+  
+  // Handle edit activity
+  const handleEditActivity = (activity) => {
+    navigation.navigate('ActivityForm', { activity });
+  };
+  
+  // Handle delete activity
+  const handleDeleteActivity = (id) => {
+    Alert.alert(
+      'Delete Activity',
+      'Are you sure you want to delete this activity? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await dispatch(deleteAktivitas(id)).unwrap();
+              Alert.alert('Success', 'Activity deleted successfully');
+              handleRefresh();
+            } catch (err) {
+              Alert.alert('Error', err || 'Failed to delete activity');
+            }
+          }
+        }
+      ]
+    );
+  };
+  
+  // Render activity item
+  const renderActivityItem = ({ item }) => (
+    <ActivityCard
+      activity={item}
+      onPress={() => handleSelectActivity(item)}
+      onEdit={() => handleEditActivity(item)}
+      onDelete={() => handleDeleteActivity(item.id_aktivitas)}
+    />
+  );
+  
+  // Render empty list
+  const renderEmptyList = () => (
+    <View style={styles.emptyContainer}>
+      <Ionicons name="calendar-outline" size={64} color="#bdc3c7" />
+      <Text style={styles.emptyText}>No activities found</Text>
+      <Text style={styles.emptySubText}>
+        {searchQuery || filterType !== 'all' || isDateFilterActive
+          ? 'Try changing your search or filters' 
+          : 'Tap the + button to create an activity'}
+      </Text>
+    </View>
+  );
+  
+  // Render footer for loading more
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    
+    return (
+      <View style={styles.footerLoader}>
+        <Text style={styles.loadingMoreText}>Loading more activities...</Text>
+      </View>
+    );
+  };
+  
+  // Month navigation
+  const navigateMonth = (direction) => {
+    if (direction === 'prev') {
+      setSelectedMonth(subMonths(selectedMonth, 1));
+    } else {
+      setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1));
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="search" size={20} color="#7f8c8d" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Cari berdasarkan materi..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onSubmitEditing={handleSearch}
+              returnKeyType="search"
+              clearButtonMode="while-editing"
+            />
+          </View>
+          <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+            <Ionicons name="search" size={20} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.filterButton, isDateFilterActive && styles.activeFilterButton]} 
+            onPress={() => setShowDateFilter(true)}
+          >
+            <Ionicons name="calendar" size={20} color={isDateFilterActive ? "#fff" : "#3498db"} />
+          </TouchableOpacity>
+        </View>
+        
+        {/* Active Date Filter Indicator */}
+        {isDateFilterActive && (
+          <View style={styles.activeFilterContainer}>
+            <Text style={styles.activeFilterText}>
+              Filter: {format(selectedMonth, 'MMMM yyyy', { locale: id })}
+            </Text>
+            <TouchableOpacity onPress={clearDateFilter}>
+              <Ionicons name="close-circle" size={20} color="#e74c3c" />
+            </TouchableOpacity>
+          </View>
+        )}
+        
+        {/* Filter Tabs */}
+        <View style={styles.filterTabs}>
+          <TouchableOpacity
+            style={[
+              styles.filterTab,
+              filterType === 'all' && styles.activeFilterTab
+            ]}
+            onPress={() => handleFilterChange('all')}
+          >
+            <Text style={[
+              styles.filterTabText,
+              filterType === 'all' && styles.activeFilterTabText
+            ]}>
+              All
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.filterTab,
+              filterType === 'Bimbel' && styles.activeFilterTab
+            ]}
+            onPress={() => handleFilterChange('Bimbel')}
+          >
+            <Text style={[
+              styles.filterTabText,
+              filterType === 'Bimbel' && styles.activeFilterTabText
+            ]}>
+              Bimbel
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.filterTab,
+              filterType === 'Kegiatan' && styles.activeFilterTab
+            ]}
+            onPress={() => handleFilterChange('Kegiatan')}
+          >
+            <Text style={[
+              styles.filterTabText,
+              filterType === 'Kegiatan' && styles.activeFilterTabText
+            ]}>
+              Kegiatan
+            </Text>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Error Message */}
+        {error && (
+          <ErrorMessage
+            message={error}
+            onRetry={() => fetchActivities(1, true)}
+          />
+        )}
+        
+        {/* Activities List */}
+        <FlatList
+          data={allActivities.length > 0 ? allActivities : activities}
+          renderItem={renderActivityItem}
+          keyExtractor={(item) => item.id_aktivitas.toString()}
+          contentContainerStyle={styles.listContainer}
+          ListEmptyComponent={renderEmptyList}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={['#3498db']}
+            />
+          }
+          ListFooterComponent={renderFooter}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          removeClippedSubviews={false}
+          showsVerticalScrollIndicator={true}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={10}
+        />
+        
+        {/* Create Activity Button */}
+        <TouchableOpacity 
+          style={styles.fab}
+          onPress={handleCreateActivity}
+        >
+          <Ionicons name="add" size={30} color="#fff" />
+        </TouchableOpacity>
+        
+        {/* Loading Overlay */}
+        {loading && !refreshing && allActivities.length === 0 && (
+          <LoadingSpinner fullScreen />
+        )}
+        
+        {/* Date Filter Modal */}
+        <Modal
+          visible={showDateFilter}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowDateFilter(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Filter by Month</Text>
+                <TouchableOpacity onPress={() => setShowDateFilter(false)}>
+                  <Ionicons name="close" size={24} color="#333" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.monthSelector}>
+                <TouchableOpacity 
+                  style={styles.monthNavButton}
+                  onPress={() => navigateMonth('prev')}
+                >
+                  <Ionicons name="chevron-back" size={24} color="#3498db" />
+                </TouchableOpacity>
+                
+                <Text style={styles.monthText}>
+                  {format(selectedMonth, 'MMMM yyyy', { locale: id })}
+                </Text>
+                
+                <TouchableOpacity 
+                  style={styles.monthNavButton}
+                  onPress={() => navigateMonth('next')}
+                  disabled={selectedMonth >= new Date()}
+                >
+                  <Ionicons 
+                    name="chevron-forward" 
+                    size={24} 
+                    color={selectedMonth >= new Date() ? '#ccc' : '#3498db'} 
+                  />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.modalButtons}>
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.clearButton]}
+                  onPress={clearDateFilter}
+                >
+                  <Text style={styles.clearButtonText}>Clear Filter</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.applyButton]}
+                  onPress={applyDateFilter}
+                >
+                  <Text style={styles.applyButtonText}>Apply Filter</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    padding: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e1e1',
+  },
+  searchInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f2f2f2',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    fontSize: 16,
+  },
+  searchButton: {
+    backgroundColor: '#3498db',
+    width: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  filterButton: {
+    backgroundColor: '#ecf0f1',
+    width: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+  },
+  activeFilterButton: {
+    backgroundColor: '#3498db',
+  },
+  activeFilterContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#e8f4f8',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#d1e7ed',
+  },
+  activeFilterText: {
+    color: '#2c88a6',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  filterTabs: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e1e1',
+    zIndex: 1,
+  },
+  filterTab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  activeFilterTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#3498db',
+  },
+  filterTabText: {
+    fontSize: 14,
+    color: '#7f8c8d',
+  },
+  activeFilterTabText: {
+    color: '#3498db',
+    fontWeight: '500',
+  },
+  listContainer: {
+    padding: 12,
+    paddingBottom: 100,
+    flexGrow: 1,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: '#7f8c8d',
+    marginTop: 12,
+  },
+  emptySubText: {
+    fontSize: 14,
+    color: '#95a5a6',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  footerLoader: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  loadingMoreText: {
+    color: '#7f8c8d',
+    fontSize: 14,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#3498db',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    zIndex: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    width: '90%',
+    maxWidth: 400,
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+  },
+  monthSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 30,
+    paddingHorizontal: 10,
+  },
+  monthNavButton: {
+    padding: 10,
+  },
+  monthText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#2c3e50',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  clearButton: {
+    backgroundColor: '#ecf0f1',
+    marginRight: 8,
+  },
+  clearButtonText: {
+    color: '#7f8c8d',
+    fontWeight: '500',
+  },
+  applyButton: {
+    backgroundColor: '#3498db',
+    marginLeft: 8,
+  },
+  applyButtonText: {
+    color: '#fff',
+    fontWeight: '500',
+  },
+});
+
+export default ActivitiesListScreen;
