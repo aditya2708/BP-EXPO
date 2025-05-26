@@ -10,8 +10,6 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
 
 // Import components
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
@@ -20,6 +18,7 @@ import Button from '../../../common/components/Button';
 
 // Import API
 import { raportApi } from '../api/raportApi';
+import { penilaianApi } from '../api/penilaianApi';
 
 const RaportViewScreen = () => {
   const navigation = useNavigation();
@@ -28,6 +27,7 @@ const RaportViewScreen = () => {
   
   const [raport, setRaport] = useState(null);
   const [nilaiSikap, setNilaiSikap] = useState(null);
+  const [detailedAcademic, setDetailedAcademic] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -43,8 +43,14 @@ const RaportViewScreen = () => {
       const response = await raportApi.getRaportDetail(raportId);
       
       if (response.data.success) {
-        setRaport(response.data.data);
-        setNilaiSikap(response.data.data.nilai_sikap);
+        const raportData = response.data.data;
+        setRaport(raportData);
+        setNilaiSikap(raportData.nilai_sikap);
+        
+        // Fetch detailed academic data
+        if (raportData.id_anak && raportData.id_semester) {
+          await fetchDetailedAcademicData(raportData.id_anak, raportData.id_semester);
+        }
       } else {
         setError(response.data.message || 'Gagal memuat data raport');
       }
@@ -53,6 +59,48 @@ const RaportViewScreen = () => {
       setError('Gagal memuat data raport. Silakan coba lagi.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchDetailedAcademicData = async (idAnak, idSemester) => {
+    try {
+      const response = await penilaianApi.getByAnakSemester(idAnak, idSemester);
+      if (response.data.success) {
+        const penilaianData = response.data.data;
+        
+        // Transform penilaian data to academic details
+        const academicDetails = Object.entries(penilaianData).map(([mataPelajaran, penilaianList]) => {
+          // Group by materi
+          const materiGroups = {};
+          penilaianList.forEach(p => {
+            const materiName = p.materi?.nama_materi || 'Materi Umum';
+            if (!materiGroups[materiName]) {
+              materiGroups[materiName] = [];
+            }
+            materiGroups[materiName].push(p);
+          });
+
+          const materiBreakdown = Object.entries(materiGroups).map(([materiName, materiPenilaian]) => ({
+            nama_materi: materiName,
+            rata_rata: (materiPenilaian.reduce((sum, p) => sum + p.nilai, 0) / materiPenilaian.length).toFixed(1),
+            total_penilaian: materiPenilaian.length,
+            assessments: materiPenilaian.map(p => ({
+              jenis: p.jenisPenilaian?.nama_jenis,
+              nilai: p.nilai,
+              tanggal: new Date(p.tanggal_penilaian).toLocaleDateString('id-ID')
+            }))
+          }));
+
+          return {
+            mata_pelajaran: mataPelajaran,
+            materi_breakdown: materiBreakdown
+          };
+        });
+
+        setDetailedAcademic(academicDetails);
+      }
+    } catch (err) {
+      console.error('Error fetching detailed academic data:', err);
     }
   };
 
@@ -170,37 +218,91 @@ const RaportViewScreen = () => {
         </View>
       </View>
 
-      {/* Grades */}
+      {/* Enhanced Academic Grades */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Nilai Akademik</Text>
-        {raport.raportDetail && raport.raportDetail.map((detail, index) => (
-          <View key={detail.id_raport_detail} style={styles.gradeCard}>
-            <View style={styles.gradeHeader}>
-              <Text style={styles.subjectName}>{detail.mata_pelajaran}</Text>
-              <Text style={[styles.gradeValue, { color: getNilaiColor(detail.nilai_akhir) }]}>
-                {detail.nilai_huruf}
-              </Text>
-            </View>
-            <View style={styles.gradeDetails}>
-              <Text style={styles.gradeScore}>Nilai: {detail.nilai_akhir}</Text>
-              <Text style={styles.kkmText}>KKM: {detail.kkm}</Text>
-              <Text style={[
-                styles.statusText,
-                { color: detail.nilai_akhir >= detail.kkm ? '#2ecc71' : '#e74c3c' }
-              ]}>
-                {detail.keterangan}
-              </Text>
-            </View>
-          </View>
-        ))}
         
-        {/* Average */}
+        {/* Overall Summary */}
         {raport.nilai_rata_rata && (
           <View style={styles.averageCard}>
-            <Text style={styles.averageLabel}>Nilai Rata-rata</Text>
+            <Text style={styles.averageLabel}>Nilai Rata-rata Keseluruhan</Text>
             <Text style={styles.averageValue}>{raport.nilai_rata_rata.toFixed(2)}</Text>
           </View>
         )}
+        
+        {/* Detailed Subject Breakdown */}
+        {raport.raportDetail && raport.raportDetail.map((detail, index) => {
+          const academicDetail = detailedAcademic.find(d => d.mata_pelajaran === detail.mata_pelajaran);
+          
+          return (
+            <View key={detail.id_raport_detail} style={styles.gradeCard}>
+              <View style={styles.gradeHeader}>
+                <Text style={styles.subjectName}>{detail.mata_pelajaran}</Text>
+                <View style={styles.gradeValueContainer}>
+                  <Text style={[styles.gradeValue, { color: getNilaiColor(detail.nilai_akhir) }]}>
+                    {detail.nilai_huruf}
+                  </Text>
+                  <Text style={styles.gradeScore}>{detail.nilai_akhir}</Text>
+                </View>
+              </View>
+              
+              <View style={styles.gradeDetails}>
+                <View style={styles.gradeDetailRow}>
+                  <Text style={styles.kkmLabel}>KKM: {detail.kkm}</Text>
+                  <Text style={[
+                    styles.statusText,
+                    { color: detail.nilai_akhir >= detail.kkm ? '#2ecc71' : '#e74c3c' }
+                  ]}>
+                    {detail.keterangan}
+                  </Text>
+                </View>
+              </View>
+              
+              {/* Material breakdown */}
+              {academicDetail?.materi_breakdown && academicDetail.materi_breakdown.length > 0 && (
+                <View style={styles.materiBreakdown}>
+                  <Text style={styles.materiTitle}>Detail Materi:</Text>
+                  {academicDetail.materi_breakdown.map((materi, mIndex) => (
+                    <View key={mIndex} style={styles.materiItem}>
+                      <View style={styles.materiRow}>
+                        <Text style={styles.materiName}>• {materi.nama_materi}</Text>
+                        <Text style={styles.materiScore}>{materi.rata_rata}</Text>
+                      </View>
+                      <Text style={styles.materiAssessments}>
+                        {materi.total_penilaian} penilaian
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })}
+        
+        {/* Academic Statistics */}
+        <View style={styles.academicStats}>
+          <View style={styles.statItem}>
+            <Ionicons name="book-outline" size={20} color="#3498db" />
+            <Text style={styles.statLabel}>Total Mata Pelajaran</Text>
+            <Text style={styles.statValue}>{raport.raportDetail?.length || 0}</Text>
+          </View>
+          
+          <View style={styles.statItem}>
+            <Ionicons name="trending-up-outline" size={20} color="#2ecc71" />
+            <Text style={styles.statLabel}>Nilai Tertinggi</Text>
+            <Text style={styles.statValue}>
+              {Math.max(...(raport.raportDetail?.map(d => d.nilai_akhir) || [0])).toFixed(1)}
+            </Text>
+          </View>
+          
+          <View style={styles.statItem}>
+            <Ionicons name="checkmark-circle-outline" size={20} color="#f39c12" />
+            <Text style={styles.statLabel}>Mata Pelajaran Tuntas</Text>
+            <Text style={styles.statValue}>
+              {raport.raportDetail?.filter(d => d.nilai_akhir >= d.kkm).length || 0}
+            </Text>
+          </View>
+        </View>
       </View>
 
       {/* Behavior Grades */}
@@ -380,6 +482,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2c3e50',
   },
+  averageCard: {
+    backgroundColor: '#3498db',
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  averageLabel: {
+    fontSize: 14,
+    color: '#ffffff',
+    marginBottom: 4,
+  },
+  averageValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
   gradeCard: {
     backgroundColor: '#ffffff',
     borderRadius: 8,
@@ -399,38 +518,93 @@ const styles = StyleSheet.create({
     color: '#2c3e50',
     flex: 1,
   },
+  gradeValueContainer: {
+    alignItems: 'center',
+  },
   gradeValue: {
     fontSize: 24,
     fontWeight: 'bold',
   },
+  gradeScore: {
+    fontSize: 12,
+    color: '#7f8c8d',
+    marginTop: 2,
+  },
   gradeDetails: {
+    marginBottom: 8,
+  },
+  gradeDetailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  gradeScore: {
+  kkmLabel: {
     fontSize: 14,
     color: '#7f8c8d',
   },
-  kkmText: {
+  statusText: {
     fontSize: 14,
-    color: '#7f8c8d',
+    fontWeight: '500',
   },
-  averageCard: {
-    backgroundColor: '#3498db',
+  materiBreakdown: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#ecf0f1',
+  },
+  materiTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#34495e',
+    marginBottom: 8,
+  },
+  materiItem: {
+    marginBottom: 8,
+    paddingLeft: 8,
+  },
+  materiRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  materiName: {
+    fontSize: 13,
+    color: '#2c3e50',
+    flex: 1,
+  },
+  materiScore: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#27ae60',
+  },
+  materiAssessments: {
+    fontSize: 11,
+    color: '#95a5a6',
+    marginTop: 2,
+  },
+  academicStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: '#f8f9fa',
     borderRadius: 8,
     padding: 16,
+    marginTop: 12,
+  },
+  statItem: {
     alignItems: 'center',
-    marginTop: 8,
+    flex: 1,
   },
-  averageLabel: {
-    fontSize: 14,
-    color: '#ffffff',
+  statLabel: {
+    fontSize: 11,
+    color: '#7f8c8d',
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 4,
   },
-  averageValue: {
-    fontSize: 32,
+  statValue: {
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#2c3e50',
   },
   behaviorCard: {
     backgroundColor: '#ffffff',

@@ -20,7 +20,6 @@ import ErrorMessage from '../../../common/components/ErrorMessage';
 // Import API
 import { raportApi } from '../api/raportApi';
 import { semesterApi } from '../api/semesterApi';
-import { penilaianApi } from '../api/penilaianApi';
 
 const RaportGenerateScreen = () => {
   const navigation = useNavigation();
@@ -48,7 +47,6 @@ const RaportGenerateScreen = () => {
       if (response.data.success) {
         setSemesters(response.data.data.data || []);
         
-        // Auto-select active semester
         const activeSemester = response.data.data.data.find(s => s.is_active);
         if (activeSemester) {
           setSelectedSemester(activeSemester.id_semester);
@@ -87,7 +85,6 @@ const RaportGenerateScreen = () => {
       setLoading(true);
       setError(null);
 
-      // Check if raport already exists
       const exists = await checkExistingRaport();
       if (exists) {
         Alert.alert(
@@ -107,7 +104,6 @@ const RaportGenerateScreen = () => {
         return;
       }
 
-      // Get preview data
       const response = await raportApi.getPreviewData(anakId, selectedSemester);
       
       if (response.data.success) {
@@ -165,6 +161,44 @@ const RaportGenerateScreen = () => {
           }
         }
       ]
+    );
+  };
+
+  const renderAcademicPreview = () => {
+    if (!previewData?.grades?.academic_details) return null;
+    
+    return (
+      <View style={styles.academicSection}>
+        <Text style={styles.previewSectionTitle}>Detail Nilai Akademik</Text>
+        
+        {previewData.grades.academic_details.map((subject, index) => (
+          <View key={index} style={styles.subjectCard}>
+            <View style={styles.subjectHeader}>
+              <Text style={styles.subjectName}>{subject.mata_pelajaran}</Text>
+              <Text style={styles.subjectAverage}>{subject.rata_rata}</Text>
+            </View>
+            
+            <View style={styles.subjectStats}>
+              <Text style={styles.statText}>
+                {subject.total_penilaian} penilaian • {subject.completeness.toFixed(0)}% lengkap
+              </Text>
+            </View>
+            
+            <Text style={styles.materiHeader}>Materi:</Text>
+            {subject.materi_list.map((materi, mIndex) => (
+              <View key={mIndex} style={styles.materiItem}>
+                <View style={styles.materiRow}>
+                  <Text style={styles.materiName}>{materi.nama_materi}</Text>
+                  <Text style={styles.materiAverage}>{materi.rata_rata}</Text>
+                </View>
+                <Text style={styles.materiCount}>
+                  {materi.total_penilaian} penilaian
+                </Text>
+              </View>
+            ))}
+          </View>
+        ))}
+      </View>
     );
   };
 
@@ -255,25 +289,36 @@ const RaportGenerateScreen = () => {
               </View>
             </View>
 
-            {/* Grades Preview */}
+            {/* Academic Overview */}
             <View style={styles.previewCard}>
               <Text style={styles.previewSectionTitle}>
-                Nilai Akademik ({previewData.grades.count} mata pelajaran)
+                Ringkasan Akademik
               </Text>
               <View style={styles.previewRow}>
-                <Text style={styles.previewLabel}>Nilai Rata-rata:</Text>
-                <Text style={styles.previewValue}>{previewData.grades.average.toFixed(2)}</Text>
+                <Text style={styles.previewLabel}>Total Mata Pelajaran:</Text>
+                <Text style={styles.previewValue}>{previewData.grades.total_subjects}</Text>
               </View>
               <View style={styles.previewRow}>
-                <Text style={styles.previewLabel}>Status:</Text>
+                <Text style={styles.previewLabel}>Rata-rata Keseluruhan:</Text>
+                <Text style={styles.previewValue}>{previewData.grades.overall_average}</Text>
+              </View>
+              <View style={styles.previewRow}>
+                <Text style={styles.previewLabel}>Total Penilaian:</Text>
+                <Text style={styles.previewValue}>{previewData.grades.total_assessments}</Text>
+              </View>
+              <View style={styles.previewRow}>
+                <Text style={styles.previewLabel}>Kelengkapan Data:</Text>
                 <Text style={[
                   styles.previewValue,
                   { color: previewData.grades.completeness === 100 ? '#2ecc71' : '#e74c3c' }
                 ]}>
-                  {previewData.grades.completeness}% Lengkap
+                  {previewData.grades.completeness}%
                 </Text>
               </View>
             </View>
+
+            {/* Detailed Academic Preview */}
+            {renderAcademicPreview()}
 
             {/* Behavior Grades Preview */}
             {previewData.nilaiSikap && (
@@ -288,6 +333,13 @@ const RaportGenerateScreen = () => {
                     {previewData.nilaiSikap.exists ? 'Sudah diinput' : 'Belum diinput'}
                   </Text>
                 </View>
+                {previewData.nilaiSikap.exists && previewData.nilaiSikap.data && (
+                  <View style={styles.nilaiSikapDetail}>
+                    <Text style={styles.nilaiSikapText}>
+                      Rata-rata: {previewData.nilaiSikap.data.rata_rata.toFixed(1)}
+                    </Text>
+                  </View>
+                )}
               </View>
             )}
 
@@ -438,6 +490,77 @@ const styles = StyleSheet.create({
   previewValue: {
     fontSize: 14,
     fontWeight: '500',
+    color: '#2c3e50',
+  },
+  academicSection: {
+    marginBottom: 12,
+  },
+  subjectCard: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#3498db',
+  },
+  subjectHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  subjectName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#2c3e50',
+    flex: 1,
+  },
+  subjectAverage: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#3498db',
+  },
+  subjectStats: {
+    marginBottom: 8,
+  },
+  statText: {
+    fontSize: 12,
+    color: '#7f8c8d',
+  },
+  materiHeader: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#34495e',
+    marginBottom: 4,
+  },
+  materiItem: {
+    paddingLeft: 12,
+    marginBottom: 4,
+  },
+  materiRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  materiName: {
+    fontSize: 13,
+    color: '#2c3e50',
+    flex: 1,
+  },
+  materiAverage: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#27ae60',
+  },
+  materiCount: {
+    fontSize: 11,
+    color: '#95a5a6',
+  },
+  nilaiSikapDetail: {
+    marginTop: 8,
+  },
+  nilaiSikapText: {
+    fontSize: 14,
     color: '#2c3e50',
   },
   warningCard: {
