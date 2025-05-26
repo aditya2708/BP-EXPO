@@ -202,7 +202,11 @@ const PenilaianListScreen = () => {
         renderItem={({ item: [mapel, penilaianGroup] }) => (
           <View key={mapel}>
             <Text style={styles.sectionHeader}>{mapel}</Text>
-            {penilaianGroup.map(penilaian => renderPenilaianCard({ item: penilaian }))}
+           {penilaianGroup.map(penilaian => (
+  <View key={penilaian.id_penilaian}>
+    {renderPenilaianCard({ item: penilaian })}
+  </View>
+))}
           </View>
         )}
         keyExtractor={(item) => item[0]}
