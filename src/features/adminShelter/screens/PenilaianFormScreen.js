@@ -52,22 +52,37 @@ const PenilaianFormScreen = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    //console.log('anakData:', anakData);
     navigation.setOptions({
       title: isEdit ? 'Edit Penilaian' : 'Tambah Penilaian'
     });
     fetchInitialData();
   }, []);
 
+  // Auto-populate materi when aktivitas is selected
+  useEffect(() => {
+    if (formData.id_aktivitas && aktivitasList.length > 0) {
+      const selectedAktivitas = aktivitasList.find(
+        aktivitas => aktivitas.id_aktivitas.toString() === formData.id_aktivitas.toString()
+      );
+      
+      if (selectedAktivitas && selectedAktivitas.id_materi) {
+        updateFormData('id_materi', selectedAktivitas.id_materi);
+      } else {
+        // Clear materi if aktivitas doesn't have associated materi
+        updateFormData('id_materi', '');
+      }
+    }
+  }, [formData.id_aktivitas, aktivitasList]);
+
   const fetchInitialData = async () => {
     try {
       setLoadingData(true);
       setError(null);
 
-      // Fetch aktivitas
+      // Fetch aktivitas (Bimbel only with higher limit)
       const aktivitasResponse = await aktivitasApi.getAllAktivitas({ 
         jenis_kegiatan: 'Bimbel',
-        limit: 100 
+        per_page: 100
       });
       
       if (aktivitasResponse.data.success) {
@@ -412,4 +427,5 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
 });
+
 export default PenilaianFormScreen;
