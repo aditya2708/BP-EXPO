@@ -75,41 +75,48 @@ const PenilaianFormScreen = () => {
   }, [formData.id_aktivitas, aktivitasList]);
 
   const fetchInitialData = async () => {
-    try {
-      setLoadingData(true);
-      setError(null);
+  try {
+    setLoadingData(true);
+    setError(null);
 
-      // Fetch aktivitas (Bimbel only with higher limit)
-      const aktivitasResponse = await aktivitasApi.getAllAktivitas({ 
-        jenis_kegiatan: 'Bimbel',
-        per_page: 100
-      });
-      
-      if (aktivitasResponse.data.success) {
-        setAktivitasList(aktivitasResponse.data.data || []);
-      }
-
-      // Fetch jenis penilaian
-      const jenisPenilaianResponse = await penilaianApi.getJenisPenilaian();
-      if (jenisPenilaianResponse.data.success) {
-        setJenisPenilaianList(jenisPenilaianResponse.data.data || []);
-      }
-
-      // If anak has level, fetch materi
-      if (anakData?.id_level_anak_binaan) {
-        const materiResponse = await materiApi.getMateriByLevel(anakData.id_level_anak_binaan);
-        if (materiResponse.data.success) {
-          setMateriList(materiResponse.data.data || []);
-        }
-      }
-
-    } catch (err) {
-      console.error('Error fetching initial data:', err);
-      setError('Gagal memuat data. Silakan coba lagi.');
-    } finally {
-      setLoadingData(false);
+    // Fetch aktivitas with kelompok filter
+    const aktivitasParams = { 
+      jenis_kegiatan: 'Bimbel',
+      limit: 100 
+    };
+    
+    // Add nama_kelompok filter if anak has kelompok
+    if (anakData?.kelompok?.nama_kelompok) {
+      aktivitasParams.nama_kelompok = anakData.kelompok.nama_kelompok;
     }
-  };
+    
+    const aktivitasResponse = await aktivitasApi.getAllAktivitas(aktivitasParams);
+    
+    if (aktivitasResponse.data.success) {
+      setAktivitasList(aktivitasResponse.data.data || []);
+    }
+
+    // Fetch jenis penilaian
+    const jenisPenilaianResponse = await penilaianApi.getJenisPenilaian();
+    if (jenisPenilaianResponse.data.success) {
+      setJenisPenilaianList(jenisPenilaianResponse.data.data || []);
+    }
+
+    // If anak has level, fetch materi
+    if (anakData?.id_level_anak_binaan) {
+      const materiResponse = await materiApi.getMateriByLevel(anakData.id_level_anak_binaan);
+      if (materiResponse.data.success) {
+        setMateriList(materiResponse.data.data || []);
+      }
+    }
+
+  } catch (err) {
+    console.error('Error fetching initial data:', err);
+    setError('Gagal memuat data. Silakan coba lagi.');
+  } finally {
+    setLoadingData(false);
+  }
+};
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
