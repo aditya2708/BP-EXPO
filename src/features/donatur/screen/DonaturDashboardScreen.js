@@ -60,11 +60,9 @@ const DonaturDashboardScreen = () => {
   };
 
   // Navigation handlers
-  const navigateToMyChildren = () => navigation.navigate('MySponsoredChildren');
-  const navigateToDonationHistory = () => navigation.navigate('DonationHistory');
+  const navigateToMyChildren = () => navigation.navigate('AnakScreen');
   const navigateToProfile = () => navigation.navigate('ProfileTab');
-  const navigateToNotifications = () => navigation.navigate('Notifications');
-  const viewChildDetails = (childId) => navigation.navigate('ChildDetail', { id: childId });
+  const viewChildDetails = (childId, childName) => navigation.navigate('ChildProfile', { childId, childName });
 
   // Show loading indicator
   if (loading && !refreshing) {
@@ -97,37 +95,21 @@ const DonaturDashboardScreen = () => {
             </Text>
           </View>
           
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={styles.notificationButton}
-              onPress={navigateToNotifications}
-            >
-              <Ionicons name="notifications-outline" size={24} color="#9b59b6" />
-              {dashboardData?.unread_notifications > 0 && (
-                <View style={styles.notificationBadge}>
-                  <Text style={styles.notificationCount}>
-                    {dashboardData.unread_notifications}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.profileButton}
-              onPress={navigateToProfile}
-            >
-              {profile?.foto ? (
-                <Image
-                  source={{ uri: `https://berbagipendidikan.org/storage/Donatur/${profile.id_donatur}/${profile.foto}` }}
-                  style={styles.profileImage}
-                />
-              ) : (
-                <View style={styles.profileImagePlaceholder}>
-                  <Ionicons name="person" size={24} color="#ffffff" />
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.profileButton}
+            onPress={navigateToProfile}
+          >
+            {profile?.foto ? (
+              <Image
+                source={{ uri: `https://berbagipendidikan.org/storage/Donatur/${profile.id_donatur}/${profile.foto}` }}
+                style={styles.profileImage}
+              />
+            ) : (
+              <View style={styles.profileImagePlaceholder}>
+                <Ionicons name="person" size={24} color="#ffffff" />
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
         
         {/* Donation Summary */}
@@ -163,33 +145,6 @@ const DonaturDashboardScreen = () => {
             </View>
             <Text style={styles.actionText}>My Children</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.actionItem}
-            onPress={navigateToDonationHistory}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: '#3498db' }]}>
-              <Ionicons name="cash" size={24} color="#ffffff" />
-            </View>
-            <Text style={styles.actionText}>Donations</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.actionItem}
-            onPress={() => navigation.navigate('Settings')}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: '#2ecc71' }]}>
-              <Ionicons name="settings" size={24} color="#ffffff" />
-            </View>
-            <Text style={styles.actionText}>Settings</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.actionItem}>
-            <View style={[styles.actionIcon, { backgroundColor: '#e74c3c' }]}>
-              <Ionicons name="help-circle" size={24} color="#ffffff" />
-            </View>
-            <Text style={styles.actionText}>Help</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -215,12 +170,12 @@ const DonaturDashboardScreen = () => {
               <TouchableOpacity 
                 key={index} 
                 style={styles.childCard}
-                onPress={() => viewChildDetails(child.id_anak)}
+                onPress={() => viewChildDetails(child.id_anak, child.full_name)}
               >
                 <View style={styles.childImageContainer}>
-                  {child.foto ? (
+                  {child.foto_url ? (
                     <Image
-                      source={{ uri: `https://berbagipendidikan.org/storage/Children/${child.id_anak}/${child.foto}` }}
+                      source={{ uri: child.foto_url }}
                       style={styles.childImage}
                     />
                   ) : (
@@ -229,7 +184,7 @@ const DonaturDashboardScreen = () => {
                     </View>
                   )}
                 </View>
-                <Text style={styles.childName}>{child.nama_lengkap}</Text>
+                <Text style={styles.childName}>{child.full_name}</Text>
                 <Text style={styles.childAge}>
                   {child.umur ? `${child.umur} years old` : 'Age not specified'}
                 </Text>
@@ -250,75 +205,6 @@ const DonaturDashboardScreen = () => {
           </View>
         )}
       </View>
-
-      {/* Recent Donations */}
-      <View style={styles.sectionContainer}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Donations</Text>
-          <Button 
-            title="View All" 
-            type="outline" 
-            size="small"
-            onPress={navigateToDonationHistory}
-          />
-        </View>
-        
-        {dashboardData?.recent_donations?.length > 0 ? (
-          <View style={styles.donationsContainer}>
-            {dashboardData.recent_donations.map((donation, index) => (
-              <TouchableOpacity 
-                key={index} 
-                style={styles.donationItem}
-                onPress={() => navigation.navigate('DonationDetail', { id: donation.id })}
-              >
-                <View style={styles.donationIconContainer}>
-                  <Ionicons name="cash-outline" size={24} color="#9b59b6" />
-                </View>
-                <View style={styles.donationInfo}>
-                  <Text style={styles.donationTitle}>
-                    {donation.type || 'Donation'} {donation.child?.nama_lengkap ? `for ${donation.child.nama_lengkap}` : ''}
-                  </Text>
-                  <Text style={styles.donationDate}>{donation.date}</Text>
-                </View>
-                <Text style={styles.donationAmount}>
-                  Rp {donation.amount.toLocaleString()}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="cash" size={40} color="#dddddd" />
-            <Text style={styles.emptyText}>No donation history yet</Text>
-          </View>
-        )}
-      </View>
-
-      {/* Upcoming Events */}
-      {dashboardData?.upcoming_events?.length > 0 && (
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Upcoming Events</Text>
-          <View style={styles.eventsContainer}>
-            {dashboardData.upcoming_events.map((event, index) => (
-              <View key={index} style={styles.eventItem}>
-                <View style={styles.eventDate}>
-                  <Text style={styles.eventDay}>{event.day}</Text>
-                  <Text style={styles.eventMonth}>{event.month}</Text>
-                </View>
-                <View style={styles.eventInfo}>
-                  <Text style={styles.eventTitle}>{event.title}</Text>
-                  <Text style={styles.eventLocation}>
-                    <Ionicons name="location-outline" size={14} color="#666666" /> {event.location}
-                  </Text>
-                  <Text style={styles.eventTime}>
-                    <Ionicons name="time-outline" size={14} color="#666666" /> {event.time}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
     </ScrollView>
   );
 };
@@ -356,36 +242,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333333',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  notificationButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f0e6f5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-    position: 'relative',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    backgroundColor: '#e74c3c',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  notificationCount: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: 'bold',
   },
   profileButton: {
     width: 40,
@@ -454,11 +310,10 @@ const styles = StyleSheet.create({
   },
   quickActions: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
     marginHorizontal: -8,
   },
   actionItem: {
-    width: (width - 80) / 4,
     alignItems: 'center',
     marginHorizontal: 8,
     marginBottom: 8,
@@ -533,84 +388,6 @@ const styles = StyleSheet.create({
   },
   exploreButton: {
     marginTop: 8,
-  },
-  donationsContainer: {
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-    borderRadius: 8,
-  },
-  donationItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  donationIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f0e6f5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  donationInfo: {
-    flex: 1,
-  },
-  donationTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333333',
-    marginBottom: 4,
-  },
-  donationDate: {
-    fontSize: 12,
-    color: '#999999',
-  },
-  eventsContainer: {
-    gap: 12,
-  },
-  eventItem: {
-    flexDirection: 'row',
-    backgroundColor: '#f9f9f9',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  eventDate: {
-    width: 60,
-    backgroundColor: '#9b59b6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 12,
-  },
-  eventDay: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
-  eventMonth: {
-    fontSize: 12,
-    color: '#ffffff',
-  },
-  eventInfo: {
-    flex: 1,
-    padding: 12,
-  },
-  eventTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 8,
-  },
-  eventLocation: {
-    fontSize: 12,
-    color: '#666666',
-    marginBottom: 4,
-  },
-  eventTime: {
-    fontSize: 12,
-    color: '#666666',
   },
 });
 
