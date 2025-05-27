@@ -60,7 +60,7 @@ const DonaturDashboardScreen = () => {
   };
 
   // Navigation handlers
-  const navigateToMyChildren = () => navigation.navigate('AnakScreen');
+  const navigateToMyChildren = () => navigation.navigate('AnakList');
   const navigateToProfile = () => navigation.navigate('ProfileTab');
   const viewChildDetails = (childId, childName) => navigation.navigate('ChildProfile', { childId, childName });
 
