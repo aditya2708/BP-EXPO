@@ -13,7 +13,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
 import { Audio } from 'expo-av';
-
+import { format } from 'date-fns';
 // Components
 import QrScanner from '../../components/QrScanner';
 
@@ -234,56 +234,63 @@ const QrScannerScreen = ({ navigation, route }) => {
   };
   
   // Record attendance
-  const handleAttendanceRecording = async (token, id_anak) => {
-    try {
-      if (isConnected) {
-        const result = await dispatch(recordAttendanceByQr({ 
-          id_anak, 
-          id_aktivitas, 
-          status: null, // Send null to let the backend auto-determine the status
-          token 
-        })).unwrap();
-        
-        // Play camera sound on success
-        playSound();
-        
-        const studentName = validationResult.anak.full_name || 'Student';
-        
-        // Use the status from the response to show appropriate message
-        let status = 'Present';
-        let toastType = 'success';
-        
-        if (result.absen && result.absen.absen) {
-          if (result.absen.absen === 'Tidak') {
-            status = 'Absent';
-            toastType = 'error';
-          } else if (result.absen.absen === 'Terlambat') {
-            status = 'Late';
-            toastType = 'warning';
-          }
+const handleAttendanceRecording = async (token, id_anak) => {
+  try {
+    if (isConnected) {
+      // Get current time in proper format
+      const currentTime = new Date();
+      const formattedArrivalTime = format(currentTime, 'yyyy-MM-dd HH:mm:ss');
+      
+      const result = await dispatch(recordAttendanceByQr({ 
+        id_anak, 
+        id_aktivitas, 
+        status: null, // Let backend determine status
+        token,
+        arrival_time: formattedArrivalTime // Add explicit arrival time
+      })).unwrap();
+      
+      // Play camera sound on success
+      playSound();
+      
+      const studentName = validationResult.anak.full_name || 'Student';
+      
+      // Use the status from the response
+      let status = 'Present';
+      let toastType = 'success';
+      
+      if (result.data && result.data.absen) {
+        if (result.data.absen === 'Tidak') {
+          status = 'Absent';
+          toastType = 'error';
+        } else if (result.data.absen === 'Terlambat') {
+          status = 'Late';
+          toastType = 'warning';
         }
-        
-        showToast(`${status}: ${studentName}`, toastType);
-      } else {
-        const result = await OfflineSync.processAttendance({
-          id_anak,
-          id_aktivitas,
-          status: null, // Auto-determine
-          token
-        }, 'qr');
-        
-        // Play sound for offline mode too
-        playSound();
-        
-        showToast('Saved for syncing when online', 'warning');
       }
-    } catch (error) {
-      // Duplicate errors are handled via the useEffect watching duplicateError
-      if (!error.isDuplicate) {
-        showToast(error.message || 'Failed to record', 'error');
-      }
+      
+      showToast(`${status}: ${studentName}`, toastType);
+    } else {
+      // Offline handling remains the same
+      const currentTime = new Date();
+      const formattedArrivalTime = format(currentTime, 'yyyy-MM-dd HH:mm:ss');
+      
+      const result = await OfflineSync.processAttendance({
+        id_anak,
+        id_aktivitas,
+        status: null,
+        token,
+        arrival_time: formattedArrivalTime
+      }, 'qr');
+      
+      playSound();
+      showToast('Saved for syncing when online', 'warning');
     }
-  };
+  } catch (error) {
+    if (!error.isDuplicate) {
+      showToast(error.message || 'Failed to record', 'error');
+    }
+  }
+};
   
   // Close scanner
   const handleClose = () => {
