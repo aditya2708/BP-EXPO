@@ -6,12 +6,19 @@ import { Ionicons } from '@expo/vector-icons';
 // Import Screens
 import DonaturDashboardScreen from '../features/donatur/screen/DonaturDashboardScreen';
 import DonaturProfileScreen from '../features/donatur/screen/DonaturProfileScreen';
-import MySponsoredChildrenScreen from '../features/donatur/screen/MySponsoredChildrenScreen';
-// import ChildDetailScreen from '../features/donatur/screens/ChildDetailScreen';
-// import DonationHistoryScreen from '../features/donatur/screens/DonationHistoryScreen';
-// import DonationDetailScreen from '../features/donatur/screens/DonationDetailScreen';
-// import SettingsScreen from '../features/donatur/screens/SettingsScreen';
-// import NotificationsScreen from '../features/donatur/screens/NotificationsScreen';
+import ChildListScreen from '../features/donatur/screen/ChildListScreen';
+
+// Import new child-related screens
+import ChildProfileScreen from '../features/donatur/screen/ChildProfileScreen';
+import SuratListScreen from '../features/donatur/screen/SuratListScreen';
+import SuratDetailScreen from '../features/donatur/screen/SuratDetailScreen';
+import SuratFormScreen from '../features/donatur/screen/SuratFormScreen';
+import ChildPrestasiListScreen from '../features/donatur/screen/ChildPrestasiListScreen';
+import ChildPrestasiDetailScreen from '../features/donatur/screen/ChildPrestasiDetailScreen';
+import ChildRaportListScreen from '../features/donatur/screen/ChildRaportListScreen';
+import ChildRaportDetailScreen from '../features/donatur/screen/ChildRaportDetailScreen';
+import ChildAktivitasListScreen from '../features/donatur/screen/ChildAktivitasListScreen';
+import ChildAktivitasDetailScreen from '../features/donatur/screen/ChildAktivitasDetailScreen';
 
 // Create navigators
 const Tab = createBottomTabNavigator();
@@ -28,23 +35,6 @@ const HomeStackNavigator = () => {
         component={DonaturDashboardScreen} 
         options={{ headerTitle: 'Donatur Dashboard' }}
       />
-      {/* <HomeStack.Screen 
-        name="DonationHistory" 
-        component={DonationHistoryScreen} 
-        options={{ headerTitle: 'Donation History' }}
-      />
-      <HomeStack.Screen 
-        name="DonationDetail" 
-        component={DonationDetailScreen} 
-        options={({ route }) => ({ 
-          headerTitle: route.params?.title || 'Donation Detail' 
-        })}
-      />
-      <HomeStack.Screen 
-        name="Notifications" 
-        component={NotificationsScreen} 
-        options={{ headerTitle: 'Notifications' }}
-      /> */}
     </HomeStack.Navigator>
   );
 };
@@ -53,18 +43,63 @@ const HomeStackNavigator = () => {
 const ChildrenStackNavigator = () => {
   return (
     <ChildrenStack.Navigator>
-      <ChildrenStack.Screen 
-        name="MySponsoredChildren" 
-        component={MySponsoredChildrenScreen} 
+       <ChildrenStack.Screen 
+        name="ChildList" 
+        component={ChildListScreen} 
         options={{ headerTitle: 'My Sponsored Children' }}
       />
-      {/* <ChildrenStack.Screen 
-        name="ChildDetail" 
-        component={ChildDetailScreen} 
+      <ChildrenStack.Screen 
+        name="ChildProfile" 
+        component={ChildProfileScreen} 
         options={({ route }) => ({ 
-          headerTitle: route.params?.title || 'Child Detail' 
+          headerTitle: route.params?.childName || 'Child Profile' 
         })}
-      /> */}
+      />
+      <ChildrenStack.Screen 
+        name="SuratList" 
+        component={SuratListScreen} 
+        options={{ headerTitle: 'Messages' }}
+      />
+      <ChildrenStack.Screen 
+        name="SuratDetail" 
+        component={SuratDetailScreen} 
+        options={{ headerTitle: 'Message Detail' }}
+      />
+      <ChildrenStack.Screen 
+        name="SuratForm" 
+        component={SuratFormScreen} 
+        options={{ headerTitle: 'Compose Message' }}
+      />
+      <ChildrenStack.Screen 
+        name="ChildPrestasiList" 
+        component={ChildPrestasiListScreen} 
+        options={{ headerTitle: 'Achievements' }}
+      />
+      <ChildrenStack.Screen 
+        name="ChildPrestasiDetail" 
+        component={ChildPrestasiDetailScreen} 
+        options={{ headerTitle: 'Achievement Detail' }}
+      />
+      <ChildrenStack.Screen 
+        name="ChildRaportList" 
+        component={ChildRaportListScreen} 
+        options={{ headerTitle: 'Report Cards' }}
+      />
+      <ChildrenStack.Screen 
+        name="ChildRaportDetail" 
+        component={ChildRaportDetailScreen} 
+        options={{ headerTitle: 'Report Card Detail' }}
+      />
+      <ChildrenStack.Screen 
+        name="ChildAktivitasList" 
+        component={ChildAktivitasListScreen} 
+        options={{ headerTitle: 'Activities' }}
+      />
+      <ChildrenStack.Screen 
+        name="ChildAktivitasDetail" 
+        component={ChildAktivitasDetailScreen} 
+        options={{ headerTitle: 'Activity Detail' }}
+      />
     </ChildrenStack.Navigator>
   );
 };
@@ -78,11 +113,6 @@ const ProfileStackNavigator = () => {
         component={DonaturProfileScreen} 
         options={{ headerTitle: 'My Profile' }}
       />
-      {/* <ProfileStack.Screen 
-        name="Settings" 
-        component={SettingsScreen} 
-        options={{ headerTitle: 'Settings' }}
-      /> */}
     </ProfileStack.Navigator>
   );
 };
