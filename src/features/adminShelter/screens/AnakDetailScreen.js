@@ -162,11 +162,20 @@ const AnakDetailScreen = () => {
 
   // Navigate to a menu screen
   const navigateToScreen = (screen) => {
-    navigation.navigate(screen, { 
-      anakData, 
-      anakId: id,
-      title: `${screen} - ${anakData?.full_name || 'Anak'}`
-    });
+    // Special handling for Surat screen
+    if (screen === 'Surat') {
+      navigation.navigate(screen, { 
+        childId: id,
+        childName: anakData?.full_name || anakData?.nick_name || 'Anak'
+      });
+    } else {
+      // Default navigation for other screens
+      navigation.navigate(screen, { 
+        anakData, 
+        anakId: id,
+        title: `${screen} - ${anakData?.full_name || 'Anak'}`
+      });
+    }
   };
 
   // Render menu item

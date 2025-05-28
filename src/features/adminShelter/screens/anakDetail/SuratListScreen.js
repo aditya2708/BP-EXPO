@@ -22,7 +22,7 @@ import { adminShelterSuratApi } from '../../api/adminShelterSuratApi';
 const SuratListScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { childId, childName } = route.params;
+  const { childId, childName } = route.params || {};
 
   const [suratList, setSuratList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,19 +32,35 @@ const SuratListScreen = () => {
   // Set navigation title
   useEffect(() => {
     navigation.setOptions({
-      title: `Messages - ${childName}`,
+      title: `Messages - ${childName || 'Anak'}`,
     });
   }, [navigation, childName]);
 
+  // Validate childId
+  useEffect(() => {
+    if (!childId) {
+      setError('Child ID is missing. Please go back and try again.');
+      setLoading(false);
+    }
+  }, [childId]);
+
   // Fetch surat list
   const fetchSuratList = async () => {
+    if (!childId) {
+      console.error('fetchSuratList: childId is missing');
+      return;
+    }
+
     try {
       setError(null);
+      console.log('Fetching surat list for childId:', childId);
       const response = await adminShelterSuratApi.getSuratList(childId);
-      setSuratList(response.data.data);
+      console.log('Surat list response:', response.data);
+      setSuratList(response.data.data || []);
     } catch (err) {
       console.error('Error fetching surat list:', err);
-      setError('Failed to load messages. Please try again.');
+      console.error('Error details:', err.response?.data);
+      setError(err.response?.data?.message || 'Failed to load messages. Please try again.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -52,13 +68,17 @@ const SuratListScreen = () => {
   };
 
   useEffect(() => {
-    fetchSuratList();
+    if (childId) {
+      fetchSuratList();
+    }
   }, [childId]);
 
   // Handle refresh
   const handleRefresh = () => {
-    setRefreshing(true);
-    fetchSuratList();
+    if (childId) {
+      setRefreshing(true);
+      fetchSuratList();
+    }
   };
 
   // Navigate to surat detail
@@ -66,7 +86,7 @@ const SuratListScreen = () => {
     navigation.navigate('SuratDetail', { 
       childId, 
       suratId, 
-      childName,
+      childName: childName || 'Anak',
       onGoBack: fetchSuratList 
     });
   };
@@ -75,7 +95,7 @@ const SuratListScreen = () => {
   const handleComposeSurat = () => {
     navigation.navigate('SuratForm', { 
       childId, 
-      childName,
+      childName: childName || 'Anak',
       onSuccess: fetchSuratList 
     });
   };
@@ -164,7 +184,7 @@ const SuratListScreen = () => {
         </View>
         <View style={styles.suratActions}>
           {item.foto && (
-            <Ionicons name="image" size={20} color="#f39c12" />
+            <Ionicons name="image" size={20} color="#f39c12" style={styles.photoIcon} />
           )}
           <TouchableOpacity
             style={styles.deleteButton}
@@ -199,6 +219,22 @@ const SuratListScreen = () => {
       </View>
     </TouchableOpacity>
   );
+
+  if (!childId) {
+    return (
+      <View style={styles.errorContainer}>
+        <Ionicons name="alert-circle-outline" size={60} color="#e74c3c" />
+        <Text style={styles.errorTitle}>Error</Text>
+        <Text style={styles.errorMessage}>Child information is missing</Text>
+        <Button
+          title="Go Back"
+          onPress={() => navigation.goBack()}
+          type="primary"
+          style={styles.goBackButton}
+        />
+      </View>
+    );
+  }
 
   if (loading && !refreshing) {
     return <LoadingSpinner fullScreen message="Loading messages..." />;
@@ -241,7 +277,7 @@ const SuratListScreen = () => {
           <Ionicons name="mail-outline" size={60} color="#cccccc" />
           <Text style={styles.emptyText}>No messages yet</Text>
           <Text style={styles.emptySubText}>
-            Start a conversation with the donatur about {childName}
+            Start a conversation with the donatur about {childName || 'this child'}
           </Text>
           <Button
             title="Send First Message"
@@ -319,9 +355,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  photoIcon: {
+    marginRight: 8,
+  },
   deleteButton: {
     padding: 4,
-    marginLeft: 8,
   },
   suratMessage: {
     fontSize: 16,
@@ -365,6 +403,28 @@ const styles = StyleSheet.create({
   },
   firstMessageButton: {
     marginTop: 8,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#e74c3c',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: '#666666',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  goBackButton: {
+    minWidth: 120,
   },
 });
 
