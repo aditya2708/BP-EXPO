@@ -1,0 +1,33 @@
+import { combineReducers } from '@reduxjs/toolkit';
+import authReducer from '../features/auth/redux/authSlice';
+import tutorReducer from '../features/adminShelter/redux/tutorSlice';
+import qrTokenReducer from '../features/adminShelter/redux/qrTokenSlice';
+import attendanceReducer from '../features/adminShelter/redux/attendanceSlice';
+import aktivitasReducer from '../features/adminShelter/redux/aktivitasSlice';
+import penilaianReducer from '../features/adminShelter/redux/penilaianSlice';
+import raportReducer from '../features/adminShelter/redux/raportSlice';
+import semesterReducer from '../features/adminShelter/redux/semesterSlice';
+// Create the root reducer
+const appReducer = combineReducers({
+  auth: authReducer,
+  tutor: tutorReducer,
+  qrToken: qrTokenReducer,
+  attendance: attendanceReducer,
+   aktivitas: aktivitasReducer,
+   penilaian: penilaianReducer,
+  raport: raportReducer,
+  semester: semesterReducer,
+});
+
+// Reset the entire redux state when logout action is dispatched
+const rootReducer = (state, action) => {
+  // Check if the action type is 'auth/logout/fulfilled'
+  if (action.type === 'auth/logout/fulfilled') {
+    // Return undefined to reset state to initial values defined in each reducer
+    return appReducer(undefined, action);
+  }
+  
+  return appReducer(state, action);
+};
+
+export default rootReducer;
