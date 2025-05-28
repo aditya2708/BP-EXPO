@@ -134,6 +134,15 @@ const ChildAktivitasListScreen = () => {
             {item.start_time} - {item.end_time}
           </Text>
         </View>
+
+        {item.materi_data && (
+          <View style={styles.materialInfo}>
+            <Ionicons name="book-outline" size={14} color="#9b59b6" />
+            <Text style={styles.materialText}>
+              {item.materi_data.mata_pelajaran} - {item.materi_data.nama_materi}
+            </Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.cardFooter}>
@@ -256,10 +265,21 @@ const styles = StyleSheet.create({
   timeInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 4,
   },
   timeText: {
     fontSize: 12,
     color: '#666666',
+    marginLeft: 4,
+  },
+  materialInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  materialText: {
+    fontSize: 12,
+    color: '#9b59b6',
     marginLeft: 4,
   },
   cardFooter: {

@@ -50,7 +50,7 @@ export const donaturApi = {
    * @returns {Promise} - API response with child details
    */
   getChildDetails: async (childId) => {
-    return await api.get(`${DONATUR_ENDPOINTS.CHILDREN}/${childId}`);
+    return await api.get(DONATUR_ENDPOINTS.CHILD_DETAIL(childId));
   },
 
   /**
@@ -133,5 +133,134 @@ export const donaturApi = {
    */
   getChildProgress: async (childId, params = {}) => {
     return await api.get(`/children/${childId}/progress`, { params });
-  }
+  },
+
+  // Surat (Messages) API
+  /**
+   * Get surat list for child
+   * @param {number|string} childId - Child ID
+   * @returns {Promise} - API response with surat list
+   */
+  getChildSurat: async (childId) => {
+    return await api.get(DONATUR_ENDPOINTS.SURAT.LIST(childId));
+  },
+
+  /**
+   * Create new surat
+   * @param {number|string} childId - Child ID
+   * @param {Object} suratData - Surat data
+   * @returns {Promise} - API response
+   */
+  createSurat: async (childId, suratData) => {
+    return await api.post(DONATUR_ENDPOINTS.SURAT.CREATE(childId), suratData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  /**
+   * Get surat details
+   * @param {number|string} childId - Child ID
+   * @param {number|string} suratId - Surat ID
+   * @returns {Promise} - API response with surat details
+   */
+  getSuratDetails: async (childId, suratId) => {
+    return await api.get(DONATUR_ENDPOINTS.SURAT.DETAIL(childId, suratId));
+  },
+
+  /**
+   * Mark surat as read
+   * @param {number|string} childId - Child ID
+   * @param {number|string} suratId - Surat ID
+   * @returns {Promise} - API response
+   */
+  markSuratAsRead: async (childId, suratId) => {
+    return await api.put(DONATUR_ENDPOINTS.SURAT.MARK_READ(childId, suratId));
+  },
+
+  // Prestasi (Achievements) API
+  /**
+   * Get prestasi list for child
+   * @param {number|string} childId - Child ID
+   * @returns {Promise} - API response with prestasi list
+   */
+  getChildPrestasi: async (childId) => {
+    return await api.get(DONATUR_ENDPOINTS.PRESTASI.LIST(childId));
+  },
+
+  /**
+   * Get prestasi details
+   * @param {number|string} childId - Child ID
+   * @param {number|string} prestasiId - Prestasi ID
+   * @returns {Promise} - API response with prestasi details
+   */
+  getPrestasiDetails: async (childId, prestasiId) => {
+    return await api.get(DONATUR_ENDPOINTS.PRESTASI.DETAIL(childId, prestasiId));
+  },
+
+  /**
+   * Mark prestasi as read
+   * @param {number|string} childId - Child ID
+   * @param {number|string} prestasiId - Prestasi ID
+   * @returns {Promise} - API response
+   */
+  markPrestasiAsRead: async (childId, prestasiId) => {
+    return await api.put(DONATUR_ENDPOINTS.PRESTASI.MARK_READ(childId, prestasiId));
+  },
+
+  // Raport (Report Cards) API
+  /**
+   * Get raport list for child
+   * @param {number|string} childId - Child ID
+   * @returns {Promise} - API response with raport list
+   */
+  getChildRaport: async (childId) => {
+    return await api.get(DONATUR_ENDPOINTS.RAPORT.LIST(childId));
+  },
+
+  /**
+   * Get raport details
+   * @param {number|string} childId - Child ID
+   * @param {number|string} raportId - Raport ID
+   * @returns {Promise} - API response with raport details
+   */
+  getRaportDetails: async (childId, raportId) => {
+    return await api.get(DONATUR_ENDPOINTS.RAPORT.DETAIL(childId, raportId));
+  },
+
+  /**
+   * Get raport summary
+   * @param {number|string} childId - Child ID
+   * @returns {Promise} - API response with raport summary
+   */
+  getRaportSummary: async (childId) => {
+    return await api.get(DONATUR_ENDPOINTS.RAPORT.SUMMARY(childId));
+  },
+
+  // Aktivitas (Activities) API
+  /**
+   * Get aktivitas list for child
+   * @param {number|string} childId - Child ID
+   * @returns {Promise} - API response with aktivitas list
+   */
+  getChildActivities: async (childId) => {
+    return await api.get(DONATUR_ENDPOINTS.AKTIVITAS.LIST(childId));
+  },
+
+  /**
+   * Get aktivitas details
+   * @param {number|string} childId - Child ID
+   * @param {number|string} aktivitasId - Aktivitas ID
+   * @returns {Promise} - API response with aktivitas details
+   */
+  getActivityDetails: async (childId, aktivitasId) => {
+    return await api.get(DONATUR_ENDPOINTS.AKTIVITAS.DETAIL(childId, aktivitasId));
+  },
+
+  /**
+   * Get attendance summary for child
+   * @param {number|string} childId - Child ID
+   * @returns {Promise} - API response with attendance summary
+   */
 };
