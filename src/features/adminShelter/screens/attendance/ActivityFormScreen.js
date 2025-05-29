@@ -437,119 +437,131 @@ const fetchTutorData = async () => {
   };
   
   // Prepare form data for submission
-  const prepareFormData = () => {
-    const data = new FormData();
+  // Updated prepareFormData function
+const prepareFormData = () => {
+  const data = new FormData();
+  
+  // Add text fields
+  data.append('jenis_kegiatan', formData.jenis_kegiatan);
+  
+  // Add tutor ID
+  if (formData.id_tutor) {
+    data.append('id_tutor', formData.id_tutor);
+  }
+  
+  // Only include level and nama_kelompok if jenis_kegiatan is Bimbel
+  if (formData.jenis_kegiatan === 'Bimbel') {
+    data.append('level', formData.level || '');
+    data.append('nama_kelompok', formData.nama_kelompok || '');
     
-    // Add text fields
-    data.append('jenis_kegiatan', formData.jenis_kegiatan);
-    
-    // Only include level and nama_kelompok if jenis_kegiatan is Bimbel
-    if (formData.jenis_kegiatan === 'Bimbel') {
-      data.append('level', formData.level || '');
-      data.append('nama_kelompok', formData.nama_kelompok || '');
-      
-      // Include either id_materi or custom materi text
-      if (!useCustomMateri && formData.id_materi) {
-        data.append('id_materi', formData.id_materi);
-      } else {
-        data.append('materi', formData.materi || '');
-      }
+    // Include either id_materi or custom materi text
+    if (!useCustomMateri && formData.id_materi) {
+      data.append('id_materi', formData.id_materi);
     } else {
-      // For Kegiatan, explicitly send empty strings and custom materi
-      data.append('level', '');
-      data.append('nama_kelompok', '');
       data.append('materi', formData.materi || '');
     }
-    
-    data.append('tanggal', format(formData.tanggal, 'yyyy-MM-dd'));
-    
-    // Add time information if available
-    if (formData.start_time) {
-      data.append('start_time', format(formData.start_time, 'HH:mm:ss'));
-    }
-    
-    if (formData.end_time) {
-      data.append('end_time', format(formData.end_time, 'HH:mm:ss'));
-    }
-    
-    // Add late threshold information
-    if (useCustomLateThreshold && formData.late_threshold) {
-      data.append('late_threshold', format(formData.late_threshold, 'HH:mm:ss'));
-    } else {
-      data.append('late_minutes_threshold', formData.late_minutes_threshold.toString());
-    }
-    
-    // Add photos if selected
-    if (formData.foto_1) {
-      data.append('foto_1', formData.foto_1);
-    }
-    
-    if (formData.foto_2) {
-      data.append('foto_2', formData.foto_2);
-    }
-    
-    if (formData.foto_3) {
-      data.append('foto_3', formData.foto_3);
-    }
-    
-    return data;
-  };
+  } else {
+    // For Kegiatan, explicitly send empty strings and custom materi
+    data.append('level', '');
+    data.append('nama_kelompok', '');
+    data.append('materi', formData.materi || '');
+  }
+  
+  data.append('tanggal', format(formData.tanggal, 'yyyy-MM-dd'));
+  
+  // Add time information if available
+  if (formData.start_time) {
+    data.append('start_time', format(formData.start_time, 'HH:mm:ss'));
+  }
+  
+  if (formData.end_time) {
+    data.append('end_time', format(formData.end_time, 'HH:mm:ss'));
+  }
+  
+  // Add late threshold information
+  if (useCustomLateThreshold && formData.late_threshold) {
+    data.append('late_threshold', format(formData.late_threshold, 'HH:mm:ss'));
+  } else {
+    data.append('late_minutes_threshold', formData.late_minutes_threshold.toString());
+  }
+  
+  // Add photos if selected
+  if (formData.foto_1) {
+    data.append('foto_1', formData.foto_1);
+  }
+  
+  if (formData.foto_2) {
+    data.append('foto_2', formData.foto_2);
+  }
+  
+  if (formData.foto_3) {
+    data.append('foto_3', formData.foto_3);
+  }
+  
+  return data;
+};
   
   // Handle form submission
   const handleSubmit = async () => {
-    // Validate required fields
-    if (!formData.jenis_kegiatan || !formData.tanggal) {
-      Alert.alert('Validation Error', 'Activity type and date are required');
-      return;
+  // Validate required fields
+  if (!formData.jenis_kegiatan || !formData.tanggal) {
+    Alert.alert('Validation Error', 'Activity type and date are required');
+    return;
+  }
+  
+  // Validate tutor selection (required field)
+  if (!formData.id_tutor) {
+    Alert.alert('Validation Error', 'Please select a tutor for this activity');
+    return;
+  }
+  
+  // If Bimbel is selected, validate kelompok selection
+  if (formData.jenis_kegiatan === 'Bimbel' && !formData.selectedKelompokId) {
+    Alert.alert('Validation Error', 'Please select a group for Bimbel activity');
+    return;
+  }
+  
+  // Validate materi field
+  if (formData.jenis_kegiatan === 'Bimbel' && !useCustomMateri && !formData.id_materi) {
+    Alert.alert('Validation Error', 'Please select a materi from the list');
+    return;
+  }
+  
+  if ((formData.jenis_kegiatan === 'Kegiatan' || useCustomMateri) && !formData.materi) {
+    Alert.alert('Validation Error', 'Materi cannot be empty');
+    return;
+  }
+  
+  // Validate schedule consistency
+  if (formData.start_time && formData.end_time && formData.start_time >= formData.end_time) {
+    Alert.alert('Validation Error', 'End time must be after start time');
+    return;
+  }
+  
+  if (useCustomLateThreshold && formData.late_threshold && formData.start_time && formData.late_threshold < formData.start_time) {
+    Alert.alert('Validation Error', 'Late threshold must be after start time');
+    return;
+  }
+  
+  const data = prepareFormData();
+  
+  try {
+    if (isEditing) {
+      await dispatch(updateAktivitas({ id: activity.id_aktivitas, aktivitasData: data })).unwrap();
+      Alert.alert('Success', 'Activity updated successfully', [
+        { text: 'OK', onPress: () => navigation.goBack() }
+      ]);
+    } else {
+      await dispatch(createAktivitas(data)).unwrap();
+      Alert.alert('Success', 'Activity created successfully', [
+        { text: 'OK', onPress: () => navigation.goBack() }
+      ]);
     }
-    
-    // If Bimbel is selected, validate kelompok selection
-    if (formData.jenis_kegiatan === 'Bimbel' && !formData.selectedKelompokId) {
-      Alert.alert('Validation Error', 'Please select a group for Bimbel activity');
-      return;
-    }
-    
-    // Validate materi field
-    if (formData.jenis_kegiatan === 'Bimbel' && !useCustomMateri && !formData.id_materi) {
-      Alert.alert('Validation Error', 'Please select a materi from the list');
-      return;
-    }
-    
-    if ((formData.jenis_kegiatan === 'Kegiatan' || useCustomMateri) && !formData.materi) {
-      Alert.alert('Validation Error', 'Materi cannot be empty');
-      return;
-    }
-    
-    // Validate schedule consistency
-    if (formData.start_time && formData.end_time && formData.start_time >= formData.end_time) {
-      Alert.alert('Validation Error', 'End time must be after start time');
-      return;
-    }
-    
-    if (useCustomLateThreshold && formData.late_threshold && formData.start_time && formData.late_threshold < formData.start_time) {
-      Alert.alert('Validation Error', 'Late threshold must be after start time');
-      return;
-    }
-    
-    const data = prepareFormData();
-    
-    try {
-      if (isEditing) {
-        await dispatch(updateAktivitas({ id: activity.id_aktivitas, aktivitasData: data })).unwrap();
-        Alert.alert('Success', 'Activity updated successfully', [
-          { text: 'OK', onPress: () => navigation.goBack() }
-        ]);
-      } else {
-        await dispatch(createAktivitas(data)).unwrap();
-        Alert.alert('Success', 'Activity created successfully', [
-          { text: 'OK', onPress: () => navigation.goBack() }
-        ]);
-      }
-    } catch (err) {
-      console.error('Error saving activity:', err);
-      Alert.alert('Error', err || 'Failed to save activity');
-    }
-  };
+  } catch (err) {
+    console.error('Error saving activity:', err);
+    Alert.alert('Error', err || 'Failed to save activity');
+  }
+};
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
