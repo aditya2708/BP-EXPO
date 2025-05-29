@@ -62,5 +62,21 @@ export const adminShelterTutorApi = {
     return await api.delete(ADMIN_SHELTER_ENDPOINTS.TUTOR.DETAIL(tutorId), {
       timeout: 30000, // Increase timeout to 30 seconds
     });
-  }
+  },
+
+  /**
+ * Get active tutors for dropdown selection
+ * @param {Object} params - Query parameters (optional)
+ * @returns {Promise} - API response with active tutors data
+ */
+getActiveTutors: async (params = {}) => {
+  // Set default parameters for active tutors only
+  const queryParams = {
+    per_page: 100, // Get more tutors for dropdown
+    status: 'active', // Only active tutors
+    ...params
+  };
+  
+  return await api.get(ADMIN_SHELTER_ENDPOINTS.TUTOR.LIST, { params: queryParams });
+}
 };
