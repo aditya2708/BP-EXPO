@@ -35,6 +35,7 @@ import {
 // API
 import { adminShelterKelompokApi } from '../../api/adminShelterKelompokApi';
 import { materiApi } from '../../api/materiApi';
+import { adminShelterTutorApi } from '../../api/adminShelterTutorApi';
 
 const ActivityFormScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
@@ -63,7 +64,8 @@ const ActivityFormScreen = ({ navigation, route }) => {
     start_time: null,
     end_time: null,
     late_threshold: null,
-    late_minutes_threshold: 15
+    late_minutes_threshold: 15,
+    id_tutor: null
   });
   
   // UI state
@@ -90,6 +92,10 @@ const ActivityFormScreen = ({ navigation, route }) => {
   const [materiError, setMateriError] = useState(null);
   const [useCustomMateri, setUseCustomMateri] = useState(false);
   
+const [tutorList, setTutorList] = useState([]);
+const [tutorLoading, setTutorLoading] = useState(false);
+const [tutorError, setTutorError] = useState(null);
+
   // Load activity data if editing
   useEffect(() => {
     if (isEditing && activity) {
@@ -125,6 +131,7 @@ const ActivityFormScreen = ({ navigation, route }) => {
       // If activity type is Bimbel, fetch kelompok data
       if (activity.jenis_kegiatan === 'Bimbel') {
         fetchKelompokData();
+        
       }
     }
   }, [isEditing, activity]);
@@ -143,6 +150,10 @@ const ActivityFormScreen = ({ navigation, route }) => {
     }
   }, [formData.selectedLevelId, formData.jenis_kegiatan, useCustomMateri]);
   
+  useEffect(() => {
+  fetchTutorData();
+}, []);
+
   // Fetch kelompok data from API
   const fetchKelompokData = async () => {
     setKelompokLoading(true);
@@ -197,6 +208,27 @@ const ActivityFormScreen = ({ navigation, route }) => {
     }
   };
   
+  // Add this method to fetch tutor data
+const fetchTutorData = async () => {
+  setTutorLoading(true);
+  setTutorError(null);
+  
+  try {
+    const response = await adminShelterTutorApi.getActiveTutors();
+    
+    if (response.data && response.data.data) {
+      setTutorList(response.data.data);
+    } else {
+      setTutorList([]);
+    }
+  } catch (error) {
+    console.error('Error fetching tutor data:', error);
+    setTutorError('Failed to load tutor data. Please try again.');
+  } finally {
+    setTutorLoading(false);
+  }
+};
+
   // Handle form input changes
   const handleChange = (name, value) => {
     if (name === 'jenis_kegiatan') {
@@ -560,6 +592,43 @@ const ActivityFormScreen = ({ navigation, route }) => {
           </TouchableOpacity>
         </View>
       </View>
+
+      
+{/* Tutor Selection */}
+<View style={styles.inputGroup}>
+  <Text style={styles.label}>Assigned Tutor</Text>
+  
+  {tutorLoading ? (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="small" color="#3498db" />
+      <Text style={styles.loadingText}>Loading tutors...</Text>
+    </View>
+  ) : tutorError ? (
+    <ErrorMessage 
+      message={tutorError} 
+      onRetry={fetchTutorData}
+      style={styles.errorContainer} 
+    />
+  ) : (
+    <View style={styles.pickerContainer}>
+      <Picker
+        selectedValue={formData.id_tutor || ''}
+        onValueChange={(value) => handleChange('id_tutor', value || null)}
+        style={styles.picker}
+        enabled={!loading}
+      >
+        <Picker.Item label="No tutor assigned" value="" />
+        {tutorList.map(tutor => (
+          <Picker.Item 
+            key={tutor.id_tutor} 
+            label={tutor.nama}
+            value={tutor.id_tutor} 
+          />
+        ))}
+      </Picker>
+    </View>
+  )}
+</View>
       
       {/* Kelompok Picker - Only shown for Bimbel */}
       {formData.jenis_kegiatan === 'Bimbel' && (
