@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
 import { Audio } from 'expo-av';
 import { format } from 'date-fns';
+
 // Components
 import QrScanner from '../../components/QrScanner';
 
@@ -32,6 +33,14 @@ import {
   selectDuplicateError,
   resetAttendanceError
 } from '../../redux/attendanceSlice';
+
+import {
+  recordTutorAttendanceByQr,
+  selectTutorAttendanceLoading,
+  selectTutorAttendanceError,
+  selectTutorDuplicateError,
+  resetTutorAttendanceError
+} from '../../redux/tutorAttendanceSlice';
 
 // Utils
 import OfflineSync from '../../utils/offlineSync';
@@ -62,6 +71,11 @@ const QrScannerScreen = ({ navigation, route }) => {
   const attendanceLoading = useSelector(selectAttendanceLoading);
   const attendanceError = useSelector(selectAttendanceError);
   const duplicateError = useSelector(selectDuplicateError);
+  
+  // Add tutor attendance state
+  const tutorAttendanceLoading = useSelector(selectTutorAttendanceLoading);
+  const tutorAttendanceError = useSelector(selectTutorAttendanceError);
+  const tutorDuplicateError = useSelector(selectTutorDuplicateError);
   
   // Local state
   const [isConnected, setIsConnected] = useState(true);
@@ -108,6 +122,7 @@ const QrScannerScreen = ({ navigation, route }) => {
     return () => {
       dispatch(resetValidationResult());
       dispatch(resetAttendanceError());
+      dispatch(resetTutorAttendanceError());
     };
   }, [dispatch]);
   
@@ -122,10 +137,10 @@ const QrScannerScreen = ({ navigation, route }) => {
   
   // Check for duplicate error
   useEffect(() => {
-    if (duplicateError) {
-      showToast(duplicateError, 'warning');
+    if (duplicateError || tutorDuplicateError) {
+      showToast(duplicateError || tutorDuplicateError, 'warning');
     }
-  }, [duplicateError]);
+  }, [duplicateError, tutorDuplicateError]);
   
   // Process validation result
   useEffect(() => {
@@ -220,84 +235,139 @@ const QrScannerScreen = ({ navigation, route }) => {
   };
   
   // Handle QR scan
-  const handleScan = (qrData) => {
+  const handleScan = async (qrData) => {
     if (!id_aktivitas) {
-      Alert.alert(
-        'Error',
-        'No activity selected. Please go back and select an activity first.',
-        [{ text: 'OK' }]
-      );
+      Alert.alert('Error', 'No activity selected. Please go back and select an activity first.');
       return;
     }
     
-    dispatch(validateToken(qrData.token));
+    // Parse QR data to check if it's a tutor token
+    const isTutorToken = qrData.token && qrData.token.startsWith('t');
+    
+    if (isTutorToken) {
+      // Direct tutor attendance recording
+      handleTutorAttendanceRecording(qrData.token);
+    } else {
+      // Student token validation flow
+      dispatch(validateToken(qrData.token));
+    }
   };
   
   // Record attendance
-const handleAttendanceRecording = async (token, id_anak) => {
-  try {
-    if (isConnected) {
-      // Get current time in proper format
-      const currentTime = new Date();
-      const formattedArrivalTime = format(currentTime, 'yyyy-MM-dd HH:mm:ss');
-      
-      const result = await dispatch(recordAttendanceByQr({ 
-        id_anak, 
-        id_aktivitas, 
-        status: null, // Let backend determine status
-        token,
-        arrival_time: formattedArrivalTime // Add explicit arrival time
-      })).unwrap();
-      
-      // Play camera sound on success
-      playSound();
-      
-      const studentName = validationResult.anak.full_name || 'Student';
-      
-      // Use the status from the response
-      let status = 'Present';
-      let toastType = 'success';
-      
-      if (result.data && result.data.absen) {
-        if (result.data.absen === 'Tidak') {
-          status = 'Absent';
-          toastType = 'error';
-        } else if (result.data.absen === 'Terlambat') {
-          status = 'Late';
-          toastType = 'warning';
+  const handleAttendanceRecording = async (token, id_anak) => {
+    try {
+      if (isConnected) {
+        // Get current time in proper format
+        const currentTime = new Date();
+        const formattedArrivalTime = format(currentTime, 'yyyy-MM-dd HH:mm:ss');
+        
+        const result = await dispatch(recordAttendanceByQr({ 
+          id_anak, 
+          id_aktivitas, 
+          status: null, // Let backend determine status
+          token,
+          arrival_time: formattedArrivalTime // Add explicit arrival time
+        })).unwrap();
+        
+        // Play camera sound on success
+        playSound();
+        
+        const studentName = validationResult.anak.full_name || 'Student';
+        
+        // Use the status from the response
+        let status = 'Present';
+        let toastType = 'success';
+        
+        if (result.data && result.data.absen) {
+          if (result.data.absen === 'Tidak') {
+            status = 'Absent';
+            toastType = 'error';
+          } else if (result.data.absen === 'Terlambat') {
+            status = 'Late';
+            toastType = 'warning';
+          }
         }
+        
+        showToast(`${status}: ${studentName}`, toastType);
+      } else {
+        // Offline handling remains the same
+        const currentTime = new Date();
+        const formattedArrivalTime = format(currentTime, 'yyyy-MM-dd HH:mm:ss');
+        
+        const result = await OfflineSync.processAttendance({
+          id_anak,
+          id_aktivitas,
+          status: null,
+          token,
+          arrival_time: formattedArrivalTime
+        }, 'qr');
+        
+        playSound();
+        showToast('Saved for syncing when online', 'warning');
       }
-      
-      showToast(`${status}: ${studentName}`, toastType);
-    } else {
-      // Offline handling remains the same
-      const currentTime = new Date();
-      const formattedArrivalTime = format(currentTime, 'yyyy-MM-dd HH:mm:ss');
-      
-      const result = await OfflineSync.processAttendance({
-        id_anak,
-        id_aktivitas,
-        status: null,
-        token,
-        arrival_time: formattedArrivalTime
-      }, 'qr');
-      
-      playSound();
-      showToast('Saved for syncing when online', 'warning');
+    } catch (error) {
+      if (!error.isDuplicate) {
+        showToast(error.message || 'Failed to record', 'error');
+      }
     }
-  } catch (error) {
-    if (!error.isDuplicate) {
-      showToast(error.message || 'Failed to record', 'error');
+  };
+  
+  // Handle tutor attendance recording
+  const handleTutorAttendanceRecording = async (token) => {
+    try {
+      if (isConnected) {
+        const currentTime = new Date();
+        const formattedArrivalTime = format(currentTime, 'yyyy-MM-dd HH:mm:ss');
+        
+        const result = await dispatch(recordTutorAttendanceByQr({ 
+          id_aktivitas, 
+          token,
+          arrival_time: formattedArrivalTime
+        })).unwrap();
+        
+        playSound();
+        
+        // Determine status for toast
+        let status = 'Present';
+        let toastType = 'success';
+        
+        if (result.data && result.data.absen) {
+          if (result.data.absen === 'Tidak') {
+            status = 'Absent';
+            toastType = 'error';
+          } else if (result.data.absen === 'Terlambat') {
+            status = 'Late';
+            toastType = 'warning';
+          }
+        }
+        
+        const tutorName = result.data?.absenUser?.tutor?.nama || 'Tutor';
+        showToast(`${status}: ${tutorName} (Tutor)`, toastType);
+      } else {
+        // Offline handling
+        const result = await OfflineSync.processAttendance({
+          id_aktivitas,
+          token,
+          arrival_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+          type: 'tutor'
+        }, 'qr');
+        
+        playSound();
+        showToast('Saved for syncing when online', 'warning');
+      }
+    } catch (error) {
+      if (!error.isDuplicate) {
+        showToast(error.message || 'Failed to record tutor attendance', 'error');
+      }
     }
-  }
-};
+  };
   
   // Close scanner
   const handleClose = () => {
     navigation.goBack();
   };
   
-  const isLoading = tokenLoading || attendanceLoading || loadingKelompokData;
+  const isLoading = tokenLoading || attendanceLoading || loadingKelompokData || tutorAttendanceLoading;
   
   // Get toast style based on type
   const getToastStyle = () => {

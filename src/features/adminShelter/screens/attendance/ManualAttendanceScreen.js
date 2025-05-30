@@ -26,6 +26,7 @@ import ErrorMessage from '../../../../common/components/ErrorMessage';
 import { adminShelterAnakApi } from '../../api/adminShelterAnakApi';
 import { adminShelterKelompokApi } from '../../api/adminShelterKelompokApi';
 import { aktivitasApi } from '../../api/aktivitasApi';
+import { adminShelterTutorApi } from '../../api/adminShelterTutorApi';
 
 // Redux
 import {
@@ -35,6 +36,13 @@ import {
   selectDuplicateError,
   resetAttendanceError
 } from '../../redux/attendanceSlice';
+
+import {
+  recordTutorAttendanceManually,
+  selectTutorAttendanceLoading,
+  selectTutorAttendanceError,
+  resetTutorAttendanceError
+} from '../../redux/tutorAttendanceSlice';
 
 // Utils
 import OfflineSync from '../../utils/offlineSync';
@@ -56,17 +64,25 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
   const loading = useSelector(selectAttendanceLoading);
   const error = useSelector(selectAttendanceError);
   const duplicateError = useSelector(selectDuplicateError);
+  const tutorAttendanceLoading = useSelector(selectTutorAttendanceLoading);
+  const tutorAttendanceError = useSelector(selectTutorAttendanceError);
   
   // Local state
+  const [attendanceMode, setAttendanceMode] = useState('student'); // 'student' or 'tutor'
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [selectedTutor, setSelectedTutor] = useState(null);
   const [notes, setNotes] = useState('');
   const [students, setStudents] = useState([]);
+  const [tutorList, setTutorList] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingStudents, setLoadingStudents] = useState(false);
+  const [loadingTutors, setLoadingTutors] = useState(false);
   const [studentError, setStudentError] = useState(null);
+  const [tutorError, setTutorError] = useState(null);
   const [isConnected, setIsConnected] = useState(true);
   const [isBimbelActivity, setIsBimbelActivity] = useState(activityType === 'Bimbel');
   const [showDuplicateAlert, setShowDuplicateAlert] = useState(false);
+  const [activityTutor, setActivityTutor] = useState(null);
   
   // Activity details state
   const [activityDetails, setActivityDetails] = useState(null);
@@ -92,16 +108,26 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
     
     // Fetch activity details to get schedule information
     fetchActivityDetails();
+    fetchActivityTutor();
   }, [activityType, id_aktivitas]);
   
   // Fetch students based on activity type and kelompok
   useEffect(() => {
-    if (isBimbelActivity && kelompokId) {
-      fetchStudentsByKelompok(kelompokId);
-    } else {
-      fetchAllStudents();
+    if (attendanceMode === 'student') {
+      if (isBimbelActivity && kelompokId) {
+        fetchStudentsByKelompok(kelompokId);
+      } else {
+        fetchAllStudents();
+      }
     }
-  }, [isBimbelActivity, kelompokId]);
+  }, [attendanceMode, isBimbelActivity, kelompokId]);
+  
+  // Fetch tutors when mode changes to tutor
+  useEffect(() => {
+    if (attendanceMode === 'tutor') {
+      fetchTutors();
+    }
+  }, [attendanceMode]);
   
   // Watch for duplicate errors
   useEffect(() => {
@@ -134,6 +160,20 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
       console.error('Failed to fetch activity details:', err);
     } finally {
       setLoadingActivityDetails(false);
+    }
+  };
+  
+  // Fetch activity tutor
+  const fetchActivityTutor = async () => {
+    if (!id_aktivitas) return;
+    
+    try {
+      const response = await aktivitasApi.getAktivitasDetail(id_aktivitas);
+      if (response.data && response.data.data && response.data.data.tutor) {
+        setActivityTutor(response.data.data.tutor);
+      }
+    } catch (error) {
+      console.error('Error fetching activity tutor:', error);
     }
   };
   
@@ -199,58 +239,58 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
   };
   
   // Fetch all students from API
- const fetchAllStudents = async () => {
-  setLoadingStudents(true);
-  setStudentError(null);
-  
-  try {
-    // Initialize an empty array for all students
-    let allStudents = [];
-    let currentPage = 1;
-    let lastPage = 1;
+  const fetchAllStudents = async () => {
+    setLoadingStudents(true);
+    setStudentError(null);
     
-    // First request to get initial data and pagination info
-    const initialResponse = await adminShelterAnakApi.getAllAnak({ page: 1 });
-    
-    if (initialResponse.data && initialResponse.data.pagination) {
-      lastPage = initialResponse.data.pagination.last_page;
-      allStudents = [...initialResponse.data.data];
+    try {
+      // Initialize an empty array for all students
+      let allStudents = [];
+      let currentPage = 1;
+      let lastPage = 1;
       
-      // Fetch remaining pages if any
-      if (lastPage > 1) {
-        for (let page = 2; page <= lastPage; page++) {
-          const pageResponse = await adminShelterAnakApi.getAllAnak({ page });
-          if (pageResponse.data && pageResponse.data.data) {
-            allStudents = [...allStudents, ...pageResponse.data.data];
+      // First request to get initial data and pagination info
+      const initialResponse = await adminShelterAnakApi.getAllAnak({ page: 1 });
+      
+      if (initialResponse.data && initialResponse.data.pagination) {
+        lastPage = initialResponse.data.pagination.last_page;
+        allStudents = [...initialResponse.data.data];
+        
+        // Fetch remaining pages if any
+        if (lastPage > 1) {
+          for (let page = 2; page <= lastPage; page++) {
+            const pageResponse = await adminShelterAnakApi.getAllAnak({ page });
+            if (pageResponse.data && pageResponse.data.data) {
+              allStudents = [...allStudents, ...pageResponse.data.data];
+            }
           }
         }
-      }
-      
-      // Filter for active students
-      const activeStudents = allStudents.filter(
-        student => student.status_validasi === 'aktif'
-      );
-      
-      setStudents(activeStudents);
-    } else {
-      // Fallback: try with high per_page to get all data at once
-      const fallbackResponse = await adminShelterAnakApi.getAllAnak({ per_page: 1000 });
-      if (fallbackResponse.data && fallbackResponse.data.data) {
-        const activeStudents = fallbackResponse.data.data.filter(
+        
+        // Filter for active students
+        const activeStudents = allStudents.filter(
           student => student.status_validasi === 'aktif'
         );
+        
         setStudents(activeStudents);
       } else {
-        setStudents([]);
+        // Fallback: try with high per_page to get all data at once
+        const fallbackResponse = await adminShelterAnakApi.getAllAnak({ per_page: 1000 });
+        if (fallbackResponse.data && fallbackResponse.data.data) {
+          const activeStudents = fallbackResponse.data.data.filter(
+            student => student.status_validasi === 'aktif'
+          );
+          setStudents(activeStudents);
+        } else {
+          setStudents([]);
+        }
       }
+    } catch (err) {
+      console.error('Failed to fetch students:', err);
+      setStudentError('Failed to load students. Please try again.');
+    } finally {
+      setLoadingStudents(false);
     }
-  } catch (err) {
-    console.error('Failed to fetch students:', err);
-    setStudentError('Failed to load students. Please try again.');
-  } finally {
-    setLoadingStudents(false);
-  }
-};
+  };
   
   // Fetch students for a specific kelompok
   const fetchStudentsByKelompok = async (kelompokId) => {
@@ -279,6 +319,26 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
     }
   };
   
+  // Fetch tutors
+  const fetchTutors = async () => {
+    setLoadingTutors(true);
+    setTutorError(null);
+    
+    try {
+      const response = await adminShelterTutorApi.getActiveTutors();
+      if (response.data && response.data.data) {
+        setTutorList(response.data.data);
+      } else {
+        setTutorList([]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch tutors:', err);
+      setTutorError('Failed to load tutors. Please try again.');
+    } finally {
+      setLoadingTutors(false);
+    }
+  };
+  
   // Handle time change
   const handleTimeChange = (event, selectedTime) => {
     setShowTimePicker(false);
@@ -297,6 +357,11 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
   // Handle student selection
   const handleSelectStudent = (student) => {
     setSelectedStudent(student);
+  };
+  
+  // Handle tutor selection
+  const handleSelectTutor = (tutor) => {
+    setSelectedTutor(tutor);
   };
   
   // Render student item
@@ -327,54 +392,102 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
   
   // Handle form submission
   const handleSubmit = async () => {
-    if (!selectedStudent) {
-      Alert.alert('Error', 'Please select a student');
-      return;
-    }
-    
-    if (!id_aktivitas) {
-      Alert.alert('Error', 'Activity not specified');
-      return;
-    }
-    
-    if (!notes) {
-      Alert.alert('Error', 'Please provide verification notes');
-      return;
-    }
-    
-    const formattedArrivalTime = format(arrivalTime, 'yyyy-MM-dd HH:mm:ss');
-    
-    const attendanceData = {
-      id_anak: selectedStudent.id_anak,
-      id_aktivitas,
-      status: null, // Send null to let the backend auto-determine the status
-      notes,
-      arrival_time: formattedArrivalTime
-    };
-    
-    try {
-      // If online, use Redux
-      if (isConnected) {
-        await dispatch(recordAttendanceManually(attendanceData)).unwrap();
-        Alert.alert(
-          'Success', 
-          'Attendance recorded successfully',
-          [{ text: 'OK', onPress: () => navigation.goBack() }]
-        );
-      } 
-      // If offline, use offline sync
-      else {
-        const result = await OfflineSync.processAttendance(attendanceData, 'manual');
-        Alert.alert(
-          'Offline Mode', 
-          result.message || 'Attendance saved for syncing when online',
-          [{ text: 'OK', onPress: () => navigation.goBack() }]
-        );
+    if (attendanceMode === 'student') {
+      // Student attendance logic
+      if (!selectedStudent) {
+        Alert.alert('Error', 'Please select a student');
+        return;
       }
-    } catch (err) {
-      // Duplicate errors are handled by the useEffect watching duplicateError
-      if (!err.isDuplicate) {
-        Alert.alert('Error', err.message || 'Failed to record attendance');
+      
+      if (!id_aktivitas) {
+        Alert.alert('Error', 'Activity not specified');
+        return;
+      }
+      
+      if (!notes) {
+        Alert.alert('Error', 'Please provide verification notes');
+        return;
+      }
+      
+      const formattedArrivalTime = format(arrivalTime, 'yyyy-MM-dd HH:mm:ss');
+      
+      const attendanceData = {
+        id_anak: selectedStudent.id_anak,
+        id_aktivitas,
+        status: null,
+        notes,
+        arrival_time: formattedArrivalTime
+      };
+      
+      try {
+        if (isConnected) {
+          await dispatch(recordAttendanceManually(attendanceData)).unwrap();
+          Alert.alert(
+            'Success', 
+            'Student attendance recorded successfully',
+            [{ text: 'OK', onPress: () => navigation.goBack() }]
+          );
+        } else {
+          const result = await OfflineSync.processAttendance(attendanceData, 'manual');
+          Alert.alert(
+            'Offline Mode', 
+            result.message || 'Attendance saved for syncing when online',
+            [{ text: 'OK', onPress: () => navigation.goBack() }]
+          );
+        }
+      } catch (err) {
+        if (!err.isDuplicate) {
+          Alert.alert('Error', err.message || 'Failed to record attendance');
+        }
+      }
+    } else {
+      // Tutor attendance logic
+      if (!selectedTutor) {
+        Alert.alert('Error', 'Please select a tutor');
+        return;
+      }
+      
+      if (!notes) {
+        Alert.alert('Error', 'Please provide verification notes');
+        return;
+      }
+      
+      // Validate tutor is assigned to activity
+      if (!activityTutor || activityTutor.id_tutor !== selectedTutor.id_tutor) {
+        Alert.alert('Error', 'Selected tutor is not assigned to this activity');
+        return;
+      }
+      
+      const formattedArrivalTime = format(arrivalTime, 'yyyy-MM-dd HH:mm:ss');
+      
+      const tutorAttendanceData = {
+        id_tutor: selectedTutor.id_tutor,
+        id_aktivitas,
+        status: null,
+        notes,
+        arrival_time: formattedArrivalTime
+      };
+      
+      try {
+        if (isConnected) {
+          await dispatch(recordTutorAttendanceManually(tutorAttendanceData)).unwrap();
+          Alert.alert(
+            'Success', 
+            'Tutor attendance recorded successfully',
+            [{ text: 'OK', onPress: () => navigation.goBack() }]
+          );
+        } else {
+          const result = await OfflineSync.processTutorAttendance(tutorAttendanceData, 'manual');
+          Alert.alert(
+            'Offline Mode', 
+            result.message || 'Tutor attendance saved for syncing when online',
+            [{ text: 'OK', onPress: () => navigation.goBack() }]
+          );
+        }
+      } catch (err) {
+        if (!err.isDuplicate) {
+          Alert.alert('Error', err.message || 'Failed to record tutor attendance');
+        }
       }
     }
   };
@@ -412,20 +525,69 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
   // Create header component for the FlatList  
   const HeaderComponent = () => (
     <>
-      <Text style={styles.label}>
-        {`Student${isBimbelActivity ? ` from ${kelompokName || 'this group'}` : ''}`}
-      </Text>
-      
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color="#7f8c8d" />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search student..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          clearButtonMode="while-editing"
-        />
-      </View>
+      {attendanceMode === 'student' ? (
+        <>
+          <Text style={styles.label}>
+            {`Student${isBimbelActivity ? ` from ${kelompokName || 'this group'}` : ''}`}
+          </Text>
+          
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={20} color="#7f8c8d" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search student..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              clearButtonMode="while-editing"
+            />
+          </View>
+        </>
+      ) : (
+        <>
+          <Text style={styles.label}>Tutor</Text>
+          
+          {loadingTutors ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#3498db" />
+              <Text style={styles.loadingText}>Loading tutors...</Text>
+            </View>
+          ) : tutorError ? (
+            <ErrorMessage 
+              message={tutorError} 
+              onRetry={fetchTutors}
+              style={styles.errorContainer} 
+            />
+          ) : (
+            <View style={styles.tutorSelectionContainer}>
+              {tutorList.map(tutor => (
+                <TouchableOpacity
+                  key={tutor.id_tutor}
+                  style={[
+                    styles.tutorItem,
+                    selectedTutor?.id_tutor === tutor.id_tutor && styles.selectedTutorItem,
+                    activityTutor?.id_tutor === tutor.id_tutor && styles.assignedTutorItem
+                  ]}
+                  onPress={() => setSelectedTutor(tutor)}
+                >
+                  <View style={styles.tutorAvatar}>
+                    <Ionicons name="person" size={24} color="#95a5a6" />
+                  </View>
+                  <View style={styles.tutorInfo}>
+                    <Text style={styles.tutorName}>{tutor.nama}</Text>
+                    <Text style={styles.tutorId}>ID: {tutor.id_tutor}</Text>
+                    {activityTutor?.id_tutor === tutor.id_tutor && (
+                      <Text style={styles.assignedLabel}>Assigned to Activity</Text>
+                    )}
+                  </View>
+                  {selectedTutor?.id_tutor === tutor.id_tutor && (
+                    <Ionicons name="checkmark-circle" size={24} color="#3498db" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </>
+      )}
     </>
   );
   
@@ -489,25 +651,29 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
         <TouchableOpacity 
           style={styles.submitButton}
           onPress={handleSubmit}
-          disabled={loading}
+          disabled={loading || tutorAttendanceLoading}
         >
-          {loading ? (
+          {(loading || tutorAttendanceLoading) ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={styles.submitButtonText}>Record Attendance</Text>
+            <Text style={styles.submitButtonText}>
+              Record {attendanceMode === 'student' ? 'Student' : 'Tutor'} Attendance
+            </Text>
           )}
         </TouchableOpacity>
         
         <TouchableOpacity 
           style={styles.cancelButton}
           onPress={() => navigation.goBack()}
-          disabled={loading}
+          disabled={loading || tutorAttendanceLoading}
         >
           <Text style={styles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>
       </View>
     </>
   );
+
+  const isAnyLoading = loading || tutorAttendanceLoading || loadingStudents || loadingTutors || loadingActivityDetails;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -529,6 +695,42 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
           )}
         </View>
         
+        {/* Attendance Mode Toggle */}
+        <View style={styles.modeToggleContainer}>
+          <Text style={styles.modeToggleLabel}>Attendance Mode</Text>
+          <View style={styles.modeToggleButtons}>
+            <TouchableOpacity
+              style={[
+                styles.modeToggleButton,
+                attendanceMode === 'student' && styles.modeToggleButtonActive
+              ]}
+              onPress={() => setAttendanceMode('student')}
+            >
+              <Text style={[
+                styles.modeToggleButtonText,
+                attendanceMode === 'student' && styles.modeToggleButtonTextActive
+              ]}>
+                Student
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.modeToggleButton,
+                attendanceMode === 'tutor' && styles.modeToggleButtonActive
+              ]}
+              onPress={() => setAttendanceMode('tutor')}
+            >
+              <Text style={[
+                styles.modeToggleButtonText,
+                attendanceMode === 'tutor' && styles.modeToggleButtonTextActive
+              ]}>
+                Tutor
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        
         {/* Network Status Indicator */}
         {!isConnected && (
           <View style={styles.offlineIndicator}>
@@ -542,7 +744,7 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
           <View style={styles.duplicateAlert}>
             <Ionicons name="alert-circle" size={20} color="#fff" />
             <Text style={styles.duplicateAlertText}>
-              {duplicateError || 'This student already has an attendance record for this activity'}
+              {duplicateError || 'This attendance record already exists for this activity'}
             </Text>
             <TouchableOpacity
               style={styles.duplicateAlertCloseButton}
@@ -554,33 +756,45 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
         )}
         
         {/* Error Message */}
-        {error && <ErrorMessage message={error} />}
+        {(error || tutorAttendanceError) && (
+          <ErrorMessage message={error || tutorAttendanceError} />
+        )}
         {studentError && <ErrorMessage message={studentError} onRetry={fetchAllStudents} />}
         
         {/* Main Form Content */}
         <View style={styles.formContainer}>
-          {loadingStudents || loadingActivityDetails ? (
+          {isAnyLoading ? (
             <ActivityIndicator size="large" color="#3498db" style={styles.loadingIndicator} />
           ) : (
-            <FlatList
-              data={filteredStudents}
-              renderItem={renderStudentItem}
-              keyExtractor={(item) => item.id_anak.toString()}
-              ListHeaderComponent={HeaderComponent}
-              ListFooterComponent={FooterComponent}
-              ListEmptyComponent={
-                <Text style={styles.emptyListText}>No students found</Text>
-              }
-              contentContainerStyle={styles.studentListContent}
-            />
+            attendanceMode === 'student' ? (
+              <FlatList
+                data={filteredStudents}
+                renderItem={renderStudentItem}
+                keyExtractor={(item) => item.id_anak.toString()}
+                ListHeaderComponent={HeaderComponent}
+                ListFooterComponent={FooterComponent}
+                ListEmptyComponent={
+                  <Text style={styles.emptyListText}>No students found</Text>
+                }
+                contentContainerStyle={styles.studentListContent}
+              />
+            ) : (
+              <FlatList
+                data={[]} // Empty data since tutors are rendered in header
+                renderItem={() => null}
+                ListHeaderComponent={HeaderComponent}
+                ListFooterComponent={FooterComponent}
+                contentContainerStyle={styles.studentListContent}
+              />
+            )
           )}
         </View>
         
         {/* Loading Overlay */}
-        {loading && (
+        {isAnyLoading && (
           <LoadingSpinner 
             fullScreen 
-            message="Recording attendance..."
+            message={`Recording ${attendanceMode} attendance...`}
           />
         )}
       </KeyboardAvoidingView>
@@ -589,6 +803,87 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
+  modeToggleContainer: {
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    marginBottom: 16,
+  },
+  modeToggleLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#2c3e50',
+    marginBottom: 12,
+  },
+  modeToggleButtons: {
+    flexDirection: 'row',
+    backgroundColor: '#e9ecef',
+    borderRadius: 8,
+    padding: 4,
+  },
+  modeToggleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  modeToggleButtonActive: {
+    backgroundColor: '#3498db',
+  },
+  modeToggleButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6c757d',
+  },
+  modeToggleButtonTextActive: {
+    color: '#fff',
+  },
+  tutorSelectionContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginHorizontal: 16,
+  },
+  tutorItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  selectedTutorItem: {
+    backgroundColor: '#e1f5fe',
+  },
+  assignedTutorItem: {
+    backgroundColor: '#e8f5e8',
+  },
+  tutorAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  tutorInfo: {
+    flex: 1,
+  },
+  tutorName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  tutorId: {
+    fontSize: 12,
+    color: '#777',
+    marginTop: 2,
+  },
+  assignedLabel: {
+    fontSize: 11,
+    color: '#28a745',
+    fontWeight: '500',
+    marginTop: 2,
+  },
   safeArea: {
     flex: 1,
     backgroundColor: '#fff',
