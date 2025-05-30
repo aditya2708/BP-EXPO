@@ -7,6 +7,8 @@ import aktivitasReducer from '../features/adminShelter/redux/aktivitasSlice';
 import penilaianReducer from '../features/adminShelter/redux/penilaianSlice';
 import raportReducer from '../features/adminShelter/redux/raportSlice';
 import semesterReducer from '../features/adminShelter/redux/semesterSlice';
+import tutorAttendaceReducer from '../features/adminShelter/redux/tutorAttendanceSlice';
+
 // Create the root reducer
 const appReducer = combineReducers({
   auth: authReducer,
@@ -17,6 +19,7 @@ const appReducer = combineReducers({
    penilaian: penilaianReducer,
   raport: raportReducer,
   semester: semesterReducer,
+  tutorAttendance: tutorAttendaceReducer,
 });
 
 // Reset the entire redux state when logout action is dispatched
