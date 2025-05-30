@@ -113,7 +113,7 @@ const DonaturDashboardScreen = () => {
         </View>
         
         {/* Donation Summary */}
-        <View style={styles.donationSummary}>
+        {/* <View style={styles.donationSummary}>
           <View style={styles.donationStat}>
             <Text style={styles.donationAmount}>
               {dashboardData?.sponsored_children || 0}
@@ -129,7 +129,7 @@ const DonaturDashboardScreen = () => {
             </Text>
             <Text style={styles.donationLabel}>Total Donation</Text>
           </View>
-        </View>
+        </View> */}
       </View>
 
       {/* Quick Actions */}
@@ -143,13 +143,13 @@ const DonaturDashboardScreen = () => {
             <View style={[styles.actionIcon, { backgroundColor: '#9b59b6' }]}>
               <Ionicons name="people" size={24} color="#ffffff" />
             </View>
-            <Text style={styles.actionText}>My Children</Text>
+            <Text style={styles.actionText}>Anak Asuh</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* My Sponsored Children */}
-      <View style={styles.sectionContainer}>
+      {/* <View style={styles.sectionContainer}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>My Sponsored Children</Text>
           <Button 
@@ -204,7 +204,7 @@ const DonaturDashboardScreen = () => {
             />
           </View>
         )}
-      </View>
+      </View> */}
     </ScrollView>
   );
 };
