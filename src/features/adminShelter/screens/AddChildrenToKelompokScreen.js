@@ -246,7 +246,7 @@ const AddChildrenToKelompokScreen = () => {
           ) : (
             <View style={styles.childImagePlaceholder}>
               <Ionicons 
-                name={child.jenis_kelamin === 'L' ? 'male' : 'female'} 
+                name={child.jenis_kelamin === 'Laki-laki' ? 'Laki-laki' : 'Perempuan'} 
                 size={24} 
                 color="#666" 
               />
@@ -260,7 +260,7 @@ const AddChildrenToKelompokScreen = () => {
             {child.full_name || child.nick_name}
           </Text>
           <Text style={styles.childDetails}>
-            {child.jenis_kelamin === 'L' ? 'Male' : 'Female'}
+            {child.jenis_kelamin === 'Laki-laki' ? 'Laki-laki' : 'Perempuan'}
             {child.tanggal_lahir && ` • ${calculateAge(child.tanggal_lahir)}`}
           </Text>
           {child.nik_anak && (

@@ -117,7 +117,7 @@ const PenilaianListScreen = () => {
       onPress={() => navigateToForm(item)}
     >
       <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>{item.materi?.mata_pelajaran || 'Unknown'}</Text>
+        <Text style={styles.cardTitle}>{item.materi?.nama_materi || 'Unknown'}</Text>
         <Text style={[styles.nilaiHuruf, { color: getNilaiColor(item.nilai) }]}>
           {item.nilai_huruf}
         </Text>

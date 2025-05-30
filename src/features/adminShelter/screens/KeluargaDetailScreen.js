@@ -424,7 +424,7 @@ const KeluargaDetailScreen = () => {
                       ) : (
                         <View style={styles.childImagePlaceholder}>
                           <Ionicons
-                            name={child.jenis_kelamin === 'L' ? 'male' : 'female'}
+                            name={child.jenis_kelamin === 'Laki-laki' ? 'Laki-laki' : 'Peerempuan'}
                             size={24}
                             color="#fff"
                           />

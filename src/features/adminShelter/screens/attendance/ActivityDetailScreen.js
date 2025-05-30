@@ -236,6 +236,7 @@ const ActivityDetailScreen = ({ navigation, route }) => {
         </View>
         
         {/* Activity Details */}
+        {/* Activity Details */}
         <View style={styles.detailsSection}>
           <Text style={styles.sectionTitle}>Details</Text>
           
@@ -254,6 +255,43 @@ const ActivityDetailScreen = ({ navigation, route }) => {
             <Text style={styles.detailValue}>{activity.materi || 'Not specified'}</Text>
           </View>
         </View>
+        
+        {/* Tutor Information */}
+        {activity.tutor && (
+          <View style={styles.tutorSection}>
+            <Text style={styles.sectionTitle}>Assigned Tutor</Text>
+            
+            <View style={styles.tutorCard}>
+              <View style={styles.tutorAvatar}>
+                {activity.tutor.foto_url ? (
+                  <Image 
+                    source={{ uri: activity.tutor.foto_url }} 
+                    style={styles.tutorImage} 
+                  />
+                ) : (
+                  <Ionicons name="person-circle" size={50} color="#bdc3c7" />
+                )}
+              </View>
+              
+              <View style={styles.tutorInfo}>
+                <Text style={styles.tutorName}>{activity.tutor.nama}</Text>
+                <Text style={styles.tutorDetail}>ID: {activity.tutor.id_tutor}</Text>
+                {activity.tutor.no_hp && (
+                  <View style={styles.tutorContact}>
+                    <Ionicons name="call-outline" size={14} color="#7f8c8d" />
+                    <Text style={styles.tutorDetail}>{activity.tutor.no_hp}</Text>
+                  </View>
+                )}
+                {activity.tutor.email && (
+                  <View style={styles.tutorContact}>
+                    <Ionicons name="mail-outline" size={14} color="#7f8c8d" />
+                    <Text style={styles.tutorDetail}>{activity.tutor.email}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+        )}
         
         {/* Attendance Actions */}
         <View style={styles.attendanceActions}>

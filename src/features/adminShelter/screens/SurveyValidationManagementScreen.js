@@ -116,10 +116,10 @@ const SurveyValidationManagementScreen = () => {
             <Text style={styles.detailValue}>{keluarga.status_ortu || '-'}</Text>
           </View>
           
-          <View style={styles.detailRow}>
+          {/* <View style={styles.detailRow}>
             <Ionicons name="time-outline" size={16} color="#666" style={styles.timeIcon} />
             <Text style={styles.timeText}>Pending validation</Text>
-          </View>
+          </View> */}
         </View>
       </TouchableOpacity>
     );

@@ -132,19 +132,19 @@ const KeluargaManagementScreen = () => {
   // Navigate to add new keluarga screen
   const handleAddKeluarga = () => {
     Alert.alert(
-      'Add Family',
-      'Choose an option:',
+      'Tambah Keluarga',
+      'Pilih Opsi:',
       [
         {
           text: 'Cancel',
           style: 'cancel'
         },
         {
-          text: 'Create New Family',
+          text: 'Buat Keluarga Baru',
           onPress: () => navigation.navigate('KeluargaForm', { isNew: true })
         },
         {
-          text: 'Add Child to Existing Family',
+          text: 'Pengajuan Anak',
           onPress: () => navigation.navigate('PengajuanAnakSearch')
         }
       ]

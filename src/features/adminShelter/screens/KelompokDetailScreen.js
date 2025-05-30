@@ -209,7 +209,7 @@ const handleAddChildren = () => {
       <View style={styles.childInfo}>
         <Text style={styles.childName}>{child.full_name || child.nick_name}</Text>
         <Text style={styles.childDetails}>
-          {child.jenis_kelamin === 'L' ? 'Male' : 'Female'} 
+          {child.jenis_kelamin === 'Laki-laki' ? 'Laki-laki' : 'Perempuan'} 
           {child.tanggal_lahir ? ` • ${calculateAge(child.tanggal_lahir)}` : ''}
         </Text>
       </View>
