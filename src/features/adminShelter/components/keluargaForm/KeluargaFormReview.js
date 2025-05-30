@@ -261,7 +261,7 @@ const KeluargaFormReview = ({ formData, dropdownData, isEditMode }) => {
         
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Gender:</Text>
-          <Text style={styles.infoValue}>{formData.jenis_kelamin === 'L' ? 'Male' : (formData.jenis_kelamin === 'P' ? 'Female' : '-')}</Text>
+          <Text style={styles.infoValue}>{formData.jenis_kelamin === 'Laki-laki' ? 'Laki-laki' : (formData.jenis_kelamin === 'Perempuan' ? 'Perempuan' : '-')}</Text>
         </View>
         
         <View style={styles.infoRow}>

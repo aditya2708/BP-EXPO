@@ -122,7 +122,7 @@ const GroupStudentsList = ({ kelompokId, showTitle = true, onRefresh }) => {
           
           {item.jenis_kelamin && (
             <Text style={styles.infoText}>
-              Gender: {item.jenis_kelamin === 'L' ? 'Male' : item.jenis_kelamin === 'P' ? 'Female' : item.jenis_kelamin}
+              Gender: {item.jenis_kelamin === 'Laki-laki' ? 'Laki-Laki' : item.jenis_kelamin === 'Perempuan' ? 'Perempuan' : item.jenis_kelamin}
             </Text>
           )}
         </View>
