@@ -27,23 +27,18 @@ export const tutorAttendanceApi = {
    * @param {string} arrival_time - Arrival time (format: YYYY-MM-DD HH:MM:SS)
    * @returns {Promise} - API response with recorded attendance
    */
-  recordTutorAttendanceByQr: async (id_tutor, id_aktivitas, status, token, arrival_time = null) => {
-    const params = {
-      id_tutor,
-      id_aktivitas,
-      token
-    };
-    
-    if (status) {
-      params.status = status;
-    }
-    
-    if (arrival_time) {
-      params.arrival_time = arrival_time;
-    }
-    
-    return await api.post('/admin-shelter/tutor-attendance/record-by-qr', params);
-  },
+ recordTutorAttendanceByQr: async (id_aktivitas, token, arrival_time = null) => {
+  const params = {
+    id_aktivitas,
+    token
+  };
+  
+  if (arrival_time) {
+    params.arrival_time = arrival_time;
+  }
+  
+  return await api.post('/admin-shelter/tutor-attendance/record-by-qr', params);
+},
 
   /**
    * Record tutor attendance manually
