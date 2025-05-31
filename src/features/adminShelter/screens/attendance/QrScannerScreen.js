@@ -15,10 +15,8 @@ import NetInfo from '@react-native-community/netinfo';
 import { Audio } from 'expo-av';
 import { format } from 'date-fns';
 
-// Components
 import QrScanner from '../../components/QrScanner';
 
-// Redux
 import {
   validateToken,
   selectQrTokenLoading,
@@ -42,20 +40,16 @@ import {
   resetTutorAttendanceError
 } from '../../redux/tutorAttendanceSlice';
 
-// Utils
 import OfflineSync from '../../utils/offlineSync';
 import { adminShelterKelompokApi } from '../../api/adminShelterKelompokApi';
+import { tutorAttendanceApi } from '../../api/tutorAttendanceApi';
 
 const QrScannerScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   
-  // Animation ref
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  
-  // Sound ref
   const sound = useRef(null);
   
-  // Get params
   const { 
     id_aktivitas, 
     activityName, 
@@ -65,28 +59,24 @@ const QrScannerScreen = ({ navigation, route }) => {
     kelompokName
   } = route.params || {};
   
-  // Redux state
   const tokenLoading = useSelector(selectQrTokenLoading);
   const validationResult = useSelector(selectValidationResult);
   const attendanceLoading = useSelector(selectAttendanceLoading);
   const attendanceError = useSelector(selectAttendanceError);
   const duplicateError = useSelector(selectDuplicateError);
   
-  // Add tutor attendance state
   const tutorAttendanceLoading = useSelector(selectTutorAttendanceLoading);
   const tutorAttendanceError = useSelector(selectTutorAttendanceError);
   const tutorDuplicateError = useSelector(selectTutorDuplicateError);
   
-  // Local state
   const [isConnected, setIsConnected] = useState(true);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const [toastType, setToastType] = useState('success'); // success, error, warning
+  const [toastType, setToastType] = useState('success');
   const [isBimbelActivity, setIsBimbelActivity] = useState(activityType === 'Bimbel');
   const [kelompokStudentIds, setKelompokStudentIds] = useState([]);
   const [loadingKelompokData, setLoadingKelompokData] = useState(false);
   
-  // Load sound effect
   useEffect(() => {
     const loadSound = async () => {
       try {
@@ -108,7 +98,6 @@ const QrScannerScreen = ({ navigation, route }) => {
     };
   }, []);
   
-  // Check connectivity
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       setIsConnected(state.isConnected && state.isInternetReachable);
@@ -117,7 +106,6 @@ const QrScannerScreen = ({ navigation, route }) => {
     return () => unsubscribe();
   }, []);
   
-  // Reset validation when unmounting
   useEffect(() => {
     return () => {
       dispatch(resetValidationResult());
@@ -126,7 +114,6 @@ const QrScannerScreen = ({ navigation, route }) => {
     };
   }, [dispatch]);
   
-  // Determine activity type and load kelompok data if needed
   useEffect(() => {
     setIsBimbelActivity(activityType === 'Bimbel');
     
@@ -135,33 +122,27 @@ const QrScannerScreen = ({ navigation, route }) => {
     }
   }, [activityType, kelompokId]);
   
-  // Check for duplicate error
   useEffect(() => {
     if (duplicateError || tutorDuplicateError) {
       showToast(duplicateError || tutorDuplicateError, 'warning');
     }
   }, [duplicateError, tutorDuplicateError]);
   
-  // Process validation result
   useEffect(() => {
     if (validationResult && validationResult.valid && validationResult.token && validationResult.anak) {
-      // For Bimbel activities, validate that student is in the kelompok
       if (isBimbelActivity && kelompokStudentIds.length > 0) {
         const studentId = validationResult.anak.id_anak;
         
         if (!kelompokStudentIds.includes(studentId)) {
-          // Student not in this kelompok
           showToast(`Student not in the ${kelompokName || 'selected'} group`, 'error');
           return;
         }
       }
       
-      // If passed validation, record attendance
       handleAttendanceRecording(validationResult.token.token, validationResult.anak.id_anak);
     }
   }, [validationResult, isBimbelActivity, kelompokStudentIds]);
   
-  // Fetch students in kelompok for validation
   const fetchKelompokStudents = async (kelompokId) => {
     if (!kelompokId) return;
     
@@ -171,7 +152,6 @@ const QrScannerScreen = ({ navigation, route }) => {
       const response = await adminShelterKelompokApi.getGroupChildren(kelompokId);
       
       if (response.data && response.data.data) {
-        // Extract student IDs for quick validation
         const studentIds = response.data.data
           .filter(student => student.status_validasi === 'aktif')
           .map(student => student.id_anak);
@@ -180,50 +160,42 @@ const QrScannerScreen = ({ navigation, route }) => {
       }
     } catch (error) {
       console.error('Error fetching kelompok students:', error);
-      // Still continue - we'll just validate all students
       setKelompokStudentIds([]);
     } finally {
       setLoadingKelompokData(false);
     }
   };
   
-  // Play camera sound
   const playSound = async () => {
     try {
       if (sound.current) {
         await sound.current.setPositionAsync(0);
         await sound.current.playAsync();
       } else {
-        // Fallback to vibration if sound can't be played
         Vibration.vibrate(100);
       }
     } catch (error) {
       console.error('Error playing sound', error);
-      // Fallback to vibration
       Vibration.vibrate(100);
     }
   };
   
-  // Show toast message
   const showToast = (message, type = 'success') => {
     setToastMessage(message);
     setToastType(type);
     setToastVisible(true);
     
-    // Animate in
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 300,
       useNativeDriver: true
     }).start();
     
-    // Auto hide after 2 seconds
     setTimeout(() => {
       hideToast();
     }, 2000);
   };
   
-  // Hide toast message
   const hideToast = () => {
     Animated.timing(fadeAnim, {
       toValue: 0,
@@ -234,47 +206,53 @@ const QrScannerScreen = ({ navigation, route }) => {
     });
   };
   
-  // Handle QR scan
   const handleScan = async (qrData) => {
     if (!id_aktivitas) {
       Alert.alert('Error', 'No activity selected. Please go back and select an activity first.');
       return;
     }
     
-    // Parse QR data to check if it's a tutor token
-    const isTutorToken = qrData.token && qrData.token.startsWith('t');
-    
-    if (isTutorToken) {
-      // Direct tutor attendance recording
-      handleTutorAttendanceRecording(qrData.token);
-    } else {
-      // Student token validation flow
+    try {
+      const isTutorToken = await validateIfTutorToken(qrData.token);
+      
+      if (isTutorToken) {
+        handleTutorAttendanceRecording(qrData.token);
+      } else {
+        dispatch(validateToken(qrData.token));
+      }
+    } catch (error) {
+      console.error('Error determining token type:', error);
       dispatch(validateToken(qrData.token));
     }
   };
   
-  // Record attendance
+  const validateIfTutorToken = async (token) => {
+    try {
+      const response = await tutorAttendanceApi.validateTutorToken(token);
+      return response.data.success;
+    } catch (error) {
+      return false;
+    }
+  };
+  
   const handleAttendanceRecording = async (token, id_anak) => {
     try {
       if (isConnected) {
-        // Get current time in proper format
         const currentTime = new Date();
         const formattedArrivalTime = format(currentTime, 'yyyy-MM-dd HH:mm:ss');
         
         const result = await dispatch(recordAttendanceByQr({ 
           id_anak, 
           id_aktivitas, 
-          status: null, // Let backend determine status
+          status: null,
           token,
-          arrival_time: formattedArrivalTime // Add explicit arrival time
+          arrival_time: formattedArrivalTime
         })).unwrap();
         
-        // Play camera sound on success
         playSound();
         
         const studentName = validationResult.anak.full_name || 'Student';
         
-        // Use the status from the response
         let status = 'Present';
         let toastType = 'success';
         
@@ -290,7 +268,6 @@ const QrScannerScreen = ({ navigation, route }) => {
         
         showToast(`${status}: ${studentName}`, toastType);
       } else {
-        // Offline handling remains the same
         const currentTime = new Date();
         const formattedArrivalTime = format(currentTime, 'yyyy-MM-dd HH:mm:ss');
         
@@ -312,7 +289,6 @@ const QrScannerScreen = ({ navigation, route }) => {
     }
   };
   
-  // Handle tutor attendance recording
   const handleTutorAttendanceRecording = async (token) => {
     try {
       if (isConnected) {
@@ -327,7 +303,6 @@ const QrScannerScreen = ({ navigation, route }) => {
         
         playSound();
         
-        // Determine status for toast
         let status = 'Present';
         let toastType = 'success';
         
@@ -344,7 +319,6 @@ const QrScannerScreen = ({ navigation, route }) => {
         const tutorName = result.data?.absenUser?.tutor?.nama || 'Tutor';
         showToast(`${status}: ${tutorName} (Tutor)`, toastType);
       } else {
-        // Offline handling
         const result = await OfflineSync.processAttendance({
           id_aktivitas,
           token,
@@ -362,14 +336,12 @@ const QrScannerScreen = ({ navigation, route }) => {
     }
   };
   
-  // Close scanner
   const handleClose = () => {
     navigation.goBack();
   };
   
   const isLoading = tokenLoading || attendanceLoading || loadingKelompokData || tutorAttendanceLoading;
   
-  // Get toast style based on type
   const getToastStyle = () => {
     switch(toastType) {
       case 'error':
@@ -382,7 +354,6 @@ const QrScannerScreen = ({ navigation, route }) => {
     }
   };
   
-  // Get toast icon based on type
   const getToastIcon = () => {
     switch(toastType) {
       case 'error':
@@ -408,14 +379,12 @@ const QrScannerScreen = ({ navigation, route }) => {
           {activityName || 'No activity selected'}
         </Text>
         
-        {/* Show Kelompok info for Bimbel activities */}
         {isBimbelActivity && kelompokName && (
           <Text style={styles.kelompokInfo}>
             Group: {kelompokName}
           </Text>
         )}
         
-        {/* Attendance status is auto-determined based on schedule */}
         <View style={styles.autoDetectionNote}>
           <Ionicons name="time-outline" size={16} color="#fff" />
           <Text style={styles.autoDetectionText}>
@@ -431,7 +400,6 @@ const QrScannerScreen = ({ navigation, route }) => {
         )}
       </View>
       
-      {/* Toast Notification */}
       {toastVisible && (
         <Animated.View 
           style={[
