@@ -13,23 +13,16 @@ import { useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute } from '@react-navigation/native';
 
-// Components
 import VerificationStatusBadge from '../../components/VerificationStatusBadge';
 import ErrorMessage from '../../../../common/components/ErrorMessage';
 
-// Utils
 import { formatDateToIndonesian } from '../../../../common/utils/dateFormatter';
 import AttendanceReportGenerator from '../../utils/attendanceReportGenerator';
 
-/**
- * Attendance Detail Screen
- * Displays detailed information about an attendance record
- */
 const AttendanceDetailScreen = ({ navigation }) => {
   const route = useRoute();
   const { id_absen } = route.params || {};
   
-  // Get attendance record from redux state
   const attendanceRecord = useSelector(state => 
     state.attendance.attendanceRecords[id_absen] || null
   );
@@ -38,11 +31,9 @@ const AttendanceDetailScreen = ({ navigation }) => {
     state.attendance.verificationHistory[id_absen] || []
   );
   
-  // Local state
   const [loading, setLoading] = useState(false);
   const [expandedSection, setExpandedSection] = useState('details');
   
-  // Handle errors
   if (!attendanceRecord) {
     return (
       <View style={styles.container}>
@@ -55,7 +46,6 @@ const AttendanceDetailScreen = ({ navigation }) => {
     );
   }
   
-  // Extract data from attendance record
   const {
     absen,
     is_verified,
@@ -65,20 +55,23 @@ const AttendanceDetailScreen = ({ navigation }) => {
     latest_verification
   } = attendanceRecord;
   
-  // Get student and activity info
-  const student = absen_user?.anak || {};
+  const person = absen_user?.anak || absen_user?.tutor || {};
+  const personType = absen_user?.anak ? 'Student' : 'Tutor';
+  const personName = absen_user?.anak ? 
+    (person.full_name || person.name || 'Unknown Student') : 
+    (person.nama || 'Unknown Tutor');
+  const personId = absen_user?.anak ? person.id_anak : person.id_tutor;
   const activity = aktivitas || {};
   
-  // Handle section toggle
   const toggleSection = (section) => {
     setExpandedSection(expandedSection === section ? null : section);
   };
   
-  // Handle share attendance
   const shareAttendance = async () => {
     try {
       await Share.share({
-        message: `Attendance record for ${student.full_name || student.name || 'Student'}\n` +
+        message: `Attendance record for ${personName}\n` +
+                 `Type: ${personType}\n` +
                  `Status: ${absen === 'Ya' ? 'Present' : 'Absent'}\n` +
                  `Activity: ${activity.jenis_kegiatan || 'Activity'}\n` +
                  `Date: ${formatDateToIndonesian(activity.tanggal) || 'N/A'}\n` +
@@ -89,7 +82,6 @@ const AttendanceDetailScreen = ({ navigation }) => {
     }
   };
   
-  // Get verification method text
   const getVerificationMethodText = (method) => {
     switch (method) {
       case 'qr_code':
@@ -107,16 +99,15 @@ const AttendanceDetailScreen = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Header Card */}
       <View style={styles.headerCard}>
-        <View style={styles.studentInfo}>
-          <Text style={styles.studentName}>{student.full_name || student.name || 'Unknown Student'}</Text>
+        <View style={styles.personInfo}>
+          <Text style={styles.personName}>{personName}</Text>
+          <Text style={styles.personType}>{personType}</Text>
           <Text style={styles.activityName}>{activity.jenis_kegiatan || 'Activity'}</Text>
           <Text style={styles.activityDate}>{formatDateToIndonesian(activity.tanggal) || 'Date not available'}</Text>
         </View>
         
         <View style={styles.statusContainer}>
-          {/* Attendance Status */}
           <View style={[
             styles.attendanceStatus,
             { backgroundColor: absen === 'Ya' ? '#2ecc71' : '#e74c3c' }
@@ -126,7 +117,6 @@ const AttendanceDetailScreen = ({ navigation }) => {
             </Text>
           </View>
           
-          {/* Verification Status */}
           <View style={styles.verificationStatus}>
             <VerificationStatusBadge
               isVerified={is_verified}
@@ -138,7 +128,6 @@ const AttendanceDetailScreen = ({ navigation }) => {
         </View>
       </View>
       
-      {/* Details Section */}
       <TouchableOpacity
         style={[
           styles.sectionHeader,
@@ -162,8 +151,8 @@ const AttendanceDetailScreen = ({ navigation }) => {
           </View>
           
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Student ID:</Text>
-            <Text style={styles.detailValue}>{student.id_anak || 'N/A'}</Text>
+            <Text style={styles.detailLabel}>{personType} ID:</Text>
+            <Text style={styles.detailValue}>{personId || 'N/A'}</Text>
           </View>
           
           <View style={styles.detailRow}>
@@ -212,7 +201,6 @@ const AttendanceDetailScreen = ({ navigation }) => {
         </View>
       )}
       
-      {/* Verification History Section */}
       <TouchableOpacity
         style={[
           styles.sectionHeader,
@@ -281,7 +269,6 @@ const AttendanceDetailScreen = ({ navigation }) => {
         </View>
       )}
       
-      {/* Action Buttons */}
       <View style={styles.actionButtons}>
         <TouchableOpacity 
           style={[styles.actionButton, styles.shareButton]}
@@ -300,7 +287,6 @@ const AttendanceDetailScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
       
-      {/* Loading Indicator */}
       {loading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#3498db" />
@@ -326,14 +312,19 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  studentInfo: {
+  personInfo: {
     marginBottom: 12,
   },
-  studentName: {
+  personName: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#2c3e50',
     marginBottom: 4,
+  },
+  personType: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginBottom: 8,
   },
   activityName: {
     fontSize: 16,

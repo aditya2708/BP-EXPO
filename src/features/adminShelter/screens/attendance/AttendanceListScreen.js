@@ -12,12 +12,10 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 
-// Components
 import AttendanceCard from '../../components/AttendanceCard';
 import LoadingSpinner from '../../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../../common/components/ErrorMessage';
 
-// Redux actions and selectors
 import {
   getAttendanceByActivity,
   manualVerify,
@@ -28,28 +26,20 @@ import {
   resetAttendanceError
 } from '../../redux/attendanceSlice';
 
-/**
- * AttendanceListScreen
- * Displays attendance records for an activity
- */
 const AttendanceListScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   
-  // Get activity ID from route params
   const { id_aktivitas, activityName, activityDate } = route.params || {};
   
-  // Redux state
   const attendanceRecords = useSelector(state => selectActivityAttendance(state, id_aktivitas));
   const loading = useSelector(selectAttendanceLoading);
   const error = useSelector(selectAttendanceError);
   
-  // Local state
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCardId, setExpandedCardId] = useState(null);
-  const [filterStatus, setFilterStatus] = useState('all'); // all, verified, pending, rejected
+  const [filterStatus, setFilterStatus] = useState('all');
   
-  // Fetch attendance records on mount
   useEffect(() => {
     if (id_aktivitas) {
       fetchAttendanceRecords();
@@ -60,7 +50,6 @@ const AttendanceListScreen = ({ navigation, route }) => {
     };
   }, [id_aktivitas, dispatch]);
   
-  // Fetch attendance records
   const fetchAttendanceRecords = async () => {
     if (!id_aktivitas) return;
     
@@ -73,16 +62,28 @@ const AttendanceListScreen = ({ navigation, route }) => {
     }
   };
   
-  // Handle refresh
   const handleRefresh = () => {
     setRefreshing(true);
     fetchAttendanceRecords();
   };
   
-  // Filter records based on search query and status filter
+  const getPersonName = (record) => {
+    if (record.absen_user?.anak) {
+      return record.absen_user.anak.full_name || record.absen_user.anak.name || 'Unknown Student';
+    }
+    if (record.absen_user?.tutor) {
+      return record.absen_user.tutor.nama || 'Unknown Tutor';
+    }
+    return 'Unknown Person';
+  };
+  
+  const getPersonType = (record) => {
+    return record.absen_user?.anak ? 'Student' : 'Tutor';
+  };
+  
   const filteredRecords = attendanceRecords.filter(record => {
-    const studentName = record.absen_user?.anak?.name || '';
-    const matchesSearch = studentName.toLowerCase().includes(searchQuery.toLowerCase());
+    const personName = getPersonName(record);
+    const matchesSearch = personName.toLowerCase().includes(searchQuery.toLowerCase());
     
     let matchesFilter = true;
     if (filterStatus === 'verified') {
@@ -96,7 +97,6 @@ const AttendanceListScreen = ({ navigation, route }) => {
     return matchesSearch && matchesFilter;
   });
   
-  // Get stats for filter buttons
   const getFilterCounts = () => {
     const verified = attendanceRecords.filter(r => r.is_verified).length;
     const pending = attendanceRecords.filter(r => !r.is_verified && r.verification_status === 'pending').length;
@@ -107,7 +107,6 @@ const AttendanceListScreen = ({ navigation, route }) => {
   
   const counts = getFilterCounts();
   
-  // Handle manual verification
   const handleVerify = (id_absen) => {
     Alert.prompt(
       'Manual Verification',
@@ -140,7 +139,6 @@ const AttendanceListScreen = ({ navigation, route }) => {
     );
   };
   
-  // Handle verification rejection
   const handleReject = (id_absen) => {
     Alert.prompt(
       'Reject Verification',
@@ -173,7 +171,6 @@ const AttendanceListScreen = ({ navigation, route }) => {
     );
   };
   
-  // Navigate to QR scanner
   const navigateToScanner = () => {
     navigation.navigate('QrScanner', {
       id_aktivitas,
@@ -182,7 +179,6 @@ const AttendanceListScreen = ({ navigation, route }) => {
     });
   };
   
-  // Navigate to manual attendance entry
   const navigateToManualEntry = () => {
     navigation.navigate('ManualAttendance', {
       id_aktivitas,
@@ -191,18 +187,82 @@ const AttendanceListScreen = ({ navigation, route }) => {
     });
   };
   
-  // Render an attendance card
   const renderAttendanceCard = ({ item }) => (
-    <AttendanceCard
-      attendance={item}
-      onPress={() => setExpandedCardId(expandedCardId === item.id_absen ? null : item.id_absen)}
-      onVerify={handleVerify}
-      onReject={handleReject}
-      expanded={expandedCardId === item.id_absen}
-    />
+    <View style={styles.attendanceCard}>
+      <TouchableOpacity
+        style={styles.cardHeader}
+        onPress={() => setExpandedCardId(expandedCardId === item.id_absen ? null : item.id_absen)}
+      >
+        <View style={styles.personInfo}>
+          <View style={styles.personDetails}>
+            <Text style={styles.personName}>{getPersonName(item)}</Text>
+            <Text style={styles.personType}>{getPersonType(item)}</Text>
+          </View>
+          
+          <View style={styles.statusContainer}>
+            <View style={[
+              styles.attendanceStatus,
+              { backgroundColor: item.absen === 'Ya' ? '#2ecc71' : item.absen === 'Terlambat' ? '#f39c12' : '#e74c3c' }
+            ]}>
+              <Text style={styles.attendanceStatusText}>
+                {item.absen === 'Ya' ? 'Present' : item.absen === 'Terlambat' ? 'Late' : 'Absent'}
+              </Text>
+            </View>
+            
+            <View style={[
+              styles.verificationStatus,
+              { backgroundColor: item.is_verified ? '#27ae60' : item.verification_status === 'rejected' ? '#e74c3c' : '#f39c12' }
+            ]}>
+              <Text style={styles.verificationStatusText}>
+                {item.is_verified ? 'Verified' : item.verification_status === 'rejected' ? 'Rejected' : 'Pending'}
+              </Text>
+            </View>
+          </View>
+        </View>
+        
+        <Ionicons
+          name={expandedCardId === item.id_absen ? 'chevron-up' : 'chevron-down'}
+          size={20}
+          color="#7f8c8d"
+        />
+      </TouchableOpacity>
+      
+      {expandedCardId === item.id_absen && (
+        <View style={styles.cardContent}>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Time Arrived:</Text>
+            <Text style={styles.detailValue}>
+              {item.time_arrived ? new Date(item.time_arrived).toLocaleTimeString() : 'Not recorded'}
+            </Text>
+          </View>
+          
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Verification:</Text>
+            <Text style={styles.detailValue}>{item.verification_status}</Text>
+          </View>
+          
+          {!item.is_verified && item.verification_status === 'pending' && (
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.verifyButton]}
+                onPress={() => handleVerify(item.id_absen)}
+              >
+                <Text style={styles.actionButtonText}>Verify</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.actionButton, styles.rejectButton]}
+                onPress={() => handleReject(item.id_absen)}
+              >
+                <Text style={styles.actionButtonText}>Reject</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      )}
+    </View>
   );
   
-  // Render empty list message
   const renderEmptyList = () => (
     <View style={styles.emptyContainer}>
       <Ionicons name="calendar-outline" size={64} color="#bdc3c7" />
@@ -215,7 +275,6 @@ const AttendanceListScreen = ({ navigation, route }) => {
     </View>
   );
   
-  // Render error message
   if (error && !refreshing) {
     return (
       <View style={styles.container}>
@@ -229,13 +288,11 @@ const AttendanceListScreen = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
-      {/* Activity Info Header */}
       <View style={styles.activityHeader}>
         <Text style={styles.activityName}>{activityName || 'Activity'}</Text>
         <Text style={styles.activityDate}>{activityDate || 'Date not specified'}</Text>
       </View>
       
-      {/* Search and Filter Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchInputContainer}>
           <Ionicons name="search" size={20} color="#7f8c8d" />
@@ -249,7 +306,6 @@ const AttendanceListScreen = ({ navigation, route }) => {
         </View>
       </View>
       
-      {/* Filter Tabs */}
       <View style={styles.filterTabs}>
         <TouchableOpacity
           style={[
@@ -312,7 +368,6 @@ const AttendanceListScreen = ({ navigation, route }) => {
         </TouchableOpacity>
       </View>
       
-      {/* Attendance List */}
       <FlatList
         data={filteredRecords}
         renderItem={renderAttendanceCard}
@@ -328,7 +383,6 @@ const AttendanceListScreen = ({ navigation, route }) => {
         }
       />
       
-      {/* Floating Action Buttons */}
       <View style={styles.fabContainer}>
         <TouchableOpacity
           style={[styles.fab, styles.secondaryFab]}
@@ -345,7 +399,6 @@ const AttendanceListScreen = ({ navigation, route }) => {
         </TouchableOpacity>
       </View>
       
-      {/* Loading Indicator */}
       {loading && !refreshing && (
         <View style={styles.loadingOverlay}>
           <LoadingSpinner />
@@ -420,7 +473,107 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 12,
-    paddingBottom: 80, // Make room for FAB
+    paddingBottom: 80,
+  },
+  attendanceCard: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  personInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  personDetails: {
+    flex: 1,
+  },
+  personName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#2c3e50',
+  },
+  personType: {
+    fontSize: 12,
+    color: '#7f8c8d',
+    marginTop: 2,
+  },
+  statusContainer: {
+    alignItems: 'flex-end',
+  },
+  attendanceStatus: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 4,
+  },
+  attendanceStatusText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  verificationStatus: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  verificationStatusText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  cardContent: {
+    padding: 16,
+    paddingTop: 0,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  detailRow: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  detailLabel: {
+    width: 120,
+    fontSize: 14,
+    color: '#7f8c8d',
+  },
+  detailValue: {
+    flex: 1,
+    fontSize: 14,
+    color: '#2c3e50',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    marginTop: 12,
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 6,
+    alignItems: 'center',
+    marginHorizontal: 4,
+  },
+  verifyButton: {
+    backgroundColor: '#27ae60',
+  },
+  rejectButton: {
+    backgroundColor: '#e74c3c',
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
   },
   emptyContainer: {
     alignItems: 'center',
