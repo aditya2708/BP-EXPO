@@ -4,324 +4,228 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   TouchableOpacity,
   Alert,
-  Modal,
+  Image,
   Dimensions
 } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
 
-// Import components
-import Button from '../../../../common/components/Button';
 import LoadingSpinner from '../../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../../common/components/ErrorMessage';
+import Button from '../../../../common/components/Button';
 
-// Import utils
-import { formatDateToIndonesian } from '../../../../common/utils/dateFormatter';
-
-// Import API
 import { adminShelterRiwayatApi } from '../../api/adminShelterRiwayatApi';
 
 const { width } = Dimensions.get('window');
 
 const RiwayatDetailScreen = () => {
-  const route = useRoute();
   const navigation = useNavigation();
-  const { anakData, anakId, riwayatId, riwayatData } = route.params || {};
-  
-  const [loading, setLoading] = useState(!riwayatData);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
-  const [riwayat, setRiwayat] = useState(riwayatData || null);
-  const [showImageModal, setShowImageModal] = useState(false);
+  const route = useRoute();
+  const { anakId, riwayatId, anakData } = route.params;
 
-  // Set screen title
+  const [riwayatData, setRiwayatData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchRiwayatDetail();
+  }, [riwayatId]);
+
   useEffect(() => {
     navigation.setOptions({
-      title: 'Detail Riwayat',
       headerRight: () => (
         <View style={styles.headerButtons}>
-          <TouchableOpacity 
-            style={styles.headerButton} 
+          <TouchableOpacity
+            style={styles.headerButton}
             onPress={handleEdit}
           >
-            <Ionicons name="create-outline" size={24} color="#e74c3c" />
+            <Ionicons name="create-outline" size={24} color="#3498db" />
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.headerButton} 
-            onPress={confirmDelete}
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={handleDelete}
           >
             <Ionicons name="trash-outline" size={24} color="#e74c3c" />
           </TouchableOpacity>
         </View>
       )
     });
-  }, [navigation, riwayat]);
+  }, [riwayatData]);
 
-  // Fetch riwayat data if not provided
-  useEffect(() => {
-    if (!riwayatData && anakId && riwayatId) {
-      fetchRiwayatData();
-    }
-  }, [riwayatData, anakId, riwayatId]);
-
-  // Fetch riwayat data
-  const fetchRiwayatData = async () => {
+  const fetchRiwayatDetail = async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await adminShelterRiwayatApi.getRiwayatDetail(anakId, riwayatId);
-      
+
       if (response.data.success) {
-        setRiwayat(response.data.data);
+        setRiwayatData(response.data.data);
       } else {
-        setError(response.data.message || 'Gagal memuat data riwayat');
+        setError(response.data.message || 'Gagal memuat detail riwayat');
       }
     } catch (err) {
-      console.error('Error fetching riwayat data:', err);
-      setError('Gagal memuat data riwayat. Silakan coba lagi.');
+      console.error('Error fetching riwayat detail:', err);
+      setError('Gagal memuat detail riwayat. Silakan coba lagi.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle edit
   const handleEdit = () => {
     navigation.navigate('RiwayatForm', {
-      anakData,
       anakId,
-      riwayatId,
-      riwayatData: riwayat,
-      isEdit: true
+      riwayatData,
+      isEdit: true,
+      anakData
     });
   };
 
-  // Confirm delete
-  const confirmDelete = () => {
+  const handleDelete = () => {
     Alert.alert(
       'Hapus Riwayat',
       'Anda yakin ingin menghapus riwayat ini? Tindakan ini tidak dapat dibatalkan.',
       [
         { text: 'Batal', style: 'cancel' },
-        { 
-          text: 'Hapus', 
+        {
+          text: 'Hapus',
           style: 'destructive',
-          onPress: handleDelete
+          onPress: async () => {
+            try {
+              setLoading(true);
+              const response = await adminShelterRiwayatApi.deleteRiwayat(anakId, riwayatId);
+              
+              if (response.data.success) {
+                Alert.alert(
+                  'Sukses',
+                  'Riwayat berhasil dihapus',
+                  [{ text: 'OK', onPress: () => navigation.goBack() }]
+                );
+              } else {
+                setError(response.data.message || 'Gagal menghapus riwayat');
+                setLoading(false);
+              }
+            } catch (err) {
+              console.error('Error deleting riwayat:', err);
+              setError('Gagal menghapus riwayat. Silakan coba lagi.');
+              setLoading(false);
+            }
+          }
         }
       ]
     );
   };
 
-  // Handle delete
-  const handleDelete = async () => {
-    try {
-      setSubmitting(true);
-      
-      const response = await adminShelterRiwayatApi.deleteRiwayat(anakId, riwayatId);
-      
-      if (response.data.success) {
-        Alert.alert(
-          'Sukses',
-          'Riwayat berhasil dihapus',
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.goBack()
-            }
-          ]
-        );
-      } else {
-        setError(response.data.message || 'Gagal menghapus riwayat');
-      }
-    } catch (err) {
-      console.error('Error deleting riwayat:', err);
-      setError('Gagal menghapus riwayat. Silakan coba lagi.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // Toggle image modal
-  const toggleImageModal = () => {
-    setShowImageModal(!showImageModal);
-  };
-
-  // Get icon based on riwayat type
-  const getRiwayatIcon = (jenisRiwayat) => {
-    switch (jenisRiwayat?.toLowerCase()) {
-      case 'kesehatan':
-        return 'medkit-outline';
-      case 'prestasi':
-        return 'trophy-outline';
-      case 'pendidikan':
-        return 'school-outline';
-      case 'keluarga':
-        return 'people-outline';
-      default:
-        return 'document-text-outline';
-    }
-  };
-
-  // Loading state
   if (loading) {
-    return (
-      <View style={styles.container}>
-        <LoadingSpinner message="Memuat data riwayat..." />
-      </View>
-    );
+    return <LoadingSpinner fullScreen message="Memuat detail riwayat..." />;
   }
 
-  // No data state
-  if (!riwayat && !loading) {
+  if (error) {
     return (
       <View style={styles.container}>
         <ErrorMessage
-          message={error || 'Data riwayat tidak ditemukan'}
-          onRetry={fetchRiwayatData}
+          message={error}
+          onRetry={fetchRiwayatDetail}
           retryText="Coba Lagi"
         />
       </View>
     );
   }
 
-  return (
-    <View style={styles.container}>
-      {/* Submit loading overlay */}
-      {submitting && (
-        <View style={styles.loadingOverlay}>
-          <LoadingSpinner message="Menghapus riwayat..." />
-        </View>
-      )}
-      
-      {/* Error message */}
-      {error && (
+  if (!riwayatData) {
+    return (
+      <View style={styles.container}>
         <ErrorMessage
-          message={error}
-          onRetry={() => setError(null)}
-          style={styles.errorMessage}
+          message="Data riwayat tidak ditemukan"
+          onRetry={() => navigation.goBack()}
+          retryText="Kembali"
         />
-      )}
-      
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header section with child info */}
-        <View style={styles.childInfoContainer}>
-          <View style={styles.childImageContainer}>
-            {anakData?.foto_url ? (
-              <Image
-                source={{ uri: anakData.foto_url }}
-                style={styles.childImage}
-              />
-            ) : (
-              <View style={styles.childImagePlaceholder}>
-                <Ionicons name="person" size={30} color="#ffffff" />
-              </View>
-            )}
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.childName}>
+          {anakData?.full_name || anakData?.nick_name || 'Anak'}
+        </Text>
+      </View>
+
+      <View style={styles.content}>
+        {riwayatData.foto_url && (
+          <View style={styles.photoContainer}>
+            <Image
+              source={{ uri: riwayatData.foto_url }}
+              style={styles.photo}
+              resizeMode="cover"
+            />
           </View>
-          <View style={styles.childInfo}>
-            <Text style={styles.childName}>{anakData?.full_name || 'Nama Anak'}</Text>
-            {anakData?.nick_name && (
-              <Text style={styles.childNickname}>{anakData.nick_name}</Text>
-            )}
-          </View>
-        </View>
-        
-        {/* Riwayat Info Card */}
-        <View style={styles.riwayatCard}>
-          <View style={styles.riwayatHeader}>
-            <View style={styles.riwayatIcon}>
-              <Ionicons name={getRiwayatIcon(riwayat.jenis_histori)} size={24} color="#ffffff" />
-            </View>
-            <View style={styles.riwayatHeaderInfo}>
-              <Text style={styles.riwayatTitle}>{riwayat.nama_histori}</Text>
-              <Text style={styles.riwayatType}>{riwayat.jenis_histori}</Text>
-            </View>
-          </View>
+        )}
+
+        <View style={styles.infoSection}>
+          <Text style={styles.sectionTitle}>Informasi Riwayat</Text>
           
-          <View style={styles.riwayatDetails}>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Tanggal:</Text>
-              <Text style={styles.detailValue}>
-                {formatDateToIndonesian(riwayat.tanggal)}
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Jenis Histori:</Text>
+            <Text style={styles.value}>{riwayatData.jenis_histori}</Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Nama Histori:</Text>
+            <Text style={styles.value}>{riwayatData.nama_histori}</Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Tanggal:</Text>
+            <Text style={styles.value}>
+              {format(new Date(riwayatData.tanggal), 'EEEE, dd MMMM yyyy', { locale: id })}
+            </Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Text style={styles.label}>Status Rawat:</Text>
+            <View style={[
+              styles.statusBadge,
+              { backgroundColor: riwayatData.di_opname === 'YA' ? '#e74c3c' : '#2ecc71' }
+            ]}>
+              <Text style={styles.statusText}>
+                {riwayatData.di_opname === 'YA' ? 'Dirawat' : 'Tidak Dirawat'}
               </Text>
             </View>
-            
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Dirawat Inap:</Text>
-              <Text style={styles.detailValue}>
-                {riwayat.di_opname === 'YA' ? 'Ya' : 'Tidak'}
-              </Text>
-            </View>
-            
-            {riwayat.dirawat_id && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>ID yang Dirawat:</Text>
-                <Text style={styles.detailValue}>{riwayat.dirawat_id}</Text>
-              </View>
-            )}
           </View>
-          
-          {/* Riwayat Photo */}
-          {riwayat.foto_url && (
-            <TouchableOpacity onPress={toggleImageModal}>
-              <View style={styles.photoContainer}>
-                <Image
-                  source={{ uri: riwayat.foto_url }}
-                  style={styles.riwayatPhoto}
-                  resizeMode="cover"
-                />
-                <View style={styles.photoOverlay}>
-                  <Ionicons name="expand-outline" size={24} color="#ffffff" />
-                  <Text style={styles.photoOverlayText}>Tap untuk memperbesar</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
+
+          {riwayatData.di_opname === 'YA' && riwayatData.dirawat_id && (
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>ID Rawat:</Text>
+              <Text style={styles.value}>{riwayatData.dirawat_id}</Text>
+            </View>
           )}
         </View>
-        
-        {/* Action buttons */}
-        <View style={styles.actionButtons}>
+
+        <View style={styles.actionSection}>
           <Button
             title="Edit Riwayat"
             onPress={handleEdit}
-            leftIcon={<Ionicons name="create-outline" size={20} color="#ffffff" />}
-            style={styles.editButton}
+            type="primary"
+            style={styles.actionButton}
+            icon="create-outline"
           />
+          
           <Button
             title="Hapus Riwayat"
-            onPress={confirmDelete}
-            leftIcon={<Ionicons name="trash-outline" size={20} color="#ffffff" />}
+            onPress={handleDelete}
             type="danger"
-            style={styles.deleteButton}
+            style={styles.actionButton}
+            icon="trash-outline"
           />
         </View>
-      </ScrollView>
-      
-      {/* Image modal */}
-      <Modal
-        visible={showImageModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={toggleImageModal}
-      >
-        <View style={styles.modalContainer}>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={toggleImageModal}
-          >
-            <Ionicons name="close-circle" size={36} color="#ffffff" />
-          </TouchableOpacity>
-          
-          <Image
-            source={{ uri: riwayat?.foto_url }}
-            style={styles.fullImage}
-            resizeMode="contain"
-          />
-        </View>
-      </Modal>
-    </View>
+      </View>
+    </ScrollView>
   );
 };
 
@@ -330,183 +234,87 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-  },
-  errorMessage: {
-    margin: 16,
-  },
   headerButtons: {
     flexDirection: 'row',
+    marginRight: 16,
   },
   headerButton: {
-    padding: 8,
-    marginLeft: 8,
+    marginLeft: 16,
   },
-  childInfoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  childImageContainer: {
-    marginRight: 16,
-  },
-  childImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
-  childImagePlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  header: {
     backgroundColor: '#e74c3c',
-    justifyContent: 'center',
+    padding: 20,
     alignItems: 'center',
-  },
-  childInfo: {
-    flex: 1,
   },
   childName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333333',
-  },
-  childNickname: {
-    fontSize: 14,
-    color: '#666666',
-    marginTop: 2,
-  },
-  riwayatCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  riwayatHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eeeeee',
-  },
-  riwayatIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#e74c3c',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  riwayatHeaderInfo: {
-    flex: 1,
-  },
-  riwayatTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 4,
+    color: '#ffffff',
+    textAlign: 'center',
   },
-  riwayatType: {
-    fontSize: 14,
-    color: '#666666',
-  },
-  riwayatDetails: {
-    marginBottom: 16,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    marginBottom: 8,
-  },
-  detailLabel: {
-    width: 120,
-    fontSize: 16,
-    color: '#666666',
-    fontWeight: '500',
-  },
-  detailValue: {
+  content: {
     flex: 1,
-    fontSize: 16,
-    color: '#333333',
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    marginTop: -20,
+    paddingTop: 30,
+    paddingHorizontal: 20,
   },
   photoContainer: {
-    position: 'relative',
-    marginTop: 8,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  riwayatPhoto: {
-    width: '100%',
-    height: 300,
-    borderRadius: 12,
-  },
-  photoOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    padding: 8,
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: 24,
   },
-  photoOverlayText: {
-    color: '#ffffff',
-    marginLeft: 8,
-    fontSize: 14,
+  photo: {
+    width: width - 80,
+    height: 200,
+    borderRadius: 12,
   },
-  actionButtons: {
+  infoSection: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 16,
+  },
+  infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  editButton: {
-    flex: 1,
-    marginRight: 8,
-  },
-  deleteButton: {
-    flex: 1,
-    marginLeft: 8,
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-    justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
-  closeButton: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    zIndex: 2,
+  label: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+    flex: 1,
   },
-  fullImage: {
-    width: '100%',
-    height: '80%',
+  value: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: 'bold',
+    flex: 2,
+    textAlign: 'right',
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    fontSize: 12,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  actionSection: {
+    paddingBottom: 20,
+  },
+  actionButton: {
+    marginBottom: 12,
   },
 });
 

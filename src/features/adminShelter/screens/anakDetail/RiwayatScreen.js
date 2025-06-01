@@ -1,69 +1,70 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Image,
-  RefreshControl,
   Alert,
-  ScrollView
+  RefreshControl,
+  Image
 } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
 
-// Import components
-import Button from '../../../../common/components/Button';
+import SearchBar from '../../../../common/components/SearchBar';
 import LoadingSpinner from '../../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../../common/components/ErrorMessage';
-import RiwayatListItem from '../../../../common/components/Anak/RiwayatListItem';
+import EmptyState from '../../../../common/components/EmptyState';
+import FloatingActionButton from '../../../../common/components/FloatingActionButton';
 
-// Import API
 import { adminShelterRiwayatApi } from '../../api/adminShelterRiwayatApi';
 
 const RiwayatScreen = () => {
-  const route = useRoute();
   const navigation = useNavigation();
-  const { anakData, anakId } = route.params || {};
-  
+  const route = useRoute();
+  const { anakData, anakId } = route.params;
+
   const [riwayatList, setRiwayatList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  const [filterType, setFilterType] = useState(''); // Filter by jenis_histori
+  const [searchQuery, setSearchQuery] = useState('');
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    last_page: 1,
+    total: 0
+  });
 
-  // Jenis Histori options for filtering
-  const jenisHistoriOptions = [
-    { id: '', label: 'Semua' },
-    { id: 'Kesehatan', label: 'Kesehatan' },
-    { id: 'Pendidikan', label: 'Pendidikan' },
-    { id: 'Keluarga', label: 'Keluarga' },
-    { id: 'Lainnya', label: 'Lainnya' }
-  ];
+  useFocusEffect(
+    useCallback(() => {
+      fetchRiwayatList();
+    }, [searchQuery])
+  );
 
-  // Fetch riwayat data
-  const fetchRiwayatData = async () => {
-    if (!anakId) return;
-    
+  const fetchRiwayatList = async (page = 1, isRefresh = false) => {
     try {
+      if (!isRefresh) setLoading(true);
       setError(null);
-      
-      // Prepare params for filtering
-      const params = {};
-      if (filterType) {
-        params.jenis_histori = filterType;
-      }
-      
-      const response = await adminShelterRiwayatApi.getRiwayat(anakId, params);
-      
+
+      const params = {
+        page,
+        per_page: 10,
+        ...(searchQuery && { search: searchQuery })
+      };
+
+      const response = await adminShelterRiwayatApi.getAllRiwayat(anakId, params);
+
       if (response.data.success) {
-        setRiwayatList(response.data.data || []);
+        setRiwayatList(response.data.data);
+        setPagination(response.data.pagination);
       } else {
         setError(response.data.message || 'Gagal memuat data riwayat');
       }
     } catch (err) {
-      console.error('Error fetching riwayat data:', err);
+      console.error('Error fetching riwayat:', err);
       setError('Gagal memuat data riwayat. Silakan coba lagi.');
     } finally {
       setLoading(false);
@@ -71,88 +72,27 @@ const RiwayatScreen = () => {
     }
   };
 
-  // Initial data fetch
-  useEffect(() => {
-    fetchRiwayatData();
-  }, [anakId, filterType]);
-  
-  // Refresh data when navigating back to screen
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      fetchRiwayatData();
-    });
-    
-    return unsubscribe;
-  }, [navigation]);
-
-  // Handle refresh
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchRiwayatData();
+    fetchRiwayatList(1, true);
   };
 
-  // Handle filter change
-  const handleFilterChange = (type) => {
-    setFilterType(type);
-  };
-
-  // Handle view riwayat detail
-  const handleViewRiwayat = (riwayat) => {
-    navigation.navigate('RiwayatDetail', {
-      anakData,
-      anakId,
-      riwayatId: riwayat.id_histori,
-      riwayatData: riwayat
-    });
-  };
-
-  // Handle add new riwayat
-  const handleAddRiwayat = () => {
-    navigation.navigate('RiwayatForm', {
-      anakData,
-      anakId,
-      isEdit: false
-    });
-  };
-
-  // Handle edit riwayat
-  const handleEditRiwayat = (riwayat) => {
-    navigation.navigate('RiwayatForm', {
-      anakData,
-      anakId,
-      riwayatId: riwayat.id_histori,
-      riwayatData: riwayat,
-      isEdit: true
-    });
-  };
-
-  // Handle delete riwayat
-  const handleDeleteRiwayat = (riwayat) => {
+  const handleDelete = (riwayatId, namaRiwayat) => {
     Alert.alert(
       'Hapus Riwayat',
-      `Anda yakin ingin menghapus riwayat "${riwayat.nama_histori}"?`,
+      `Anda yakin ingin menghapus riwayat "${namaRiwayat}"?`,
       [
         { text: 'Batal', style: 'cancel' },
-        { 
-          text: 'Hapus', 
+        {
+          text: 'Hapus',
           style: 'destructive',
           onPress: async () => {
             try {
-              setLoading(true);
-              const response = await adminShelterRiwayatApi.deleteRiwayat(anakId, riwayat.id_histori);
-              
-              if (response.data.success) {
-                // Remove the deleted riwayat from the list
-                setRiwayatList(prev => prev.filter(item => item.id_histori !== riwayat.id_histori));
-                Alert.alert('Sukses', 'Riwayat berhasil dihapus');
-              } else {
-                setError(response.data.message || 'Gagal menghapus riwayat');
-              }
+              await adminShelterRiwayatApi.deleteRiwayat(anakId, riwayatId);
+              fetchRiwayatList();
+              Alert.alert('Sukses', 'Riwayat berhasil dihapus');
             } catch (err) {
-              console.error('Error deleting riwayat:', err);
-              setError('Gagal menghapus riwayat. Silakan coba lagi.');
-            } finally {
-              setLoading(false);
+              Alert.alert('Error', 'Gagal menghapus riwayat');
             }
           }
         }
@@ -160,139 +100,126 @@ const RiwayatScreen = () => {
     );
   };
 
-  // Loading state
-  if (loading && !refreshing) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.headerContainer}>
-          <View style={styles.headerImageContainer}>
-            {anakData?.foto_url ? (
-              <Image
-                source={{ uri: anakData.foto_url }}
-                style={styles.headerImage}
-              />
-            ) : (
-              <View style={styles.headerImagePlaceholder}>
-                <Ionicons name="person" size={40} color="#ffffff" />
-              </View>
-            )}
-          </View>
-          <View style={styles.headerInfo}>
-            <Text style={styles.headerName}>{anakData?.full_name || 'Nama Anak'}</Text>
-            {anakData?.nick_name && (
-              <Text style={styles.headerNickname}>{anakData.nick_name}</Text>
-            )}
-          </View>
+  const renderRiwayatItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.riwayatCard}
+      onPress={() => navigation.navigate('RiwayatDetail', { 
+        anakId, 
+        riwayatId: item.id_histori,
+        anakData
+      })}
+    >
+      <View style={styles.cardHeader}>
+        <View style={styles.headerInfo}>
+          <Text style={styles.jenisHistori}>{item.jenis_histori}</Text>
+          <Text style={styles.namaHistori}>{item.nama_histori}</Text>
+          <Text style={styles.tanggal}>
+            {format(new Date(item.tanggal), 'dd MMMM yyyy', { locale: id })}
+          </Text>
         </View>
-        <LoadingSpinner message="Memuat data riwayat..." />
+        {item.foto_url && (
+          <Image source={{ uri: item.foto_url }} style={styles.thumbnail} />
+        )}
       </View>
-    );
+      
+      <View style={styles.cardContent}>
+        <View style={styles.statusContainer}>
+          <View style={[
+            styles.statusBadge,
+            { backgroundColor: item.di_opname === 'YA' ? '#e74c3c' : '#2ecc71' }
+          ]}>
+            <Text style={styles.statusText}>
+              {item.di_opname === 'YA' ? 'Dirawat' : 'Tidak Dirawat'}
+            </Text>
+          </View>
+          {item.di_opname === 'YA' && item.dirawat_id && (
+            <Text style={styles.rawatInfo}>ID Rawat: {item.dirawat_id}</Text>
+          )}
+        </View>
+      </View>
+
+      <View style={styles.cardActions}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => navigation.navigate('RiwayatForm', {
+            anakId,
+            riwayatData: item,
+            isEdit: true,
+            anakData
+          })}
+        >
+          <Ionicons name="create-outline" size={16} color="#3498db" />
+          <Text style={[styles.actionButtonText, { color: '#3498db' }]}>Edit</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => handleDelete(item.id_histori, item.nama_histori)}
+        >
+          <Ionicons name="trash-outline" size={16} color="#e74c3c" />
+          <Text style={[styles.actionButtonText, { color: '#e74c3c' }]}>Hapus</Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+
+  if (loading && !refreshing) {
+    return <LoadingSpinner fullScreen message="Memuat riwayat..." />;
   }
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <View style={styles.headerImageContainer}>
-          {anakData?.foto_url ? (
-            <Image
-              source={{ uri: anakData.foto_url }}
-              style={styles.headerImage}
-            />
-          ) : (
-            <View style={styles.headerImagePlaceholder}>
-              <Ionicons name="person" size={40} color="#ffffff" />
-            </View>
-          )}
-        </View>
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerName}>{anakData?.full_name || 'Nama Anak'}</Text>
-          {anakData?.nick_name && (
-            <Text style={styles.headerNickname}>{anakData.nick_name}</Text>
-          )}
-        </View>
+      <View style={styles.header}>
+        <Text style={styles.childName}>
+          Riwayat {anakData?.full_name || anakData?.nick_name || 'Anak'}
+        </Text>
+        <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Cari riwayat..."
+          style={styles.searchBar}
+        />
       </View>
 
-      <View style={styles.contentContainer}>
-        {/* Error Message */}
-        {error && (
-          <ErrorMessage
-            message={error}
-            onRetry={fetchRiwayatData}
+      {error && (
+        <ErrorMessage
+          message={error}
+          onRetry={() => fetchRiwayatList()}
+          retryText="Coba Lagi"
+        />
+      )}
+
+      {!error && (
+        <>
+          {riwayatList.length === 0 ? (
+            <EmptyState
+              title="Belum Ada Riwayat"
+              subtitle="Belum ada riwayat yang tercatat untuk anak ini"
+              icon="document-text-outline"
+            />
+          ) : (
+            <FlatList
+              data={riwayatList}
+              renderItem={renderRiwayatItem}
+              keyExtractor={(item) => item.id_histori.toString()}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+              }
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.listContainer}
+            />
+          )}
+
+          <FloatingActionButton
+            onPress={() => navigation.navigate('RiwayatForm', { 
+              anakId, 
+              isEdit: false,
+              anakData
+            })}
+            icon="add"
           />
-        )}
-        
-        {/* Header */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Riwayat Anak</Text>
-          <Button
-            title="Tambah Riwayat"
-            onPress={handleAddRiwayat}
-            leftIcon={<Ionicons name="add" size={16} color="#fff" />}
-            size="small"
-          />
-        </View>
-        
-        {/* Filter Buttons */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView}>
-          <View style={styles.filterContainer}>
-            {jenisHistoriOptions.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.filterButton,
-                  filterType === option.id && styles.filterButtonActive
-                ]}
-                onPress={() => handleFilterChange(option.id)}
-              >
-                <Text style={[
-                  styles.filterButtonText,
-                  filterType === option.id && styles.filterButtonTextActive
-                ]}>
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
-        
-        {/* Riwayat List */}
-        {riwayatList.length > 0 ? (
-          <FlatList
-            data={riwayatList}
-            renderItem={({ item }) => (
-              <RiwayatListItem
-                riwayat={item}
-                onPress={() => handleViewRiwayat(item)}
-                onEdit={() => handleEditRiwayat(item)}
-                onDelete={() => handleDeleteRiwayat(item)}
-              />
-            )}
-            keyExtractor={(item) => item.id_histori.toString()}
-            contentContainerStyle={styles.listContainer}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-            }
-          />
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="document-text-outline" size={80} color="#cccccc" />
-            <Text style={styles.emptyTitle}>Belum Ada Riwayat</Text>
-            <Text style={styles.emptyText}>
-              {filterType 
-                ? `Tidak ada riwayat dengan jenis "${filterType}"`
-                : 'Belum ada data riwayat untuk anak ini. Tambahkan riwayat baru untuk memulai.'}
-            </Text>
-            {!filterType && (
-              <Button
-                title="Tambah Riwayat Pertama"
-                onPress={handleAddRiwayat}
-                style={styles.emptyButton}
-                leftIcon={<Ionicons name="add" size={16} color="#fff" />}
-              />
-            )}
-          </View>
-        )}
-      </View>
+        </>
+      )}
     </View>
   );
 };
@@ -302,107 +229,107 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  header: {
     backgroundColor: '#ffffff',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eeeeee',
+    borderBottomColor: '#e0e0e0',
   },
-  headerImageContainer: {
-    marginRight: 16,
+  childName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
   },
-  headerImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  searchBar: {
+    marginTop: 8,
   },
-  headerImagePlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#e74c3c',
-    justifyContent: 'center',
-    alignItems: 'center',
+  listContainer: {
+    padding: 16,
+  },
+  riwayatCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
   },
   headerInfo: {
     flex: 1,
+    marginRight: 12,
   },
-  headerName: {
-    fontSize: 18,
+  jenisHistori: {
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#333333',
+    color: '#333',
+    marginBottom: 4,
   },
-  headerNickname: {
+  namaHistori: {
     fontSize: 14,
-    color: '#666666',
-    marginTop: 2,
+    color: '#666',
+    marginBottom: 4,
   },
-  contentContainer: {
-    flex: 1,
-    padding: 16,
+  tanggal: {
+    fontSize: 12,
+    color: '#999',
   },
-  sectionHeader: {
+  thumbnail: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+  },
+  cardContent: {
+    marginBottom: 12,
+  },
+  statusContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    flexWrap: 'wrap',
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333333',
-  },
-  filterScrollView: {
-    marginBottom: 16,
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    paddingRight: 16,
-  },
-  filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#e74c3c',
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
     marginRight: 8,
   },
-  filterButtonActive: {
-    backgroundColor: '#e74c3c',
-  },
-  filterButtonText: {
-    color: '#e74c3c',
-    fontSize: 14,
-  },
-  filterButtonTextActive: {
+  statusText: {
+    fontSize: 12,
     color: '#ffffff',
-  },
-  listContainer: {
-    paddingBottom: 20,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  emptyTitle: {
-    fontSize: 20,
     fontWeight: 'bold',
-    color: '#333333',
-    marginTop: 16,
-    marginBottom: 8,
   },
-  emptyText: {
-    fontSize: 16,
-    color: '#666666',
-    textAlign: 'center',
-    marginBottom: 24,
+  rawatInfo: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
   },
-  emptyButton: {
-    minWidth: 200,
+  cardActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    paddingTop: 12,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginLeft: 8,
+  },
+  actionButtonText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginLeft: 4,
   },
 });
 
