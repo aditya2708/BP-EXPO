@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -76,6 +76,7 @@ const QrScannerScreen = ({ navigation, route }) => {
   const [isBimbelActivity, setIsBimbelActivity] = useState(activityType === 'Bimbel');
   const [kelompokStudentIds, setKelompokStudentIds] = useState([]);
   const [loadingKelompokData, setLoadingKelompokData] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   
   useEffect(() => {
     const loadSound = async () => {
@@ -166,7 +167,7 @@ const QrScannerScreen = ({ navigation, route }) => {
     }
   };
   
-  const playSound = async () => {
+  const playSound = useCallback(async () => {
     try {
       if (sound.current) {
         await sound.current.setPositionAsync(0);
@@ -178,9 +179,9 @@ const QrScannerScreen = ({ navigation, route }) => {
       console.error('Error playing sound', error);
       Vibration.vibrate(100);
     }
-  };
+  }, []);
   
-  const showToast = (message, type = 'success') => {
+  const showToast = useCallback((message, type = 'success') => {
     setToastMessage(message);
     setToastType(type);
     setToastVisible(true);
@@ -194,9 +195,9 @@ const QrScannerScreen = ({ navigation, route }) => {
     setTimeout(() => {
       hideToast();
     }, 2000);
-  };
+  }, [fadeAnim]);
   
-  const hideToast = () => {
+  const hideToast = useCallback(() => {
     Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 300,
@@ -204,38 +205,52 @@ const QrScannerScreen = ({ navigation, route }) => {
     }).start(() => {
       setToastVisible(false);
     });
-  };
+  }, [fadeAnim]);
   
-  const handleScan = async (qrData) => {
+  const handleScan = useCallback(async (qrData) => {
+    if (!id_aktivitas || isProcessing) {
+      return;
+    }
+    
     if (!id_aktivitas) {
       Alert.alert('Error', 'No activity selected. Please go back and select an activity first.');
       return;
     }
     
+    setIsProcessing(true);
+    
     try {
       const isTutorToken = await validateIfTutorToken(qrData.token);
       
-      if (isTutorToken) {
-        handleTutorAttendanceRecording(qrData.token);
-      } else {
-        dispatch(validateToken(qrData.token));
-      }
+      setTimeout(() => {
+        if (isTutorToken) {
+          handleTutorAttendanceRecording(qrData.token);
+        } else {
+          dispatch(validateToken(qrData.token));
+        }
+      }, 100);
     } catch (error) {
       console.error('Error determining token type:', error);
-      dispatch(validateToken(qrData.token));
+      setTimeout(() => {
+        dispatch(validateToken(qrData.token));
+      }, 100);
+    } finally {
+      setTimeout(() => {
+        setIsProcessing(false);
+      }, 1000);
     }
-  };
+  }, [id_aktivitas, isProcessing, dispatch]);
   
-  const validateIfTutorToken = async (token) => {
+  const validateIfTutorToken = useCallback(async (token) => {
     try {
       const response = await tutorAttendanceApi.validateTutorToken(token);
       return response.data.success;
     } catch (error) {
       return false;
     }
-  };
+  }, []);
   
-  const handleAttendanceRecording = async (token, id_anak) => {
+  const handleAttendanceRecording = useCallback(async (token, id_anak) => {
     try {
       if (isConnected) {
         const currentTime = new Date();
@@ -249,9 +264,9 @@ const QrScannerScreen = ({ navigation, route }) => {
           arrival_time: formattedArrivalTime
         })).unwrap();
         
-        playSound();
+        await playSound();
         
-        const studentName = validationResult.anak.full_name || 'Student';
+        const studentName = validationResult?.anak?.full_name || 'Student';
         
         let status = 'Present';
         let toastType = 'success';
@@ -266,7 +281,9 @@ const QrScannerScreen = ({ navigation, route }) => {
           }
         }
         
-        showToast(`${status}: ${studentName}`, toastType);
+        setTimeout(() => {
+          showToast(`${status}: ${studentName}`, toastType);
+        }, 100);
       } else {
         const currentTime = new Date();
         const formattedArrivalTime = format(currentTime, 'yyyy-MM-dd HH:mm:ss');
@@ -279,17 +296,21 @@ const QrScannerScreen = ({ navigation, route }) => {
           arrival_time: formattedArrivalTime
         }, 'qr');
         
-        playSound();
-        showToast('Saved for syncing when online', 'warning');
+        await playSound();
+        setTimeout(() => {
+          showToast('Saved for syncing when online', 'warning');
+        }, 100);
       }
     } catch (error) {
       if (!error.isDuplicate) {
-        showToast(error.message || 'Failed to record', 'error');
+        setTimeout(() => {
+          showToast(error.message || 'Failed to record', 'error');
+        }, 100);
       }
     }
-  };
+  }, [isConnected, dispatch, id_aktivitas, validationResult, playSound, showToast]);
   
-  const handleTutorAttendanceRecording = async (token) => {
+  const handleTutorAttendanceRecording = useCallback(async (token) => {
     try {
       if (isConnected) {
         const currentTime = new Date();
@@ -301,7 +322,7 @@ const QrScannerScreen = ({ navigation, route }) => {
           arrival_time: formattedArrivalTime
         })).unwrap();
         
-        playSound();
+        await playSound();
         
         let status = 'Present';
         let toastType = 'success';
@@ -316,8 +337,10 @@ const QrScannerScreen = ({ navigation, route }) => {
           }
         }
         
-        const tutorName = result.data?.absenUser?.tutor?.nama || 'Tutor';
-        showToast(`${status}: ${tutorName} (Tutor)`, toastType);
+        const tutorName = result.data?.absen_user?.tutor?.nama || 'Tutor';
+        setTimeout(() => {
+          showToast(`${status}: ${tutorName} (Tutor)`, toastType);
+        }, 100);
       } else {
         const result = await OfflineSync.processAttendance({
           id_aktivitas,
@@ -326,21 +349,25 @@ const QrScannerScreen = ({ navigation, route }) => {
           type: 'tutor'
         }, 'qr');
         
-        playSound();
-        showToast('Saved for syncing when online', 'warning');
+        await playSound();
+        setTimeout(() => {
+          showToast('Saved for syncing when online', 'warning');
+        }, 100);
       }
     } catch (error) {
       if (!error.isDuplicate) {
-        showToast(error.message || 'Failed to record tutor attendance', 'error');
+        setTimeout(() => {
+          showToast(error.message || 'Failed to record tutor attendance', 'error');
+        }, 100);
       }
     }
-  };
+  }, [isConnected, dispatch, id_aktivitas, playSound, showToast]);
   
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     navigation.goBack();
-  };
+  }, [navigation]);
   
-  const isLoading = tokenLoading || attendanceLoading || loadingKelompokData || tutorAttendanceLoading;
+  const isLoading = tokenLoading || attendanceLoading || loadingKelompokData || tutorAttendanceLoading || isProcessing;
   
   const getToastStyle = () => {
     switch(toastType) {

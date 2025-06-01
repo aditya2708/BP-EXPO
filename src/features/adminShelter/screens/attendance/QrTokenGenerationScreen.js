@@ -1,497 +1,44 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
-  FlatList,
-  TextInput,
-  Alert,
-  ActivityIndicator,
-  Platform
+  ActivityIndicator
 } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-
-// Components
 import QrCodeDisplay from '../../components/QrCodeDisplay';
-import Button from '../../../../common/components/Button';
 import ErrorMessage from '../../../../common/components/ErrorMessage';
-import LoadingSpinner from '../../../../common/components/LoadingSpinner';
-
-// API and Redux
-import { adminShelterAnakApi } from '../../api/adminShelterAnakApi';
-import { adminShelterKelompokApi } from '../../api/adminShelterKelompokApi';
-import { 
-  generateToken, 
-  generateBatchTokens,
-  getActiveToken,
-  selectQrTokenLoading, 
-  selectQrTokenError,
-  selectStudentToken
-} from '../../redux/qrTokenSlice';
-
-import {
-  generateTutorToken,
-  selectCurrentTutorToken,
-  selectTutorAttendanceLoading,
-  selectTutorAttendanceError
-} from '../../redux/tutorAttendanceSlice';
-
-// Utils
-import qrExportHelper from '../../utils/qrExportHelper';
+import StudentTokenSection from '../../components/StudentTokenSection';
+import TutorTokenSection from '../../components/TutorTokenSection';
+import { useQrTokenGeneration } from '../../hooks/useQrTokenGeneration';
 
 const QrTokenGenerationScreen = ({ navigation, route }) => {
-  const dispatch = useDispatch();
+  const hookData = useQrTokenGeneration(route.params || {});
   
-  // Get activity data from route params
-  const { 
-    id_aktivitas, 
-    activityName, 
+  const {
+    mode,
+    setMode,
+    selectedStudents,
+    filteredStudents,
+    studentTokens,
+    activityName,
     activityDate,
     activityType,
-    kelompokId,
     kelompokName,
     level,
-    completeActivity
-  } = route.params || {};
-  
-  // Redux state
-  const tokenLoading = useSelector(selectQrTokenLoading);
-  const tokenError = useSelector(selectQrTokenError);
-  const studentTokens = useSelector(state => state.qrToken.studentTokens);
-  const tutorToken = useSelector(selectCurrentTutorToken);
-  const tutorLoading = useSelector(selectTutorAttendanceLoading);
-  const tutorError = useSelector(selectTutorAttendanceError);
-  
-  // Local state
-  const [mode, setMode] = useState('students'); // 'students' or 'tutor'
-  const [students, setStudents] = useState([]);
-  const [selectedStudents, setSelectedStudents] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [validDays, setValidDays] = useState(30);
-  const [exportLoading, setExportLoading] = useState(false);
-  const [activityTutor, setActivityTutor] = useState(null);
-  
-  // Kelompok state
-  const [kelompokList, setKelompokList] = useState([]);
-  const [selectedKelompokId, setSelectedKelompokId] = useState(kelompokId || '');
-  const [kelompokLoading, setKelompokLoading] = useState(false);
-  const [kelompokError, setKelompokError] = useState(null);
-  const [isContextualMode, setIsContextualMode] = useState(!!id_aktivitas);
-  
-  // Ref for QR codes
-  const qrRefs = useRef({});
-  const tutorQrRef = useRef(null);
+    activityTutor,
+    tokenLoading,
+    tokenError,
+    tutorLoading,
+    tutorError,
+    exportLoading,
+    setQrRef,
+    toggleStudentSelection,
+    handleGenerateToken,
+    handleExportQr
+  } = hookData;
 
-  // Initialize QR refs
-  const setQrRef = (studentId, ref) => {
-    qrRefs.current[studentId] = ref;
-  };
-  
-  // Check if activity has tutor
-  useEffect(() => {
-    if (completeActivity && completeActivity.tutor) {
-      setActivityTutor(completeActivity.tutor);
-    }
-  }, [completeActivity]);
-  
-  // Fetch kelompok list when component mounts if not in contextual mode
-  useEffect(() => {
-    if (!isContextualMode || (isContextualMode && activityType !== 'Bimbel')) {
-      fetchKelompokList();
-    }
-  }, [isContextualMode, activityType]);
-  
-  // Load students based on activity context or selection
-  useEffect(() => {
-    if (mode === 'students') {
-      // If we have activity context with Bimbel type and kelompokId
-      if (isContextualMode && activityType === 'Bimbel' && kelompokId) {
-        fetchStudentsByKelompok(kelompokId);
-      } 
-      // If we have activity context but it's a general Kegiatan (no specific kelompok)
-      else if (isContextualMode && activityType === 'Kegiatan') {
-        fetchAllStudents();
-      }
-      // Regular case - respond to dropdown selection
-      else if (selectedKelompokId) {
-        fetchStudentsByKelompok(selectedKelompokId);
-      } 
-      // Default - show all students
-      else {
-        fetchAllStudents();
-      }
-    }
-  }, [isContextualMode, activityType, kelompokId, selectedKelompokId, mode]);
-  
-  // Fetch kelompok list from API
-  const fetchKelompokList = async () => {
-    try {
-      setKelompokLoading(true);
-      setKelompokError(null);
-      
-      const response = await adminShelterKelompokApi.getAllKelompok();
-      
-      if (response.data && response.data.data) {
-        setKelompokList(response.data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching kelompok list:', error);
-      setKelompokError('Failed to load groups. Please try again.');
-    } finally {
-      setKelompokLoading(false);
-    }
-  };
-  
-  // Fetch all students
-  const fetchAllStudents = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Initialize an empty array for all students
-      let allStudents = [];
-      let currentPage = 1;
-      let lastPage = 1;
-      
-      // First request to get initial data and pagination info
-      const initialResponse = await adminShelterAnakApi.getAllAnak({ page: 1 });
-      
-      if (initialResponse.data && initialResponse.data.pagination) {
-        lastPage = initialResponse.data.pagination.last_page;
-        allStudents = [...initialResponse.data.data];
-        
-        // Fetch remaining pages if any
-        if (lastPage > 1) {
-          for (let page = 2; page <= lastPage; page++) {
-            const pageResponse = await adminShelterAnakApi.getAllAnak({ page });
-            if (pageResponse.data && pageResponse.data.data) {
-              allStudents = [...allStudents, ...pageResponse.data.data];
-            }
-          }
-        }
-        
-        // Filter for active students
-        const activeStudents = allStudents.filter(
-          student => student.status_validasi === 'aktif'
-        );
-        
-        setStudents(activeStudents);
-        setSelectedStudents([]);
-        
-        // Check for existing tokens
-        activeStudents.forEach(student => {
-          dispatch(getActiveToken(student.id_anak));
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching all students:', error);
-      setError('Failed to load students. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Fetch students by kelompok
-  const fetchStudentsByKelompok = async (kelompokId) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      console.log(`Fetching students for kelompok ID: ${kelompokId}`);
-      const response = await adminShelterKelompokApi.getGroupChildren(kelompokId);
-      
-      if (response.data && response.data.data && Array.isArray(response.data.data)) {
-        const kelompokStudents = response.data.data;
-        console.log(`Found ${kelompokStudents.length} students in kelompok`);
-        
-        // Filter for active students
-        const activeStudents = kelompokStudents.filter(
-          student => student.status_validasi === 'aktif'
-        );
-        
-        setStudents(activeStudents);
-        setSelectedStudents([]);
-        
-        // Check for existing tokens
-        activeStudents.forEach(student => {
-          dispatch(getActiveToken(student.id_anak));
-        });
-      } else {
-        console.error('Invalid response structure:', response.data);
-        setError('Students data structure is invalid. Please try a different group.');
-      }
-    } catch (error) {
-      console.error('Error fetching students by kelompok:', error);
-      setError(`Failed to load students: ${error.message}`);
-      
-      // If we get an error and we're in contextual mode, try to fall back to all students
-      if (isContextualMode) {
-        fetchAllStudents();
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Handle kelompok selection change
-  const handleKelompokChange = (kelompokId) => {
-    setSelectedKelompokId(kelompokId);
-  };
-  
-  // Filter students by search query
-  const filteredStudents = students.filter(student => 
-    (student.full_name || student.nick_name || '')
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase())
-  );
-  
-  // Toggle student selection
-  const toggleStudentSelection = (studentId) => {
-    if (selectedStudents.includes(studentId)) {
-      setSelectedStudents(selectedStudents.filter(id => id !== studentId));
-    } else {
-      setSelectedStudents([...selectedStudents, studentId]);
-    }
-  };
-  
-  // Select all students
-  const selectAllStudents = () => {
-    if (selectedStudents.length === filteredStudents.length) {
-      // If all are selected, deselect all
-      setSelectedStudents([]);
-    } else {
-      // Select all filtered students
-      setSelectedStudents(filteredStudents.map(student => student.id_anak));
-    }
-  };
-  
-  // Generate token for a single student
-  const handleGenerateToken = async (studentId) => {
-    try {
-      await dispatch(generateToken({ id_anak: studentId, validDays })).unwrap();
-    } catch (error) {
-      Alert.alert('Error', error.message || 'Failed to generate token');
-    }
-  };
-  
-  // Generate tokens for selected students
-  const handleGenerateBatchTokens = async () => {
-    if (selectedStudents.length === 0) {
-      Alert.alert('No Students Selected', 'Please select at least one student.');
-      return;
-    }
-    
-    try {
-      await dispatch(generateBatchTokens({ 
-        studentIds: selectedStudents, 
-        validDays 
-      })).unwrap();
-      
-      Alert.alert('Success', `Generated tokens for ${selectedStudents.length} students.`);
-    } catch (error) {
-      Alert.alert('Error', error.message || 'Failed to generate batch tokens');
-    }
-  };
-  
-  // Generate token for tutor
-  const handleGenerateTutorToken = async () => {
-    if (!activityTutor) {
-      Alert.alert('Error', 'No tutor assigned to this activity');
-      return;
-    }
-    
-    try {
-      await dispatch(generateTutorToken({ 
-        id_tutor: activityTutor.id_tutor, 
-        validDays 
-      })).unwrap();
-      
-      Alert.alert('Success', `Generated token for tutor: ${activityTutor.nama}`);
-    } catch (error) {
-      Alert.alert('Error', error.message || 'Failed to generate tutor token');
-    }
-  };
-
-  // Get QR code data URL from ref
-  const getQrDataUrl = async (studentId) => {
-    return new Promise((resolve, reject) => {
-      if (!qrRefs.current[studentId] || !qrRefs.current[studentId].getDataURL) {
-        reject(new Error('QR code ref not found'));
-        return;
-      }
-      
-      qrRefs.current[studentId].getDataURL()
-        .then(resolve)
-        .catch(reject);
-    });
-  };
-  
-  // Get tutor QR data URL
-  const getTutorQrDataUrl = async () => {
-    return new Promise((resolve, reject) => {
-      if (!tutorQrRef.current || !tutorQrRef.current.getDataURL) {
-        reject(new Error('Tutor QR code ref not found'));
-        return;
-      }
-      
-      tutorQrRef.current.getDataURL()
-        .then(resolve)
-        .catch(reject);
-    });
-  };
-
-  // Export single QR code
-  const handleExportQr = async (studentId) => {
-    try {
-      const isSharingAvailable = await qrExportHelper.isSharingAvailable();
-      if (!isSharingAvailable) {
-        Alert.alert('Error', 'Sharing is not available on this device');
-        return;
-      }
-
-      setExportLoading(true);
-      
-      const token = studentTokens[studentId];
-      if (!token) {
-        Alert.alert('Error', 'No token found for this student');
-        return;
-      }
-      
-      const student = students.find(s => s.id_anak === studentId);
-      if (!student) {
-        Alert.alert('Error', 'Student information not found');
-        return;
-      }
-      
-      // Get QR code data
-      const base64Data = await getQrDataUrl(studentId);
-      if (!base64Data) {
-        throw new Error('Failed to generate QR code image');
-      }
-      
-      // Save and share
-      const fileUri = await qrExportHelper.saveQrCodeToFile(base64Data, student);
-      await qrExportHelper.shareQrCode(fileUri);
-    } catch (error) {
-      console.error('Error exporting QR code:', error);
-      Alert.alert('Error', error.message || 'Failed to export QR code');
-    } finally {
-      setExportLoading(false);
-    }
-  };
-  
-  // Export tutor QR code
-  const handleExportTutorQr = async () => {
-    try {
-      const isSharingAvailable = await qrExportHelper.isSharingAvailable();
-      if (!isSharingAvailable) {
-        Alert.alert('Error', 'Sharing is not available on this device');
-        return;
-      }
-
-      setExportLoading(true);
-      
-      if (!tutorToken) {
-        Alert.alert('Error', 'No token found for tutor');
-        return;
-      }
-      
-      // Get QR code data
-      const base64Data = await getTutorQrDataUrl();
-      if (!base64Data) {
-        throw new Error('Failed to generate tutor QR code image');
-      }
-      
-      // Save and share with tutor info
-      const tutorInfo = {
-        full_name: activityTutor.nama,
-        id_tutor: activityTutor.id_tutor
-      };
-      const fileUri = await qrExportHelper.saveQrCodeToFile(base64Data, tutorInfo);
-      await qrExportHelper.shareQrCode(fileUri);
-    } catch (error) {
-      console.error('Error exporting tutor QR code:', error);
-      Alert.alert('Error', error.message || 'Failed to export tutor QR code');
-    } finally {
-      setExportLoading(false);
-    }
-  };
-
-  // Export multiple QR codes
-  const handleExportBatchQr = async () => {
-    if (selectedStudents.length === 0) {
-      Alert.alert('No Students Selected', 'Please select at least one student.');
-      return;
-    }
-    
-    try {
-      const isSharingAvailable = await qrExportHelper.isSharingAvailable();
-      if (!isSharingAvailable) {
-        Alert.alert('Error', 'Sharing is not available on this device');
-        return;
-      }
-
-      setExportLoading(true);
-      
-      // Array to collect QR data
-      const qrDataArray = [];
-      
-      // Process each selected student
-      for (const studentId of selectedStudents) {
-        const token = studentTokens[studentId];
-        if (!token) continue;
-        
-        const student = students.find(s => s.id_anak === studentId);
-        if (!student) continue;
-        
-        try {
-          const base64Data = await getQrDataUrl(studentId);
-          if (base64Data) {
-            qrDataArray.push({ base64Data, student });
-          }
-        } catch (err) {
-          console.error(`Error getting QR for student ${studentId}:`, err);
-          // Continue with other students
-        }
-      }
-      
-      if (qrDataArray.length === 0) {
-        Alert.alert('Error', 'No QR codes could be generated');
-        return;
-      }
-      
-      // Process the batch
-      const results = await qrExportHelper.processBatch(qrDataArray);
-      
-      // Get successful exports
-      const successfulExports = results.filter(r => r.success);
-      const fileUris = successfulExports.map(r => r.fileUri);
-      
-      if (fileUris.length === 0) {
-        Alert.alert('Error', 'Failed to export QR codes');
-        return;
-      }
-      
-      // Handle sharing multiple QR codes
-      await qrExportHelper.handleMultipleQrCodes(fileUris);
-      
-    } catch (error) {
-      console.error('Error exporting QR codes:', error);
-      Alert.alert('Error', error.message || 'Failed to export QR codes');
-    } finally {
-      setExportLoading(false);
-    }
-  };
-  
-  // Render a student item
   const renderStudentItem = ({ item }) => {
     const isSelected = selectedStudents.includes(item.id_anak);
     const token = studentTokens[item.id_anak];
@@ -539,7 +86,6 @@ const QrTokenGenerationScreen = ({ navigation, route }) => {
           </View>
         </View>
         
-        {/* QR Code Display */}
         {token && (
           <QrCodeDisplay
             token={token.token}
@@ -556,7 +102,6 @@ const QrTokenGenerationScreen = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
-      {/* Activity Info */}
       {activityName && (
         <View style={styles.activityInfo}>
           <Text style={styles.activityName}>{activityName}</Text>
@@ -564,7 +109,6 @@ const QrTokenGenerationScreen = ({ navigation, route }) => {
             <Text style={styles.activityDate}>{activityDate}</Text>
           )}
           
-          {/* Display contextual info for Bimbel */}
           {activityType === 'Bimbel' && kelompokName && (
             <View style={styles.contextInfo}>
               <Text style={styles.contextInfoText}>Group: {kelompokName}</Text>
@@ -574,7 +118,6 @@ const QrTokenGenerationScreen = ({ navigation, route }) => {
         </View>
       )}
       
-      {/* Mode Toggle */}
       <View style={styles.modeToggleContainer}>
         <TouchableOpacity
           style={[
@@ -620,214 +163,19 @@ const QrTokenGenerationScreen = ({ navigation, route }) => {
         </TouchableOpacity>
       </View>
       
-      {/* Error Message */}
-      {(error || tokenError || kelompokError || tutorError) && (
-        <ErrorMessage
-          message={error || tokenError || kelompokError || tutorError}
-          onRetry={error ? fetchAllStudents : (kelompokError ? fetchKelompokList : null)}
-        />
+      {(tokenError || tutorError) && (
+        <ErrorMessage message={tokenError || tutorError} />
       )}
       
-      {/* Content based on mode */}
       {mode === 'students' ? (
-        <>
-          {/* Kelompok Selector - Only show if:
-              1. Not in contextual mode, OR
-              2. In contextual mode but activity is not Bimbel (general activity) */}
-          {(!isContextualMode || (isContextualMode && activityType !== 'Bimbel')) && (
-            <View style={styles.kelompokContainer}>
-              <Text style={styles.kelompokLabel}>Filter by Group:</Text>
-              {kelompokLoading ? (
-                <View style={styles.pickerLoadingContainer}>
-                  <ActivityIndicator size="small" color="#3498db" />
-                  <Text style={styles.pickerLoadingText}>Loading groups...</Text>
-                </View>
-              ) : (
-                <View style={styles.pickerContainer}>
-                  <Picker
-                    selectedValue={selectedKelompokId}
-                    onValueChange={handleKelompokChange}
-                    style={styles.picker}
-                    enabled={!loading && !kelompokLoading}
-                  >
-                    <Picker.Item label="All Students" value="" />
-                    {kelompokList.map(kelompok => (
-                      <Picker.Item 
-                        key={kelompok.id_kelompok} 
-                        label={kelompok.nama_kelompok}
-                        value={kelompok.id_kelompok} 
-                      />
-                    ))}
-                  </Picker>
-                </View>
-              )}
-            </View>
-          )}
-          
-          {/* Search and Controls */}
-          <View style={styles.controlsContainer}>
-            <View style={styles.searchContainer}>
-              <Ionicons name="search" size={20} color="#7f8c8d" />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search students..."
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                clearButtonMode="while-editing"
-              />
-            </View>
-            
-            <View style={styles.tokenControls}>
-              <Text style={styles.validDaysLabel}>Valid for (days):</Text>
-              <TextInput
-                style={styles.validDaysInput}
-                value={validDays.toString()}
-                onChangeText={(value) => setValidDays(parseInt(value) || 30)}
-                keyboardType="number-pad"
-              />
-            </View>
-          </View>
-          
-          {/* Actions Bar */}
-          <View style={styles.actionsBar}>
-            <TouchableOpacity
-              style={styles.selectAllButton}
-              onPress={selectAllStudents}
-            >
-              <Text style={styles.selectAllText}>
-                {selectedStudents.length === filteredStudents.length
-                  ? 'Unselect All'
-                  : 'Select All'}
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[
-                styles.batchGenerateButton,
-                (selectedStudents.length === 0 || tokenLoading) && styles.disabledButton
-              ]}
-              onPress={handleGenerateBatchTokens}
-              disabled={selectedStudents.length === 0 || tokenLoading}
-            >
-              <Ionicons name="qr-code" size={16} color="#fff" />
-              <Text style={styles.batchGenerateText}>
-                Generate {selectedStudents.length} QR Codes
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Export Batch Button */}
-          {selectedStudents.length > 0 && (
-            <TouchableOpacity
-              style={[
-                styles.exportBatchButton,
-                (exportLoading || tokenLoading) && styles.disabledButton
-              ]}
-              onPress={handleExportBatchQr}
-              disabled={exportLoading || tokenLoading}
-            >
-              <Ionicons name="share-social" size={16} color="#fff" />
-              <Text style={styles.exportBatchText}>
-                Export {selectedStudents.length} QR Codes
-              </Text>
-            </TouchableOpacity>
-          )}
-          
-          {/* Students List */}
-          {loading ? (
-            <LoadingSpinner message="Loading students..." />
-          ) : (
-            <FlatList
-              data={filteredStudents}
-              renderItem={renderStudentItem}
-              keyExtractor={(item) => item.id_anak.toString()}
-              contentContainerStyle={styles.studentsList}
-              ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                  <Ionicons name="people" size={48} color="#bdc3c7" />
-                  <Text style={styles.emptyText}>No students found</Text>
-                  {selectedKelompokId && (
-                    <Text style={styles.emptySubtext}>Try selecting a different group</Text>
-                  )}
-                </View>
-              }
-            />
-          )}
-        </>
+        <StudentTokenSection
+          {...hookData}
+          renderStudentItem={renderStudentItem}
+        />
       ) : (
-        /* Tutor Mode */
-        <ScrollView style={styles.tutorContainer}>
-          {activityTutor ? (
-            <View style={styles.tutorCard}>
-              <View style={styles.tutorHeader}>
-                <View style={styles.tutorInfo}>
-                  <Text style={styles.tutorName}>{activityTutor.nama}</Text>
-                  <Text style={styles.tutorId}>ID: {activityTutor.id_tutor}</Text>
-                  {activityTutor.email && (
-                    <Text style={styles.tutorDetail}>Email: {activityTutor.email}</Text>
-                  )}
-                  {activityTutor.no_hp && (
-                    <Text style={styles.tutorDetail}>Phone: {activityTutor.no_hp}</Text>
-                  )}
-                </View>
-              </View>
-              
-              {/* Valid Days Control */}
-              <View style={styles.tutorTokenControls}>
-                <Text style={styles.validDaysLabel}>Valid for (days):</Text>
-                <TextInput
-                  style={styles.validDaysInput}
-                  value={validDays.toString()}
-                  onChangeText={(value) => setValidDays(parseInt(value) || 30)}
-                  keyboardType="number-pad"
-                />
-              </View>
-              
-              {/* Generate Button */}
-              <TouchableOpacity
-                style={[styles.tutorGenerateButton, tutorLoading && styles.disabledButton]}
-                onPress={handleGenerateTutorToken}
-                disabled={tutorLoading}
-              >
-                <Ionicons name="qr-code" size={20} color="#fff" />
-                <Text style={styles.tutorGenerateText}>
-                  {tutorToken ? 'Regenerate QR Code' : 'Generate QR Code'}
-                </Text>
-              </TouchableOpacity>
-              
-              {/* QR Code Display */}
-              {tutorToken && (
-                <View style={styles.tutorQrContainer}>
-                  <QrCodeDisplay
-                    token={tutorToken.token}
-                    studentName={activityTutor.nama}
-                    studentId={`Tutor-${activityTutor.id_tutor}`}
-                    size={250}
-                    showExportButtons={false}
-                    ref={tutorQrRef}
-                  />
-                  
-                  <TouchableOpacity
-                    style={[styles.tutorExportButton, exportLoading && styles.disabledButton]}
-                    onPress={handleExportTutorQr}
-                    disabled={exportLoading}
-                  >
-                    <Ionicons name="share-outline" size={20} color="#fff" />
-                    <Text style={styles.tutorExportText}>Export QR Code</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          ) : (
-            <View style={styles.noTutorContainer}>
-              <Ionicons name="person-outline" size={48} color="#bdc3c7" />
-              <Text style={styles.noTutorText}>No tutor assigned to this activity</Text>
-            </View>
-          )}
-        </ScrollView>
+        <TutorTokenSection {...hookData} />
       )}
       
-      {/* Loading overlay */}
       {(tokenLoading || exportLoading || tutorLoading) && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#3498db" />
@@ -908,133 +256,6 @@ const styles = StyleSheet.create({
   modeButtonTextDisabled: {
     color: '#bdc3c7',
   },
-  kelompokContainer: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e1e1e1',
-  },
-  kelompokLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 8,
-  },
-  pickerContainer: {
-    backgroundColor: '#f9f9f9',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  picker: {
-    height: 50,
-    width: '100%',
-  },
-  pickerLoadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f9f9f9',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-  },
-  pickerLoadingText: {
-    marginLeft: 8,
-    color: '#7f8c8d',
-  },
-  controlsContainer: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e1e1e1',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f2f2f2',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginBottom: 8,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    fontSize: 16,
-  },
-  tokenControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
-  validDaysLabel: {
-    fontSize: 14,
-    color: '#7f8c8d',
-    marginRight: 8,
-  },
-  validDaysInput: {
-    backgroundColor: '#f2f2f2',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    width: 60,
-    textAlign: 'center',
-  },
-  actionsBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e1e1e1',
-  },
-  selectAllButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  selectAllText: {
-    color: '#3498db',
-    fontWeight: '500',
-  },
-  batchGenerateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#3498db',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-  },
-  disabledButton: {
-    backgroundColor: '#bdc3c7',
-  },
-  batchGenerateText: {
-    color: '#fff',
-    fontWeight: '500',
-    marginLeft: 6,
-  },
-  exportBatchButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#27ae60',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginHorizontal: 12,
-    marginTop: 8,
-    borderRadius: 16,
-  },
-  exportBatchText: {
-    color: '#fff',
-    fontWeight: '500',
-    marginLeft: 6,
-  },
-  studentsList: {
-    padding: 12,
-  },
   studentCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -1099,21 +320,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#7f8c8d',
-    marginTop: 12,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#95a5a6',
-    marginTop: 4,
-  },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
@@ -1124,93 +330,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: '#3498db',
-  },
-  tutorContainer: {
-    flex: 1,
-    padding: 16,
-  },
-  tutorCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  tutorHeader: {
-    marginBottom: 16,
-  },
-  tutorInfo: {
-    marginBottom: 12,
-  },
-  tutorName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 4,
-  },
-  tutorId: {
-    fontSize: 14,
-    color: '#7f8c8d',
-    marginBottom: 2,
-  },
-  tutorDetail: {
-    fontSize: 14,
-    color: '#7f8c8d',
-    marginBottom: 2,
-  },
-  tutorTokenControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  tutorGenerateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#3498db',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  tutorGenerateText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-    marginLeft: 8,
-  },
-  tutorQrContainer: {
-    alignItems: 'center',
-  },
-  tutorExportButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#27ae60',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    marginTop: 16,
-  },
-  tutorExportText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-    marginLeft: 8,
-  },
-  noTutorContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  noTutorText: {
-    fontSize: 16,
-    color: '#7f8c8d',
-    marginTop: 12,
   },
 });
 
