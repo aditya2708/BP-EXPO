@@ -1,12 +1,11 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import { tutorAttendanceApi } from '../api/tutorAttendanceApi';
 
-// Async thunks
 export const recordTutorAttendanceByQr = createAsyncThunk(
   'tutorAttendance/recordByQr',
-  async ({ id_tutor, id_aktivitas, status, token, arrival_time }, { rejectWithValue }) => {
+  async ({ id_aktivitas, token, arrival_time }, { rejectWithValue }) => {
     try {
-      const response = await tutorAttendanceApi.recordTutorAttendanceByQr(id_tutor, id_aktivitas, status, token, arrival_time);
+      const response = await tutorAttendanceApi.recordTutorAttendanceByQr(id_aktivitas, token, arrival_time);
       return response.data;
     } catch (error) {
       if (error.response?.status === 409) {
@@ -76,7 +75,6 @@ export const generateTutorToken = createAsyncThunk(
   }
 );
 
-// Initial state
 const initialState = {
   attendanceRecords: {},
   activityRecords: {},
@@ -91,7 +89,6 @@ const initialState = {
   isSyncing: false
 };
 
-// Slice
 const tutorAttendanceSlice = createSlice({
   name: 'tutorAttendance',
   initialState,
@@ -112,7 +109,6 @@ const tutorAttendanceSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Record tutor attendance by QR
       .addCase(recordTutorAttendanceByQr.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -139,8 +135,6 @@ const tutorAttendanceSlice = createSlice({
           state.error = action.payload?.message || 'Failed to record tutor attendance';
         }
       })
-      
-      // Record tutor attendance manually
       .addCase(recordTutorAttendanceManually.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -167,8 +161,6 @@ const tutorAttendanceSlice = createSlice({
           state.error = action.payload?.message || 'Failed to record tutor attendance manually';
         }
       })
-      
-      // Get tutor attendance by activity
       .addCase(getTutorAttendanceByActivity.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -189,8 +181,6 @@ const tutorAttendanceSlice = createSlice({
         state.loading = false;
         state.error = action.payload?.message || 'Failed to get tutor attendance';
       })
-      
-      // Get tutor attendance history
       .addCase(getTutorAttendanceHistory.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -211,8 +201,6 @@ const tutorAttendanceSlice = createSlice({
         state.loading = false;
         state.error = action.payload?.message || 'Failed to get tutor attendance history';
       })
-      
-      // Generate tutor token
       .addCase(generateTutorToken.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -233,7 +221,6 @@ const tutorAttendanceSlice = createSlice({
   }
 });
 
-// Actions
 export const { 
   resetTutorAttendanceError, 
   queueOfflineTutorAttendance, 
@@ -241,7 +228,6 @@ export const {
   setSyncing 
 } = tutorAttendanceSlice.actions;
 
-// Selectors
 export const selectTutorAttendanceLoading = (state) => state.tutorAttendance.loading;
 export const selectTutorAttendanceError = (state) => state.tutorAttendance.error;
 export const selectTutorDuplicateError = (state) => state.tutorAttendance.duplicateError;
@@ -249,7 +235,6 @@ export const selectTutorAttendanceRecords = (state) => state.tutorAttendance.att
 export const selectTutorTokens = (state) => state.tutorAttendance.tokens;
 export const selectCurrentTutorToken = (state) => state.tutorAttendance.currentToken;
 
-// Memoized selectors
 export const selectTutorAttendanceByActivity = createSelector(
   [(state) => state.tutorAttendance.activityRecords, (_, id_aktivitas) => id_aktivitas],
   (activityRecords, id_aktivitas) => activityRecords[id_aktivitas] || null

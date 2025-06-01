@@ -1,13 +1,12 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { qrTokenApi } from '../api/qrTokenApi';
 
-// Async thunks
 export const generateToken = createAsyncThunk(
   'qrToken/generate',
   async ({ id_anak, validDays = 30 }, { rejectWithValue }) => {
     try {
       const response = await qrTokenApi.generateToken(id_anak, validDays);
-      return response.data;
+      return { ...response.data, id_anak };
     } catch (error) {
       return rejectWithValue(error.response?.data || { message: error.message });
     }
@@ -43,7 +42,7 @@ export const getActiveToken = createAsyncThunk(
   async (id_anak, { rejectWithValue }) => {
     try {
       const response = await qrTokenApi.getActiveToken(id_anak);
-      return response.data;
+      return { ...response.data, id_anak };
     } catch (error) {
       return rejectWithValue(error.response?.data || { message: error.message });
     }
@@ -62,7 +61,6 @@ export const invalidateToken = createAsyncThunk(
   }
 );
 
-// Initial state
 const initialState = {
   tokens: {},
   studentTokens: {},
@@ -73,7 +71,6 @@ const initialState = {
   lastUpdated: null
 };
 
-// Slice
 const qrTokenSlice = createSlice({
   name: 'qrToken',
   initialState,
@@ -90,7 +87,6 @@ const qrTokenSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Generate token
       .addCase(generateToken.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -99,13 +95,10 @@ const qrTokenSlice = createSlice({
         state.loading = false;
         if (action.payload.data) {
           const token = action.payload.data;
+          const id_anak = action.payload.id_anak;
+          
           state.tokens[token.token] = token;
-          
-          // Store by student ID
-          const id_anak = token.id_anak;
           state.studentTokens[id_anak] = token;
-          
-          // Set as current token
           state.currentToken = token;
         }
         state.lastUpdated = new Date().toISOString();
@@ -114,8 +107,6 @@ const qrTokenSlice = createSlice({
         state.loading = false;
         state.error = action.payload?.message || 'Failed to generate token';
       })
-      
-      // Generate batch tokens
       .addCase(generateBatchTokens.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -134,8 +125,6 @@ const qrTokenSlice = createSlice({
         state.loading = false;
         state.error = action.payload?.message || 'Failed to generate batch tokens';
       })
-      
-      // Validate token
       .addCase(validateToken.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -158,8 +147,6 @@ const qrTokenSlice = createSlice({
         };
         state.error = action.payload?.message || 'Failed to validate token';
       })
-      
-      // Get active token
       .addCase(getActiveToken.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -168,18 +155,20 @@ const qrTokenSlice = createSlice({
         state.loading = false;
         if (action.payload.data) {
           const token = action.payload.data;
+          const id_anak = action.payload.id_anak;
+          
           state.tokens[token.token] = token;
-          state.studentTokens[token.id_anak] = token;
+          state.studentTokens[id_anak] = token;
           state.currentToken = token;
         }
         state.lastUpdated = new Date().toISOString();
       })
       .addCase(getActiveToken.rejected, (state, action) => {
         state.loading = false;
+        const id_anak = action.meta.arg;
+        state.studentTokens[id_anak] = null;
         state.error = action.payload?.message || 'Failed to get active token';
       })
-      
-      // Invalidate token
       .addCase(invalidateToken.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -191,13 +180,11 @@ const qrTokenSlice = createSlice({
         if (state.tokens[token]) {
           state.tokens[token].is_active = false;
           
-          // If this was the current token for a student, clear it
           const id_anak = state.tokens[token].id_anak;
           if (state.studentTokens[id_anak] && state.studentTokens[id_anak].token === token) {
             state.studentTokens[id_anak] = null;
           }
           
-          // If this was the current token, clear it
           if (state.currentToken && state.currentToken.token === token) {
             state.currentToken = null;
           }
@@ -212,10 +199,8 @@ const qrTokenSlice = createSlice({
   }
 });
 
-// Actions
 export const { resetQrTokenError, resetValidationResult, setCurrentToken } = qrTokenSlice.actions;
 
-// Selectors
 export const selectQrTokenLoading = (state) => state.qrToken.loading;
 export const selectQrTokenError = (state) => state.qrToken.error;
 export const selectAllTokens = (state) => state.qrToken.tokens;

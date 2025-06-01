@@ -9,7 +9,7 @@ export const tutorAttendanceApi = {
   },
 
   validateTutorToken: async (token) => {
-    return await api.post('/admin-shelter/tutor-attendance/validate-token', {
+    return await api.post('/admin-shelter/tutor-attendance/validate-tutor-token', {
       token
     });
   },
