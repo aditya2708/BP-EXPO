@@ -13,12 +13,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-// Import components
 import Button from '../../../common/components/Button';
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../common/components/ErrorMessage';
 
-// Import Redux actions and selectors
 import {
   fetchTutorDetail,
   deleteTutor,
@@ -32,25 +30,20 @@ const TutorDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
 
-  // Extract tutorId from route params
   const { tutorId } = route.params;
 
-  // Selectors
   const tutor = useSelector(selectSelectedTutor);
   const status = useSelector(selectTutorStatus);
   const error = useSelector(selectTutorError);
 
-  // Fetch tutor details on mount
   useEffect(() => {
     dispatch(fetchTutorDetail(tutorId));
   }, [dispatch, tutorId]);
 
-  // Handle edit tutor
   const handleEditTutor = () => {
     navigation.navigate('TutorForm', { tutor });
   };
 
-  // Handle delete tutor
   const handleDeleteTutor = () => {
     Alert.alert(
       'Konfirmasi Hapus',
@@ -79,26 +72,29 @@ const TutorDetailScreen = () => {
     );
   };
 
-  // Open phone dialer
+  const handleViewActivityHistory = () => {
+    navigation.navigate('TutorActivityHistory', {
+      tutorId: tutor.id_tutor,
+      tutorName: tutor.nama
+    });
+  };
+
   const handleCallTutor = () => {
     if (tutor.no_hp) {
       Linking.openURL(`tel:${tutor.no_hp}`);
     }
   };
 
-  // Open email app
   const handleEmailTutor = () => {
     if (tutor.email) {
       Linking.openURL(`mailto:${tutor.email}`);
     }
   };
 
-  // Render loading state
   if (status === 'loading') {
     return <LoadingSpinner fullScreen message="Memuat detail tutor..." />;
   }
 
-  // Render error state
   if (status === 'failed' || !tutor) {
     return (
       <ErrorMessage
@@ -113,7 +109,6 @@ const TutorDetailScreen = () => {
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
     >
-      {/* Tutor Photo */}
       <View style={styles.photoContainer}>
         {tutor.foto_url ? (
           <Image
@@ -128,10 +123,8 @@ const TutorDetailScreen = () => {
         )}
       </View>
 
-      {/* Tutor Name */}
       <Text style={styles.nameText}>{tutor.nama}</Text>
 
-      {/* Contact Actions */}
       <View style={styles.contactActions}>
         <TouchableOpacity 
           style={styles.contactButton}
@@ -147,9 +140,15 @@ const TutorDetailScreen = () => {
           <Ionicons name="mail" size={24} color="#3498db" />
           <Text style={styles.contactButtonText}>Email</Text>
         </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.contactButton}
+          onPress={handleViewActivityHistory}
+        >
+          <Ionicons name="calendar" size={24} color="#3498db" />
+          <Text style={styles.contactButtonText}>Riwayat</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Tutor Details */}
       <View style={styles.detailSection}>
         <View style={styles.detailRow}>
           <Ionicons name="mail-outline" size={20} color="#666" />
@@ -179,7 +178,6 @@ const TutorDetailScreen = () => {
         )}
       </View>
 
-      {/* Action Buttons */}
       <View style={styles.actionButtons}>
         <Button
           title="Edit"
@@ -241,21 +239,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginBottom: 20,
+    gap: 12,
   },
   contactButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 16,
     backgroundColor: '#ffffff',
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
     elevation: 2,
+    minWidth: 80,
+    justifyContent: 'center',
   },
   contactButtonText: {
     marginLeft: 8,
     color: '#3498db',
     fontWeight: '500',
+    fontSize: 13,
   },
   detailSection: {
     backgroundColor: '#ffffff',
