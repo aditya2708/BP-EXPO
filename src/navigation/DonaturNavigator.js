@@ -46,7 +46,7 @@ const ChildrenStackNavigator = () => {
        <ChildrenStack.Screen 
         name="ChildList" 
         component={ChildListScreen} 
-        options={{ headerTitle: 'My Sponsored Children' }}
+        options={{ headerTitle: 'Anak Asuh' }}
       />
       <ChildrenStack.Screen 
         name="ChildProfile" 

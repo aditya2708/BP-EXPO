@@ -73,6 +73,9 @@ import RaportGenerateScreen from '../features/adminShelter/screens/RaportGenerat
 import SemesterManagementScreen from '../features/adminShelter/screens/SemesterManagementScreen';
 import SemesterFormScreen from '../features/adminShelter/screens/SemesterFormScreen';
 import SemesterDetailScreen from '../features/adminShelter/screens/SemesterDetailScreen';
+
+import TutorActivityHistoryScreen from '../features/adminShelter/screens/TutorActivityHistoryScreen';
+
 // Create navigators
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
@@ -165,6 +168,11 @@ const AttendanceStackNavigator = () => {
 const ManagementStackNavigator = () => {
   return (
     <ManagementStack.Navigator>
+      <ManagementStack.Screen 
+  name="TutorActivityHistory" 
+  component={TutorActivityHistoryScreen} 
+  options={{ headerTitle: 'Riwayat Aktivitas Tutor' }}
+/>
     <ManagementStack.Screen 
         name="Surat" 
         component={SuratScreen} 
