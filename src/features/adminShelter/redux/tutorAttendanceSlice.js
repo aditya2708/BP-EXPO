@@ -105,6 +105,13 @@ const tutorAttendanceSlice = createSlice({
     },
     setSyncing: (state, action) => {
       state.isSyncing = action.payload;
+    },
+    clearTutorHistory: (state, action) => {
+      if (action.payload) {
+        delete state.tutorRecords[action.payload];
+      } else {
+        state.tutorRecords = {};
+      }
     }
   },
   extraReducers: (builder) => {
@@ -225,8 +232,14 @@ export const {
   resetTutorAttendanceError, 
   queueOfflineTutorAttendance, 
   removeFromOfflineQueue, 
-  setSyncing 
+  setSyncing,
+  clearTutorHistory
 } = tutorAttendanceSlice.actions;
+
+const emptyArray = [];
+const selectTutorAttendanceState = state => state.tutorAttendance;
+const selectActivityRecords = state => state.tutorAttendance.activityRecords;
+const selectTutorRecordsState = state => state.tutorAttendance.tutorRecords;
 
 export const selectTutorAttendanceLoading = (state) => state.tutorAttendance.loading;
 export const selectTutorAttendanceError = (state) => state.tutorAttendance.error;
@@ -236,13 +249,35 @@ export const selectTutorTokens = (state) => state.tutorAttendance.tokens;
 export const selectCurrentTutorToken = (state) => state.tutorAttendance.currentToken;
 
 export const selectTutorAttendanceByActivity = createSelector(
-  [(state) => state.tutorAttendance.activityRecords, (_, id_aktivitas) => id_aktivitas],
+  [selectActivityRecords, (_, id_aktivitas) => id_aktivitas],
   (activityRecords, id_aktivitas) => activityRecords[id_aktivitas] || null
 );
 
 export const selectTutorAttendanceHistory = createSelector(
-  [(state) => state.tutorAttendance.tutorRecords, (_, id_tutor) => id_tutor],
-  (tutorRecords, id_tutor) => tutorRecords[id_tutor] || []
+  [selectTutorRecordsState, (_, id_tutor) => id_tutor],
+  (tutorRecords, id_tutor) => tutorRecords[id_tutor] || emptyArray
+);
+
+export const selectTutorAttendanceStats = createSelector(
+  [selectTutorAttendanceHistory],
+  (history) => {
+    const total = history.length;
+    const present = history.filter(record => record.absen === 'Ya').length;
+    const late = history.filter(record => record.absen === 'Terlambat').length;
+    const absent = history.filter(record => record.absen === 'Tidak').length;
+    const verified = history.filter(record => record.is_verified).length;
+
+    return {
+      total,
+      present,
+      late,
+      absent,
+      verified,
+      presentRate: total > 0 ? ((present / total) * 100).toFixed(1) : 0,
+      attendanceRate: total > 0 ? (((present + late) / total) * 100).toFixed(1) : 0,
+      verificationRate: total > 0 ? ((verified / total) * 100).toFixed(1) : 0
+    };
+  }
 );
 
 export const selectOfflineQueue = (state) => state.tutorAttendance.offlineQueue;
