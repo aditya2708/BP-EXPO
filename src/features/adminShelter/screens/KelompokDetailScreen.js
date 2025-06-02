@@ -7,17 +7,15 @@ import {
   TouchableOpacity,
   FlatList,
   Alert,
-  RefreshControl
+  RefreshControl,
+  Image
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-// Import components
 import Button from '../../../common/components/Button';
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../common/components/ErrorMessage';
-
-// Import API
 import { adminShelterKelompokApi } from '../api/adminShelterKelompokApi';
 import { useAuth } from '../../../common/hooks/useAuth';
 
@@ -26,17 +24,14 @@ const KelompokDetailScreen = () => {
   const route = useRoute();
   const { profile } = useAuth();
   
-  // Get kelompok ID from route params
   const { id } = route.params || {};
   
-  // State
   const [kelompok, setKelompok] = useState(null);
   const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   
-  // Fetch kelompok details
   const fetchKelompokDetails = async () => {
     try {
       setError(null);
@@ -45,7 +40,6 @@ const KelompokDetailScreen = () => {
       
       if (response.data.success) {
         setKelompok(response.data.data);
-        // Set screen title based on kelompok name
         navigation.setOptions({ 
           headerTitle: response.data.data.nama_kelompok || 'Group Detail' 
         });
@@ -58,7 +52,6 @@ const KelompokDetailScreen = () => {
     }
   };
   
-  // Fetch children in kelompok
   const fetchGroupChildren = async () => {
     try {
       const response = await adminShelterKelompokApi.getGroupChildren(id);
@@ -76,7 +69,6 @@ const KelompokDetailScreen = () => {
     }
   };
   
-  // Initial data fetch
   useEffect(() => {
     if (id) {
       Promise.all([
@@ -86,7 +78,6 @@ const KelompokDetailScreen = () => {
     }
   }, [id]);
   
-  // Handle refresh
   const handleRefresh = () => {
     setRefreshing(true);
     Promise.all([
@@ -95,12 +86,10 @@ const KelompokDetailScreen = () => {
     ]);
   };
   
-  // Navigate to edit kelompok
   const handleEditKelompok = () => {
     navigation.navigate('KelompokForm', { kelompok });
   };
   
-  // Handle delete kelompok
   const handleDeleteKelompok = () => {
     Alert.alert(
       'Delete Group',
@@ -114,7 +103,6 @@ const KelompokDetailScreen = () => {
             try {
               setLoading(true);
               
-              // Check if group has children
               if (children.length > 0) {
                 Alert.alert(
                   'Cannot Delete',
@@ -153,7 +141,6 @@ const KelompokDetailScreen = () => {
     );
   };
   
-  // Handle remove child from group
   const handleRemoveChild = (child) => {
     Alert.alert(
       'Remove Child',
@@ -173,7 +160,6 @@ const KelompokDetailScreen = () => {
               );
               
               if (response.data.success) {
-                // Refresh data
                 fetchGroupChildren();
                 fetchKelompokDetails();
               } else {
@@ -191,56 +177,42 @@ const KelompokDetailScreen = () => {
     );
   };
   
-  // Navigate to add children screen
-const handleAddChildren = () => {
-  navigation.navigate('AddChildrenToKelompok', {
-    kelompokId: id,
-    kelompokName: kelompok?.nama_kelompok,
-    shelterId: kelompok?.shelter?.id_shelter || profile?.shelter?.id_shelter,
-    onRefresh: () => {
-      handleRefresh();
-    }
-  });
-};
-  
-  // Render child item
-  const renderChildItem = ({ item: child }) => (
-    <View style={styles.childItem}>
-      <View style={styles.childInfo}>
-        <Text style={styles.childName}>{child.full_name || child.nick_name}</Text>
-        <Text style={styles.childDetails}>
-          {child.jenis_kelamin === 'Laki-laki' ? 'Laki-laki' : 'Perempuan'} 
-          {child.tanggal_lahir ? ` • ${calculateAge(child.tanggal_lahir)}` : ''}
-        </Text>
-      </View>
-      
-      <TouchableOpacity
-        style={styles.removeButton}
-        onPress={() => handleRemoveChild(child)}
-      >
-        <Ionicons name="close-circle" size={22} color="#e74c3c" />
-      </TouchableOpacity>
-    </View>
-  );
-  
-  // Helper function to calculate age
+  const handleAddChildren = () => {
+    navigation.navigate('AddChildrenToKelompok', {
+      kelompokId: id,
+      kelompokName: kelompok?.nama_kelompok,
+      shelterId: kelompok?.shelter?.id_shelter || profile?.shelter?.id_shelter,
+      onRefresh: () => {
+        handleRefresh();
+      }
+    });
+  };
+
+  const getLevelBadgeColor = (level) => {
+    if (!level) return '#95a5a6';
+    
+    const levelName = level.nama_level_binaan?.toLowerCase() || '';
+    
+    if (levelName.includes('sd') || levelName.includes('dasar')) return '#3498db';
+    if (levelName.includes('smp') || levelName.includes('menengah pertama')) return '#f39c12';
+    if (levelName.includes('sma') || levelName.includes('menengah atas')) return '#e74c3c';
+    if (levelName.includes('tk') || levelName.includes('paud')) return '#9b59b6';
+    if (levelName.includes('universitas') || levelName.includes('tinggi')) return '#2ecc71';
+    
+    return '#95a5a6';
+  };
+
   const calculateAge = (birthDate) => {
     if (!birthDate) return '';
     
-    // Handle different date formats
-    let dob;
     try {
-      // Check for DD-MM-YYYY format
+      let dob;
       if (birthDate.match(/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/)) {
         const parts = birthDate.split(/[-/]/);
         dob = new Date(parts[2], parts[1] - 1, parts[0]);
-      } 
-      // Handle YYYY-MM-DD format
-      else if (birthDate.match(/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/)) {
+      } else if (birthDate.match(/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/)) {
         dob = new Date(birthDate);
-      } 
-      // Try direct parsing as fallback
-      else {
+      } else {
         dob = new Date(birthDate);
       }
       
@@ -256,13 +228,77 @@ const handleAddChildren = () => {
         age--;
       }
       
-      return `${age} years`;
+      return `${age}y`;
     } catch (error) {
       return '';
     }
   };
   
-  // Loading state
+  const renderChildItem = ({ item: child }) => (
+    <View style={styles.childItem}>
+      <View style={styles.childImageContainer}>
+        {child.foto_url && child.foto_url !== 'http://127.0.0.1:8000/images/default.png' ? (
+          <Image source={{ uri: child.foto_url }} style={styles.childImage} />
+        ) : (
+          <View style={styles.childImagePlaceholder}>
+            <Ionicons 
+              name={child.jenis_kelamin === 'Laki-laki' ? 'Laki-laki' : 'Perempuan'} 
+              size={20} 
+              color="#666" 
+            />
+          </View>
+        )}
+      </View>
+      
+      <View style={styles.childInfo}>
+        <Text style={styles.childName}>{child.full_name || child.nick_name}</Text>
+        <Text style={styles.childDetails}>
+          {child.jenis_kelamin === 'Laki-laki' ? 'Laki-laki' : 'Perempuan'} 
+          {child.tanggal_lahir ? ` • ${calculateAge(child.tanggal_lahir)}` : ''}
+          {child.nik_anak ? ` • ${child.nik_anak}` : ''}
+        </Text>
+        
+        <View style={styles.childBadgeContainer}>
+          <View style={[
+            styles.statusBadge,
+            { backgroundColor: child.status_validasi === 'aktif' ? '#2ecc71' : '#e74c3c' }
+          ]}>
+            <Text style={styles.statusBadgeText}>
+              {child.status_validasi === 'aktif' ? 'Active' : 'Inactive'}
+            </Text>
+          </View>
+          
+          {child.levelAnakBinaan && (
+            <View style={[
+              styles.levelBadge,
+              { backgroundColor: getLevelBadgeColor(child.levelAnakBinaan) }
+            ]}>
+              <Text style={styles.levelBadgeText}>
+                {child.levelAnakBinaan.nama_level_binaan}
+              </Text>
+            </View>
+          )}
+
+          {child.anakPendidikan && (
+            <View style={styles.educationBadge}>
+              <Text style={styles.educationBadgeText}>
+                {child.anakPendidikan.jenjang?.toUpperCase()}
+                {child.anakPendidikan.kelas ? ` ${child.anakPendidikan.kelas}` : ''}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+      
+      <TouchableOpacity
+        style={styles.removeButton}
+        onPress={() => handleRemoveChild(child)}
+      >
+        <Ionicons name="close-circle" size={22} color="#e74c3c" />
+      </TouchableOpacity>
+    </View>
+  );
+  
   if (loading && !refreshing) {
     return <LoadingSpinner fullScreen message="Loading group details..." />;
   }
@@ -275,7 +311,6 @@ const handleAddChildren = () => {
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
       }
     >
-      {/* Error Message */}
       {error && (
         <ErrorMessage
           message={error}
@@ -285,7 +320,6 @@ const handleAddChildren = () => {
       
       {kelompok && (
         <>
-          {/* Group Information */}
           <View style={styles.infoCard}>
             <View style={styles.infoHeader}>
               <Text style={styles.groupName}>{kelompok.nama_kelompok}</Text>
@@ -307,9 +341,21 @@ const handleAddChildren = () => {
             
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Tingkat:</Text>
-              <Text style={styles.detailValue}>
-                {kelompok.level_anak_binaan?.nama_level_binaan || 'No Level'}
-              </Text>
+              <View style={styles.detailValueContainer}>
+                <Text style={styles.detailValue}>
+                  {kelompok.level_anak_binaan?.nama_level_binaan || 'No Level'}
+                </Text>
+                {kelompok.level_anak_binaan && (
+                  <View style={[
+                    styles.levelIndicator,
+                    { backgroundColor: getLevelBadgeColor(kelompok.level_anak_binaan) }
+                  ]}>
+                    <Text style={styles.levelIndicatorText}>
+                      {kelompok.level_anak_binaan.nama_level_binaan}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
             
             <View style={styles.detailRow}>
@@ -325,10 +371,9 @@ const handleAddChildren = () => {
             </View>
           </View>
           
-          {/* Children List */}
           <View style={styles.childrenContainer}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Daftar Anak</Text>
+              <Text style={styles.sectionTitle}>Daftar Anak ({children.length})</Text>
               <Button
                 title="Tambah Anak"
                 onPress={handleAddChildren}
@@ -410,6 +455,7 @@ const styles = StyleSheet.create({
   },
   detailRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
   },
   detailLabel: {
@@ -422,6 +468,22 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#333',
+  },
+  detailValueContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  levelIndicator: {
+    marginLeft: 8,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+  },
+  levelIndicatorText: {
+    fontSize: 12,
+    color: '#ffffff',
+    fontWeight: '500',
   },
   childrenContainer: {
     backgroundColor: '#ffffff',
@@ -454,6 +516,24 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
+  childImageContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    overflow: 'hidden',
+    marginRight: 12,
+  },
+  childImage: {
+    width: '100%',
+    height: '100%',
+  },
+  childImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   childInfo: {
     flex: 1,
   },
@@ -461,11 +541,48 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#333',
+    marginBottom: 4,
   },
   childDetails: {
     fontSize: 14,
     color: '#666',
-    marginTop: 2,
+    marginBottom: 6,
+  },
+  childBadgeContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  statusBadge: {
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    color: '#ffffff',
+    fontWeight: '500',
+  },
+  levelBadge: {
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+  },
+  levelBadgeText: {
+    fontSize: 10,
+    color: '#ffffff',
+    fontWeight: '500',
+  },
+  educationBadge: {
+    backgroundColor: '#ecf0f1',
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+  },
+  educationBadgeText: {
+    fontSize: 10,
+    color: '#34495e',
+    fontWeight: '500',
   },
   removeButton: {
     padding: 8,

@@ -14,12 +14,9 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-// Import components
 import Button from '../../../common/components/Button';
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../common/components/ErrorMessage';
-
-// Import API and hooks
 import { adminShelterKelompokApi } from '../api/adminShelterKelompokApi';
 import { useAuth } from '../../../common/hooks/useAuth';
 
@@ -28,10 +25,9 @@ const AddChildrenToKelompokScreen = () => {
   const route = useRoute();
   const { profile } = useAuth();
   
-  // Get params
   const { kelompokId, kelompokName, shelterId } = route.params || {};
   
-  // State
+  const [kelompokDetails, setKelompokDetails] = useState(null);
   const [availableChildren, setAvailableChildren] = useState([]);
   const [filteredChildren, setFilteredChildren] = useState([]);
   const [selectedChildren, setSelectedChildren] = useState([]);
@@ -41,7 +37,17 @@ const AddChildrenToKelompokScreen = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   
-  // Fetch available children
+  const fetchKelompokDetails = async () => {
+    try {
+      const response = await adminShelterKelompokApi.getKelompokDetail(kelompokId);
+      if (response.data.success) {
+        setKelompokDetails(response.data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching kelompok details:', err);
+    }
+  };
+  
   const fetchAvailableChildren = async () => {
     try {
       setError(null);
@@ -64,18 +70,18 @@ const AddChildrenToKelompokScreen = () => {
       setLoading(false);
       setRefreshing(false);
     }
-    
   };
   
-  // Initial load
   useEffect(() => {
     navigation.setOptions({
       headerTitle: `Add to ${kelompokName || 'Group'}`
     });
-    fetchAvailableChildren();
+    Promise.all([
+      fetchKelompokDetails(),
+      fetchAvailableChildren()
+    ]);
   }, []);
   
-  // Handle search
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setFilteredChildren(availableChildren);
@@ -90,14 +96,15 @@ const AddChildrenToKelompokScreen = () => {
     }
   }, [searchQuery, availableChildren]);
   
-  // Handle refresh
   const handleRefresh = () => {
     setRefreshing(true);
     setSelectedChildren([]);
-    fetchAvailableChildren();
+    Promise.all([
+      fetchKelompokDetails(),
+      fetchAvailableChildren()
+    ]);
   };
   
-  // Toggle child selection
   const toggleChildSelection = (childId) => {
     setSelectedChildren(prev => {
       if (prev.includes(childId)) {
@@ -108,18 +115,59 @@ const AddChildrenToKelompokScreen = () => {
     });
   };
   
-  // Select all filtered children
   const selectAll = () => {
     const allChildIds = filteredChildren.map(child => child.id_anak);
     setSelectedChildren(allChildIds);
   };
   
-  // Deselect all
   const deselectAll = () => {
     setSelectedChildren([]);
   };
   
-  // Submit selected children
+  const checkEducationCompatibility = (child, kelompok) => {
+    if (!child.anakPendidikan || !kelompok?.level_anak_binaan) {
+      return { compatible: true, reason: 'No education data' };
+    }
+
+    const jenjang = child.anakPendidikan.jenjang?.toLowerCase().trim() || '';
+    const levelName = kelompok.level_anak_binaan.nama_level_binaan?.toLowerCase().trim() || '';
+
+    const compatibility = {
+      'belum_sd': ['tk', 'paud', 'early', 'dini', 'kelas 1', 'kelas 2', 'kelas 3'],
+      'sd': ['sd', 'elementary', 'dasar', 'kelas 1', 'kelas 2', 'kelas 3', 'kelas 4', 'kelas 5', 'kelas 6'],
+      'smp': ['smp', 'mts', 'junior', 'menengah pertama', 'kelas 7', 'kelas 8', 'kelas 9'],
+      'sma': ['sma', 'smk', 'ma', 'senior', 'menengah atas', 'kelas 10', 'kelas 11', 'kelas 12'],
+      'perguruan_tinggi': ['universitas', 'college', 'tinggi', 'sarjana', 'semester']
+    };
+
+    if (!compatibility[jenjang]) {
+      return { compatible: true, reason: 'Unknown education level' };
+    }
+
+    const isCompatible = compatibility[jenjang].some(keyword => 
+      levelName.includes(keyword)
+    );
+
+    return {
+      compatible: isCompatible,
+      reason: isCompatible ? 'Compatible' : `${jenjang.toUpperCase()} doesn't match ${levelName}`
+    };
+  };
+
+  const getLevelBadgeColor = (level) => {
+    if (!level) return '#95a5a6';
+    
+    const levelName = level.nama_level_binaan?.toLowerCase() || '';
+    
+    if (levelName.includes('sd') || levelName.includes('dasar')) return '#3498db';
+    if (levelName.includes('smp') || levelName.includes('menengah pertama')) return '#f39c12';
+    if (levelName.includes('sma') || levelName.includes('menengah atas')) return '#e74c3c';
+    if (levelName.includes('tk') || levelName.includes('paud')) return '#9b59b6';
+    if (levelName.includes('universitas') || levelName.includes('tinggi')) return '#2ecc71';
+    
+    return '#95a5a6';
+  };
+  
   const handleSubmit = async () => {
     if (selectedChildren.length === 0) {
       Alert.alert('No Selection', 'Please select at least one child to add.');
@@ -137,7 +185,6 @@ const AddChildrenToKelompokScreen = () => {
             setSubmitting(true);
             
             try {
-              // Add children one by one (API limitation)
               const results = [];
               const errors = [];
               
@@ -154,7 +201,6 @@ const AddChildrenToKelompokScreen = () => {
                 }
               }
               
-              // Show result
               if (errors.length === 0) {
                 Alert.alert(
                   'Success',
@@ -164,7 +210,6 @@ const AddChildrenToKelompokScreen = () => {
                       text: 'OK',
                       onPress: () => {
                         navigation.goBack();
-                        // Trigger refresh in parent screen
                         if (route.params?.onRefresh) {
                           route.params.onRefresh();
                         }
@@ -191,7 +236,6 @@ const AddChildrenToKelompokScreen = () => {
     );
   };
   
-  // Calculate age from birth date
   const calculateAge = (birthDate) => {
     if (!birthDate) return '';
     
@@ -216,37 +260,39 @@ const AddChildrenToKelompokScreen = () => {
         age--;
       }
       
-      return `${age} years`;
+      return `${age}y`;
     } catch (error) {
       return '';
     }
   };
   
-  // Render child item
   const renderChildItem = ({ item: child }) => {
     const isSelected = selectedChildren.includes(child.id_anak);
+    const compatibility = checkEducationCompatibility(child, kelompokDetails);
     
     return (
       <TouchableOpacity
-        style={[styles.childItem, isSelected && styles.childItemSelected]}
+        style={[
+          styles.childItem, 
+          isSelected && styles.childItemSelected,
+          !compatibility.compatible && styles.childItemIncompatible
+        ]}
         onPress={() => toggleChildSelection(child.id_anak)}
         activeOpacity={0.7}
       >
-        {/* Selection checkbox */}
         <View style={styles.checkboxContainer}>
           <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
             {isSelected && <Ionicons name="checkmark" size={16} color="#fff" />}
           </View>
         </View>
         
-        {/* Child image */}
         <View style={styles.childImageContainer}>
-          {child.foto_url ? (
+          {child.foto_url && child.foto_url !== 'http://127.0.0.1:8000/images/default.png' ? (
             <Image source={{ uri: child.foto_url }} style={styles.childImage} />
           ) : (
             <View style={styles.childImagePlaceholder}>
               <Ionicons 
-                name={child.jenis_kelamin === 'Laki-laki' ? 'Laki-laki' : 'Perempuan'} 
+                name={child.jenis_kelamin === 'Laki-laki' ? 'man' : 'woman'} 
                 size={24} 
                 color="#666" 
               />
@@ -254,24 +300,70 @@ const AddChildrenToKelompokScreen = () => {
           )}
         </View>
         
-        {/* Child info */}
         <View style={styles.childInfo}>
-          <Text style={styles.childName} numberOfLines={1}>
-            {child.full_name || child.nick_name}
-          </Text>
+          <View style={styles.childHeader}>
+            <Text style={styles.childName} numberOfLines={1}>
+              {child.full_name || child.nick_name}
+            </Text>
+            
+            <View style={styles.compatibilityIndicator}>
+              <Ionicons 
+                name={compatibility.compatible ? 'checkmark-circle' : 'warning-outline'} 
+                size={18} 
+                color={compatibility.compatible ? '#2ecc71' : '#f39c12'} 
+              />
+            </View>
+          </View>
+          
           <Text style={styles.childDetails}>
-            {child.jenis_kelamin === 'Laki-laki' ? 'Laki-laki' : 'Perempuan'}
+            {child.jenis_kelamin === 'Laki-laki' ? 'L' : 'P'}
             {child.tanggal_lahir && ` • ${calculateAge(child.tanggal_lahir)}`}
           </Text>
+          
           {child.nik_anak && (
             <Text style={styles.childNik}>NIK: {child.nik_anak}</Text>
+          )}
+          
+          <View style={styles.badgeContainer}>
+            {child.levelAnakBinaan && (
+              <View style={[
+                styles.levelBadge,
+                { backgroundColor: getLevelBadgeColor(child.levelAnakBinaan) }
+              ]}>
+                <Text style={styles.levelBadgeText}>
+                  Current: {child.levelAnakBinaan.nama_level_binaan}
+                </Text>
+              </View>
+            )}
+            
+            {child.anakPendidikan && (
+              <View style={styles.educationBadge}>
+                <Text style={styles.educationBadgeText}>
+                  {child.anakPendidikan.jenjang?.toUpperCase()}
+                  {child.anakPendidikan.kelas ? ` ${child.anakPendidikan.kelas}` : ''}
+                </Text>
+              </View>
+            )}
+            
+            {!compatibility.compatible && (
+              <View style={styles.warningBadge}>
+                <Text style={styles.warningBadgeText}>
+                  Level Mismatch
+                </Text>
+              </View>
+            )}
+          </View>
+          
+          {!compatibility.compatible && (
+            <Text style={styles.compatibilityNote}>
+              {compatibility.reason}
+            </Text>
           )}
         </View>
       </TouchableOpacity>
     );
   };
   
-  // Render empty state
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <Ionicons name="people-outline" size={48} color="#bdc3c7" />
@@ -283,14 +375,12 @@ const AddChildrenToKelompokScreen = () => {
     </View>
   );
   
-  // Loading state
   if (loading) {
     return <LoadingSpinner fullScreen message="Loading available children..." />;
   }
   
   return (
     <View style={styles.container}>
-      {/* Error Message */}
       {error && (
         <ErrorMessage
           message={error}
@@ -298,7 +388,20 @@ const AddChildrenToKelompokScreen = () => {
         />
       )}
       
-      {/* Search Bar */}
+      {kelompokDetails && (
+        <View style={styles.kelompokInfoContainer}>
+          <Text style={styles.kelompokInfoTitle}>Target Group Level:</Text>
+          <View style={[
+            styles.targetLevelBadge,
+            { backgroundColor: getLevelBadgeColor(kelompokDetails.level_anak_binaan) }
+          ]}>
+            <Text style={styles.targetLevelText}>
+              {kelompokDetails.level_anak_binaan?.nama_level_binaan || 'No Level'}
+            </Text>
+          </View>
+        </View>
+      )}
+      
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Ionicons name="search" size={20} color="#666" />
@@ -317,7 +420,6 @@ const AddChildrenToKelompokScreen = () => {
         </View>
       </View>
       
-      {/* Selection Info Bar */}
       {filteredChildren.length > 0 && (
         <View style={styles.selectionBar}>
           <Text style={styles.selectionText}>
@@ -352,7 +454,6 @@ const AddChildrenToKelompokScreen = () => {
         </View>
       )}
       
-      {/* Children List */}
       <FlatList
         data={filteredChildren}
         renderItem={renderChildItem}
@@ -368,7 +469,6 @@ const AddChildrenToKelompokScreen = () => {
         }
       />
       
-      {/* Submit Button */}
       {selectedChildren.length > 0 && (
         <View style={styles.submitContainer}>
           <Button
@@ -385,13 +485,36 @@ const AddChildrenToKelompokScreen = () => {
       )}
     </View>
   );
-  
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  kelompokInfoContainer: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  kelompokInfoTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+    marginRight: 8,
+  },
+  targetLevelBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  targetLevelText: {
+    fontSize: 12,
+    color: '#ffffff',
+    fontWeight: '600',
   },
   searchContainer: {
     padding: 16,
@@ -448,7 +571,7 @@ const styles = StyleSheet.create({
   },
   childItem: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: '#fff',
     padding: 12,
     marginHorizontal: 16,
@@ -465,8 +588,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#9b59b6',
   },
+  childItemIncompatible: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#f39c12',
+  },
   checkboxContainer: {
     marginRight: 12,
+    marginTop: 4,
   },
   checkbox: {
     width: 24,
@@ -501,20 +629,73 @@ const styles = StyleSheet.create({
   childInfo: {
     flex: 1,
   },
+  childHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
   childName: {
     fontSize: 16,
     fontWeight: '500',
     color: '#333',
-    marginBottom: 2,
+    flex: 1,
+  },
+  compatibilityIndicator: {
+    marginLeft: 8,
   },
   childDetails: {
     fontSize: 14,
     color: '#666',
+    marginBottom: 4,
   },
   childNik: {
     fontSize: 12,
     color: '#999',
-    marginTop: 2,
+    marginBottom: 8,
+  },
+  badgeContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginBottom: 4,
+  },
+  levelBadge: {
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+  },
+  levelBadgeText: {
+    fontSize: 10,
+    color: '#ffffff',
+    fontWeight: '500',
+  },
+  educationBadge: {
+    backgroundColor: '#ecf0f1',
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+  },
+  educationBadgeText: {
+    fontSize: 10,
+    color: '#34495e',
+    fontWeight: '500',
+  },
+  warningBadge: {
+    backgroundColor: '#f39c12',
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+  },
+  warningBadgeText: {
+    fontSize: 10,
+    color: '#ffffff',
+    fontWeight: '500',
+  },
+  compatibilityNote: {
+    fontSize: 12,
+    color: '#f39c12',
+    fontStyle: 'italic',
   },
   emptyContainer: {
     flex: 1,
