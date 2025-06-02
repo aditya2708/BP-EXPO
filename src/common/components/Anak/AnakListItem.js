@@ -8,19 +8,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-// Import utils
 import { calculateAge, getStatusLabel } from '../../../common/utils/ageCalculator';
+import { formatEducationDisplay } from '../../../common/utils/educationFormatter';
 
-/**
- * Anak List Item Component
- * A reusable component to display a child's basic information in a list
- * 
- * @param {Object} props - Component props
- * @param {Object} props.item - Anak (child) data object
- * @param {Function} props.onPress - Function to call when the item is pressed
- * @param {Function} props.onToggleStatus - Function to call when toggle status button is pressed
- * @param {Function} props.onDelete - Function to call when delete button is pressed
- */
 const AnakListItem = ({ item, onPress, onToggleStatus, onDelete }) => {
   if (!item) return null;
 
@@ -58,6 +48,14 @@ const AnakListItem = ({ item, onPress, onToggleStatus, onDelete }) => {
             <Ionicons name="bookmark-outline" size={16} color="#666" />
             <Text style={styles.anakDetailText}>
               {getStatusLabel(item.status_cpb)}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.anakDetailsRow}>
+          <View style={styles.anakDetail}>
+            <Ionicons name="school-outline" size={16} color="#666" />
+            <Text style={styles.anakDetailText}>
+              {formatEducationDisplay(item.anakPendidikan)}
             </Text>
           </View>
         </View>
