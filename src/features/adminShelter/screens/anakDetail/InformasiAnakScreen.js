@@ -9,16 +9,16 @@ import {
 import { useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-// Import utils
 import { formatDateToIndonesian } from '../../../../common/utils/dateFormatter';
+import { formatEducationDetail, getEducationIcon } from '../../../../common/utils/educationFormatter';
 
 const InformasiAnakScreen = () => {
   const route = useRoute();
   const { anakData } = route.params || {};
+  const educationDetail = formatEducationDetail(anakData?.anakPendidikan);
 
   return (
     <ScrollView style={styles.container}>
-      {/* Personal Information */}
       <View style={styles.infoSection}>
         <Text style={styles.sectionTitle}>Informasi Pribadi</Text>
         
@@ -99,7 +99,6 @@ const InformasiAnakScreen = () => {
         </View>
       </View>
       
-      {/* Additional Information */}
       <View style={styles.infoSection}>
         <Text style={styles.sectionTitle}>Informasi Tambahan</Text>
         
@@ -138,7 +137,6 @@ const InformasiAnakScreen = () => {
         )}
       </View>
 
-      {/* Shelter Information */}
       <View style={styles.infoSection}>
         <Text style={styles.sectionTitle}>Informasi Shelter</Text>
         
@@ -171,7 +169,6 @@ const InformasiAnakScreen = () => {
         )}
       </View>
 
-      {/* Family Information */}
       <View style={styles.infoSection}>
         <Text style={styles.sectionTitle}>Informasi Keluarga</Text>
         
@@ -206,62 +203,62 @@ const InformasiAnakScreen = () => {
         )}
       </View>
 
-      {/* Educational Information */}
       <View style={styles.infoSection}>
         <Text style={styles.sectionTitle}>Informasi Pendidikan</Text>
         
-        {anakData?.anakPendidikan ? (
+        {educationDetail ? (
           <>
             <View style={styles.infoRow}>
               <View style={styles.infoLabel}>
-                <Ionicons name="school-outline" size={20} color="#666" />
-                <Text style={styles.infoLabelText}>Jenjang</Text>
+                <Ionicons name={getEducationIcon(educationDetail.jenjang)} size={20} color="#666" />
+                <Text style={styles.infoLabelText}>Jenjang Pendidikan</Text>
               </View>
-              <Text style={styles.infoValue}>{anakData.anakPendidikan.jenjang || '-'}</Text>
+              <Text style={styles.infoValue}>{educationDetail.jenjang}</Text>
             </View>
             
             <View style={styles.infoRow}>
               <View style={styles.infoLabel}>
                 <Ionicons name="list-outline" size={20} color="#666" />
-                <Text style={styles.infoLabelText}>Kelas/Semester</Text>
+                <Text style={styles.infoLabelText}>Tingkat</Text>
               </View>
-              <Text style={styles.infoValue}>
-                {anakData.anakPendidikan.kelas 
-                  ? `Kelas ${anakData.anakPendidikan.kelas}` 
-                  : anakData.anakPendidikan.semester 
-                    ? `Semester ${anakData.anakPendidikan.semester}`
-                    : '-'
-                }
-              </Text>
+              <Text style={styles.infoValue}>{educationDetail.tingkat}</Text>
             </View>
             
             <View style={styles.infoRow}>
               <View style={styles.infoLabel}>
                 <Ionicons name="business-outline" size={20} color="#666" />
-                <Text style={styles.infoLabelText}>Nama Sekolah</Text>
+                <Text style={styles.infoLabelText}>Nama Institusi</Text>
               </View>
-              <Text style={styles.infoValue}>
-                {anakData.anakPendidikan.nama_sekolah || anakData.anakPendidikan.nama_pt || '-'}
-              </Text>
+              <Text style={styles.infoValue}>{educationDetail.institusi}</Text>
             </View>
             
-            <View style={styles.infoRow}>
-              <View style={styles.infoLabel}>
-                <Ionicons name="location-outline" size={20} color="#666" />
-                <Text style={styles.infoLabelText}>Alamat Sekolah</Text>
+            {anakData?.anakPendidikan?.alamat_sekolah && (
+              <View style={styles.infoRow}>
+                <View style={styles.infoLabel}>
+                  <Ionicons name="location-outline" size={20} color="#666" />
+                  <Text style={styles.infoLabelText}>Alamat Sekolah</Text>
+                </View>
+                <Text style={styles.infoValue}>{anakData.anakPendidikan.alamat_sekolah}</Text>
               </View>
-              <Text style={styles.infoValue}>
-                {anakData.anakPendidikan.alamat_sekolah || anakData.anakPendidikan.alamat_pt || '-'}
-              </Text>
-            </View>
+            )}
             
-            {anakData.anakPendidikan.jurusan && (
+            {anakData?.anakPendidikan?.alamat_pt && (
+              <View style={styles.infoRow}>
+                <View style={styles.infoLabel}>
+                  <Ionicons name="location-outline" size={20} color="#666" />
+                  <Text style={styles.infoLabelText}>Alamat Kampus</Text>
+                </View>
+                <Text style={styles.infoValue}>{anakData.anakPendidikan.alamat_pt}</Text>
+              </View>
+            )}
+            
+            {educationDetail.jurusan !== '-' && (
               <View style={styles.infoRow}>
                 <View style={styles.infoLabel}>
                   <Ionicons name="bookmark-outline" size={20} color="#666" />
                   <Text style={styles.infoLabelText}>Jurusan</Text>
                 </View>
-                <Text style={styles.infoValue}>{anakData.anakPendidikan.jurusan}</Text>
+                <Text style={styles.infoValue}>{educationDetail.jurusan}</Text>
               </View>
             )}
           </>
