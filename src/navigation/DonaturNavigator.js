@@ -3,12 +3,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 
-// Import Screens
 import DonaturDashboardScreen from '../features/donatur/screen/DonaturDashboardScreen';
 import DonaturProfileScreen from '../features/donatur/screen/DonaturProfileScreen';
 import ChildListScreen from '../features/donatur/screen/ChildListScreen';
-
-// Import new child-related screens
 import ChildProfileScreen from '../features/donatur/screen/ChildProfileScreen';
 import SuratListScreen from '../features/donatur/screen/SuratListScreen';
 import SuratDetailScreen from '../features/donatur/screen/SuratDetailScreen';
@@ -19,14 +16,14 @@ import ChildRaportListScreen from '../features/donatur/screen/ChildRaportListScr
 import ChildRaportDetailScreen from '../features/donatur/screen/ChildRaportDetailScreen';
 import ChildAktivitasListScreen from '../features/donatur/screen/ChildAktivitasListScreen';
 import ChildAktivitasDetailScreen from '../features/donatur/screen/ChildAktivitasDetailScreen';
+import BeritaListScreen from '../features/donatur/screen/BeritaListScreen';
+import BeritaDetailScreen from '../features/donatur/screen/BeritaDetailScreen';
 
-// Create navigators
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
 const ChildrenStack = createStackNavigator();
 const ProfileStack = createStackNavigator();
 
-// Home Stack Navigator
 const HomeStackNavigator = () => {
   return (
     <HomeStack.Navigator>
@@ -35,11 +32,20 @@ const HomeStackNavigator = () => {
         component={DonaturDashboardScreen} 
         options={{ headerTitle: 'Donatur Dashboard' }}
       />
+      <HomeStack.Screen 
+        name="BeritaList" 
+        component={BeritaListScreen} 
+        options={{ headerTitle: 'Berita' }}
+      />
+      <HomeStack.Screen 
+        name="BeritaDetail" 
+        component={BeritaDetailScreen} 
+        options={{ headerTitle: 'Berita Detail' }}
+      />
     </HomeStack.Navigator>
   );
 };
 
-// Children Stack Navigator
 const ChildrenStackNavigator = () => {
   return (
     <ChildrenStack.Navigator>
@@ -104,7 +110,6 @@ const ChildrenStackNavigator = () => {
   );
 };
 
-// Profile Stack Navigator
 const ProfileStackNavigator = () => {
   return (
     <ProfileStack.Navigator>
@@ -117,7 +122,6 @@ const ProfileStackNavigator = () => {
   );
 };
 
-// Main Tab Navigator for Donatur
 const DonaturNavigator = () => {
   return (
     <Tab.Navigator
