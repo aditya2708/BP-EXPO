@@ -34,23 +34,22 @@ const AnakDetailScreen = () => {
 
   // Define menu items
   const menuItems = [
-    
-    {
-      title: 'Prestasi',
-      screen: 'Prestasi',
-      icon: '🏆'
-    },
-    {
-      title: 'Surat',
-      screen: 'Surat',
-      icon: '✉️'
-    },
-    {
-      title: 'Riwayat',
-      screen: 'Riwayat',
-      icon: '📖'
-    },
-     {
+  {
+    title: 'Prestasi',
+    screen: 'Prestasi',
+    icon: '🏆'
+  },
+  {
+    title: 'Surat',
+    screen: 'Surat',
+    icon: '✉️'
+  },
+  {
+    title: 'Riwayat',
+    screen: 'Riwayat',
+    icon: '📖'
+  },
+  {
     title: 'Informasi Anak',
     screen: 'InformasiAnak',
     icon: '📋'
@@ -61,11 +60,16 @@ const AnakDetailScreen = () => {
     icon: '📝'
   },
   {
-    title: 'Raport',
+    title: 'Raport Shelter',  // Updated title
     screen: 'Raport',
     icon: '📚'
   },
-  ];
+  {
+    title: 'Raport Formal',   // New menu item
+    screen: 'RaportFormal',
+    icon: '🎓'
+  }
+];
 
   // Fetch anak data
   useEffect(() => {
