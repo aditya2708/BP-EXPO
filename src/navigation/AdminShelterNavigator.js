@@ -75,7 +75,9 @@ import SemesterFormScreen from '../features/adminShelter/screens/SemesterFormScr
 import SemesterDetailScreen from '../features/adminShelter/screens/SemesterDetailScreen';
 
 import TutorActivityHistoryScreen from '../features/adminShelter/screens/TutorActivityHistoryScreen';
-
+import RaportFormalScreen from '../features/adminShelter/screens/anakDetail/RaportFormalScreen';
+import RaportFormalDetailScreen from '../features/adminShelter/screens/anakDetail/RaportFormalDetailScreen';
+import RaportFormalFormScreen from '../features/adminShelter/screens/anakDetail/RaportFormalFormScreen';
 // Create navigators
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
@@ -474,6 +476,23 @@ const ManagementStackNavigator = () => {
         component={AttendanceReportScreen}
         options={{ headerTitle: 'Laporan Aktivitas' }}
       />
+      <ManagementStack.Screen 
+  name="RaportFormal" 
+  component={RaportFormalScreen} 
+  options={{ headerTitle: 'Raport Formal' }}
+/>
+<ManagementStack.Screen 
+  name="RaportFormalDetail" 
+  component={RaportFormalDetailScreen} 
+  options={{ headerTitle: 'Detail Raport Formal' }}
+/>
+<ManagementStack.Screen 
+  name="RaportFormalForm" 
+  component={RaportFormalFormScreen} 
+  options={({ route }) => ({ 
+    headerTitle: route.params?.isEdit ? 'Edit Raport Formal' : 'Tambah Raport Formal'
+  })}
+/>
     </ManagementStack.Navigator>
   );
 };

@@ -125,6 +125,13 @@ SURAT: {
   DELETE: (childId, suratId) => `/admin-shelter/anak/${childId}/surat/${suratId}`,
   MARK_READ: (childId, suratId) => `/admin-shelter/anak/${childId}/surat/${suratId}/read`
 },
+RAPORT_FORMAL: {
+  LIST: (childId) => `/admin-shelter/anak/${childId}/raport-formal`,
+  CREATE: (childId) => `/admin-shelter/anak/${childId}/raport-formal`,
+  DETAIL: (childId, raportId) => `/admin-shelter/anak/${childId}/raport-formal/${raportId}`,
+  UPDATE: (childId, raportId) => `/admin-shelter/anak/${childId}/raport-formal/${raportId}`,
+  DELETE: (childId, raportId) => `/admin-shelter/anak/${childId}/raport-formal/${raportId}`
+},
 };
 
 // Donatur endpoints
