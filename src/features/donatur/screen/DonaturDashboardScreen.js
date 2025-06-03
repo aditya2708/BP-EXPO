@@ -88,7 +88,7 @@ const DonaturDashboardScreen = () => {
             style={styles.profileButton}
             onPress={navigateToProfile}
           >
-            {profile?.foto ? (
+            {/* {profile?.foto ? (
               <Image
                 source={{ uri: `https://berbagipendidikan.org/storage/Donatur/${profile.id_donatur}/${profile.foto}` }}
                 style={styles.profileImage}
@@ -97,7 +97,7 @@ const DonaturDashboardScreen = () => {
               <View style={styles.profileImagePlaceholder}>
                 <Ionicons name="person" size={24} color="#ffffff" />
               </View>
-            )}
+            )} */}
           </TouchableOpacity>
         </View>
       </View>

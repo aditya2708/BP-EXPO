@@ -43,21 +43,21 @@ const DonaturProfileScreen = () => {
 
   // Initialize profile data from Redux state
   useEffect(() => {
-    if (profile) {
-      setProfileData({
-        nama_lengkap: profile.nama_lengkap || '',
-        alamat: profile.alamat || '',
-        no_hp: profile.no_hp || '',
-        email: user?.email || '',
-        bank: profile.bank || null,
-        no_rekening: profile.no_rekening || '',
-        diperuntukan: profile.diperuntukan || '',
-      });
+    // if (profile) {
+    //   setProfileData({
+    //     nama_lengkap: profile.nama_lengkap || '',
+    //     alamat: profile.alamat || '',
+    //     no_hp: profile.no_hp || '',
+    //     email: user?.email || '',
+    //     bank: profile.bank || null,
+    //     no_rekening: profile.no_rekening || '',
+    //     diperuntukan: profile.diperuntukan || '',
+    //   });
 
-      if (profile.foto) {
-        setProfileImage(`https://berbagipendidikan.org/storage/Donatur/${profile.id_donatur}/${profile.foto}`);
-      }
-    }
+    //   if (profile.foto) {
+    //     setProfileImage(`https://berbagipendidikan.org/storage/Donatur/${profile.id_donatur}/${profile.foto}`);
+    //   }
+    // }
   }, [profile, user]);
 
   // Handle profile image selection
