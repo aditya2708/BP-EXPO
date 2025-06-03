@@ -15,20 +15,17 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { format } from 'date-fns';
+import { format, isToday, isFuture, isPast, startOfDay } from 'date-fns';
 import NetInfo from '@react-native-community/netinfo';
 
-// Components
 import LoadingSpinner from '../../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../../common/components/ErrorMessage';
 
-// API Services
 import { adminShelterAnakApi } from '../../api/adminShelterAnakApi';
 import { adminShelterKelompokApi } from '../../api/adminShelterKelompokApi';
 import { aktivitasApi } from '../../api/aktivitasApi';
 import { adminShelterTutorApi } from '../../api/adminShelterTutorApi';
 
-// Redux
 import {
   recordAttendanceManually,
   selectAttendanceLoading,
@@ -44,13 +41,11 @@ import {
   resetTutorAttendanceError
 } from '../../redux/tutorAttendanceSlice';
 
-// Utils
 import OfflineSync from '../../utils/offlineSync';
 
 const ManualAttendanceScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   
-  // Get activity data from route params
   const { 
     id_aktivitas, 
     activityName, 
@@ -60,15 +55,13 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
     activityType 
   } = route.params || {};
   
-  // Redux state
   const loading = useSelector(selectAttendanceLoading);
   const error = useSelector(selectAttendanceError);
   const duplicateError = useSelector(selectDuplicateError);
   const tutorAttendanceLoading = useSelector(selectTutorAttendanceLoading);
   const tutorAttendanceError = useSelector(selectTutorAttendanceError);
   
-  // Local state
-  const [attendanceMode, setAttendanceMode] = useState('student'); // 'student' or 'tutor'
+  const [attendanceMode, setAttendanceMode] = useState('student');
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [selectedTutor, setSelectedTutor] = useState(null);
   const [notes, setNotes] = useState('');
@@ -83,17 +76,13 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
   const [isBimbelActivity, setIsBimbelActivity] = useState(activityType === 'Bimbel');
   const [showDuplicateAlert, setShowDuplicateAlert] = useState(false);
   const [activityTutor, setActivityTutor] = useState(null);
-  
-  // Activity details state
   const [activityDetails, setActivityDetails] = useState(null);
   const [loadingActivityDetails, setLoadingActivityDetails] = useState(false);
   const [expectedStatus, setExpectedStatus] = useState('present');
-  
-  // Time arrival state
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [arrivalTime, setArrivalTime] = useState(new Date());
+  const [activityDateStatus, setActivityDateStatus] = useState('valid');
   
-  // Check network connectivity
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener(state => {
       setIsConnected(state.isConnected && state.isInternetReachable);
@@ -102,34 +91,29 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
     return () => unsubscribe();
   }, []);
   
-  // Determine activity type when component mounts
   useEffect(() => {
     setIsBimbelActivity(activityType === 'Bimbel');
-    
-    // Fetch activity details to get schedule information
     fetchActivityDetails();
     fetchActivityTutor();
-  }, [activityType, id_aktivitas]);
+    validateActivityDate();
+  }, [activityType, id_aktivitas, activityDate]);
   
-  // Fetch students based on activity type and kelompok
   useEffect(() => {
-    if (attendanceMode === 'student') {
+    if (attendanceMode === 'student' && activityDateStatus === 'valid') {
       if (isBimbelActivity && kelompokId) {
         fetchStudentsByKelompok(kelompokId);
       } else {
         fetchAllStudents();
       }
     }
-  }, [attendanceMode, isBimbelActivity, kelompokId]);
+  }, [attendanceMode, isBimbelActivity, kelompokId, activityDateStatus]);
   
-  // Fetch tutors when mode changes to tutor
   useEffect(() => {
-    if (attendanceMode === 'tutor') {
+    if (attendanceMode === 'tutor' && activityDateStatus === 'valid') {
       fetchTutors();
     }
-  }, [attendanceMode]);
+  }, [attendanceMode, activityDateStatus]);
   
-  // Watch for duplicate errors
   useEffect(() => {
     if (duplicateError) {
       setShowDuplicateAlert(true);
@@ -140,12 +124,28 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
     };
   }, [duplicateError, dispatch]);
   
-  // Update expected status when arrival time changes
   useEffect(() => {
     updateExpectedStatus();
   }, [arrivalTime, activityDetails]);
   
-  // Fetch activity details to get schedule info
+  const validateActivityDate = () => {
+    if (!activityDate) {
+      setActivityDateStatus('unknown');
+      return;
+    }
+    
+    const today = startOfDay(new Date());
+    const actDate = startOfDay(new Date(activityDate));
+    
+    if (isFuture(actDate)) {
+      setActivityDateStatus('future');
+    } else if (isPast(actDate)) {
+      setActivityDateStatus('past');
+    } else {
+      setActivityDateStatus('valid');
+    }
+  };
+  
   const fetchActivityDetails = async () => {
     if (!id_aktivitas) return;
     
@@ -163,7 +163,6 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
     }
   };
   
-  // Fetch activity tutor
   const fetchActivityTutor = async () => {
     if (!id_aktivitas) return;
     
@@ -177,7 +176,6 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
     }
   };
   
-  // Determine the expected status based on current time and activity schedule
   const updateExpectedStatus = () => {
     if (!activityDetails || !arrivalTime) {
       return;
@@ -185,12 +183,16 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
     
     let status = 'present';
     
-    // If activity has end time and arrival is after that, mark as absent
+    if (activityDateStatus === 'past') {
+      status = 'absent';
+      setExpectedStatus(status);
+      return;
+    }
+    
     if (activityDetails.end_time) {
       const activityDate = new Date(activityDetails.tanggal);
       const endTimeStr = activityDetails.end_time;
       
-      // Parse end time if it's a string
       if (typeof endTimeStr === 'string') {
         const [hours, minutes] = endTimeStr.split(':');
         const endTime = new Date(activityDate);
@@ -202,18 +204,15 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
       }
     }
     
-    // If not absent, check if late based on late threshold
     if (status !== 'absent' && activityDetails.start_time) {
       const activityDate = new Date(activityDetails.tanggal);
       const startTimeStr = activityDetails.start_time;
       
-      // Parse start time if it's a string
       if (typeof startTimeStr === 'string') {
         const [hours, minutes] = startTimeStr.split(':');
         const startTime = new Date(activityDate);
         startTime.setHours(parseInt(hours, 10), parseInt(minutes, 10));
         
-        // Check if late threshold is defined
         if (activityDetails.late_threshold) {
           const lateThresholdStr = activityDetails.late_threshold;
           const [lateHours, lateMinutes] = lateThresholdStr.split(':');
@@ -224,7 +223,6 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
             status = 'late';
           }
         } else if (activityDetails.late_minutes_threshold) {
-          // Use minutes-based threshold
           const lateThreshold = new Date(startTime);
           lateThreshold.setMinutes(lateThreshold.getMinutes() + activityDetails.late_minutes_threshold);
           
@@ -238,25 +236,21 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
     setExpectedStatus(status);
   };
   
-  // Fetch all students from API
   const fetchAllStudents = async () => {
     setLoadingStudents(true);
     setStudentError(null);
     
     try {
-      // Initialize an empty array for all students
       let allStudents = [];
       let currentPage = 1;
       let lastPage = 1;
       
-      // First request to get initial data and pagination info
       const initialResponse = await adminShelterAnakApi.getAllAnak({ page: 1 });
       
       if (initialResponse.data && initialResponse.data.pagination) {
         lastPage = initialResponse.data.pagination.last_page;
         allStudents = [...initialResponse.data.data];
         
-        // Fetch remaining pages if any
         if (lastPage > 1) {
           for (let page = 2; page <= lastPage; page++) {
             const pageResponse = await adminShelterAnakApi.getAllAnak({ page });
@@ -266,14 +260,12 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
           }
         }
         
-        // Filter for active students
         const activeStudents = allStudents.filter(
           student => student.status_validasi === 'aktif'
         );
         
         setStudents(activeStudents);
       } else {
-        // Fallback: try with high per_page to get all data at once
         const fallbackResponse = await adminShelterAnakApi.getAllAnak({ per_page: 1000 });
         if (fallbackResponse.data && fallbackResponse.data.data) {
           const activeStudents = fallbackResponse.data.data.filter(
@@ -292,7 +284,6 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
     }
   };
   
-  // Fetch students for a specific kelompok
   const fetchStudentsByKelompok = async (kelompokId) => {
     setLoadingStudents(true);
     setStudentError(null);
@@ -300,7 +291,6 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
     try {
       const response = await adminShelterKelompokApi.getGroupChildren(kelompokId);
       if (response.data && response.data.data) {
-        // Filter for active students
         const activeStudents = response.data.data.filter(
           student => student.status_validasi === 'aktif'
         );
@@ -311,15 +301,12 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
     } catch (err) {
       console.error('Failed to fetch students by kelompok:', err);
       setStudentError('Failed to load students from this group. Using all students instead.');
-      
-      // Fallback to all students if kelompok fetch fails
       fetchAllStudents();
     } finally {
       setLoadingStudents(false);
     }
   };
   
-  // Fetch tutors
   const fetchTutors = async () => {
     setLoadingTutors(true);
     setTutorError(null);
@@ -339,7 +326,6 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
     }
   };
   
-  // Handle time change
   const handleTimeChange = (event, selectedTime) => {
     setShowTimePicker(false);
     if (selectedTime) {
@@ -347,24 +333,20 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
     }
   };
   
-  // Filter students by search query
   const filteredStudents = students.filter(student => 
     (student.full_name || student.nick_name || '')
       .toLowerCase()
       .includes(searchQuery.toLowerCase())
   );
   
-  // Handle student selection
   const handleSelectStudent = (student) => {
     setSelectedStudent(student);
   };
   
-  // Handle tutor selection
   const handleSelectTutor = (tutor) => {
     setSelectedTutor(tutor);
   };
   
-  // Render student item
   const renderStudentItem = ({ item }) => (
     <TouchableOpacity
       style={[
@@ -372,6 +354,7 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
         selectedStudent?.id_anak === item.id_anak && styles.selectedStudentItem
       ]}
       onPress={() => handleSelectStudent(item)}
+      disabled={activityDateStatus !== 'valid'}
     >
       <View style={styles.studentAvatar}>
         <Ionicons name="person" size={24} color="#95a5a6" />
@@ -390,10 +373,13 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
     </TouchableOpacity>
   );
   
-  // Handle form submission
   const handleSubmit = async () => {
+    if (activityDateStatus === 'future') {
+      Alert.alert('Error', 'Activity has not started yet. Please wait until the activity date.');
+      return;
+    }
+    
     if (attendanceMode === 'student') {
-      // Student attendance logic
       if (!selectedStudent) {
         Alert.alert('Error', 'Please select a student');
         return;
@@ -409,39 +395,20 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
         return;
       }
       
-      const formattedArrivalTime = format(arrivalTime, 'yyyy-MM-dd HH:mm:ss');
-      
-      const attendanceData = {
-        id_anak: selectedStudent.id_anak,
-        id_aktivitas,
-        status: null,
-        notes,
-        arrival_time: formattedArrivalTime
-      };
-      
-      try {
-        if (isConnected) {
-          await dispatch(recordAttendanceManually(attendanceData)).unwrap();
-          Alert.alert(
-            'Success', 
-            'Student attendance recorded successfully',
-            [{ text: 'OK', onPress: () => navigation.goBack() }]
-          );
-        } else {
-          const result = await OfflineSync.processAttendance(attendanceData, 'manual');
-          Alert.alert(
-            'Offline Mode', 
-            result.message || 'Attendance saved for syncing when online',
-            [{ text: 'OK', onPress: () => navigation.goBack() }]
-          );
-        }
-      } catch (err) {
-        if (!err.isDuplicate) {
-          Alert.alert('Error', err.message || 'Failed to record attendance');
-        }
+      if (activityDateStatus === 'past') {
+        Alert.alert(
+          'Past Activity', 
+          'This activity was in the past. Attendance will be marked as absent. Continue?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Continue', onPress: () => submitStudentAttendance() }
+          ]
+        );
+        return;
       }
+      
+      submitStudentAttendance();
     } else {
-      // Tutor attendance logic
       if (!selectedTutor) {
         Alert.alert('Error', 'Please select a tutor');
         return;
@@ -452,53 +419,100 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
         return;
       }
       
-      // Validate tutor is assigned to activity
       if (!activityTutor || activityTutor.id_tutor !== selectedTutor.id_tutor) {
         Alert.alert('Error', 'Selected tutor is not assigned to this activity');
         return;
       }
       
-      const formattedArrivalTime = format(arrivalTime, 'yyyy-MM-dd HH:mm:ss');
+      if (activityDateStatus === 'past') {
+        Alert.alert(
+          'Past Activity', 
+          'This activity was in the past. Attendance will be marked as absent. Continue?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Continue', onPress: () => submitTutorAttendance() }
+          ]
+        );
+        return;
+      }
       
-      const tutorAttendanceData = {
-        id_tutor: selectedTutor.id_tutor,
-        id_aktivitas,
-        status: null,
-        notes,
-        arrival_time: formattedArrivalTime
-      };
-      
-      try {
-        if (isConnected) {
-          await dispatch(recordTutorAttendanceManually(tutorAttendanceData)).unwrap();
-          Alert.alert(
-            'Success', 
-            'Tutor attendance recorded successfully',
-            [{ text: 'OK', onPress: () => navigation.goBack() }]
-          );
-        } else {
-          const result = await OfflineSync.processTutorAttendance(tutorAttendanceData, 'manual');
-          Alert.alert(
-            'Offline Mode', 
-            result.message || 'Tutor attendance saved for syncing when online',
-            [{ text: 'OK', onPress: () => navigation.goBack() }]
-          );
-        }
-      } catch (err) {
-        if (!err.isDuplicate) {
-          Alert.alert('Error', err.message || 'Failed to record tutor attendance');
-        }
+      submitTutorAttendance();
+    }
+  };
+  
+  const submitStudentAttendance = async () => {
+    const formattedArrivalTime = format(arrivalTime, 'yyyy-MM-dd HH:mm:ss');
+    
+    const attendanceData = {
+      id_anak: selectedStudent.id_anak,
+      id_aktivitas,
+      status: null,
+      notes,
+      arrival_time: formattedArrivalTime
+    };
+    
+    try {
+      if (isConnected) {
+        await dispatch(recordAttendanceManually(attendanceData)).unwrap();
+        Alert.alert(
+          'Success', 
+          'Student attendance recorded successfully',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      } else {
+        const result = await OfflineSync.processAttendance(attendanceData, 'manual');
+        Alert.alert(
+          'Offline Mode', 
+          result.message || 'Attendance saved for syncing when online',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      }
+    } catch (err) {
+      if (!err.isDuplicate) {
+        Alert.alert('Error', err.message || 'Failed to record attendance');
       }
     }
   };
   
-  // Handle closing duplicate alert
+  const submitTutorAttendance = async () => {
+    const formattedArrivalTime = format(arrivalTime, 'yyyy-MM-dd HH:mm:ss');
+    
+    const tutorAttendanceData = {
+      id_tutor: selectedTutor.id_tutor,
+      id_aktivitas,
+      status: null,
+      notes,
+      arrival_time: formattedArrivalTime
+    };
+    
+    try {
+      if (isConnected) {
+        await dispatch(recordTutorAttendanceManually(tutorAttendanceData)).unwrap();
+        Alert.alert(
+          'Success', 
+          'Tutor attendance recorded successfully',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      } else {
+        const result = await OfflineSync.processTutorAttendance(tutorAttendanceData, 'manual');
+        Alert.alert(
+          'Offline Mode', 
+          result.message || 'Tutor attendance saved for syncing when online',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      }
+    } catch (err) {
+      if (!err.isDuplicate) {
+        Alert.alert('Error', err.message || 'Failed to record tutor attendance');
+      }
+    }
+  };
+  
   const handleCloseDuplicateAlert = () => {
     setShowDuplicateAlert(false);
     dispatch(resetAttendanceError());
   };
 
-  // Get status color for the expected status indicator
   const getStatusColor = (status) => {
     switch (status) {
       case 'absent':
@@ -510,7 +524,6 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
     }
   };
 
-  // Get status icon for the expected status indicator
   const getStatusIcon = (status) => {
     switch (status) {
       case 'absent':
@@ -522,7 +535,30 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
     }
   };
 
-  // Create header component for the FlatList  
+  const getActivityStatusInfo = () => {
+    switch(activityDateStatus) {
+      case 'future':
+        return {
+          show: true,
+          color: '#f39c12',
+          icon: 'time-outline',
+          text: 'Activity has not started yet - form disabled'
+        };
+      case 'past':
+        return {
+          show: true,
+          color: '#e74c3c',
+          icon: 'alert-circle',
+          text: 'Past activity - attendance will be marked as absent'
+        };
+      default:
+        return { show: false };
+    }
+  };
+
+  const isFormDisabled = activityDateStatus === 'future';
+  const activityStatus = getActivityStatusInfo();
+  
   const HeaderComponent = () => (
     <>
       {attendanceMode === 'student' ? (
@@ -531,16 +567,19 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
             {`Student${isBimbelActivity ? ` from ${kelompokName || 'this group'}` : ''}`}
           </Text>
           
-          <View style={styles.searchContainer}>
-            <Ionicons name="search" size={20} color="#7f8c8d" />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search student..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              clearButtonMode="while-editing"
-            />
-          </View>
+          {!isFormDisabled && (
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={20} color="#7f8c8d" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search student..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                clearButtonMode="while-editing"
+                editable={!isFormDisabled}
+              />
+            </View>
+          )}
         </>
       ) : (
         <>
@@ -557,7 +596,7 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
               onRetry={fetchTutors}
               style={styles.errorContainer} 
             />
-          ) : (
+          ) : !isFormDisabled ? (
             <View style={styles.tutorSelectionContainer}>
               {tutorList.map(tutor => (
                 <TouchableOpacity
@@ -565,9 +604,11 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
                   style={[
                     styles.tutorItem,
                     selectedTutor?.id_tutor === tutor.id_tutor && styles.selectedTutorItem,
-                    activityTutor?.id_tutor === tutor.id_tutor && styles.assignedTutorItem
+                    activityTutor?.id_tutor === tutor.id_tutor && styles.assignedTutorItem,
+                    isFormDisabled && styles.disabledItem
                   ]}
-                  onPress={() => setSelectedTutor(tutor)}
+                  onPress={() => !isFormDisabled && setSelectedTutor(tutor)}
+                  disabled={isFormDisabled}
                 >
                   <View style={styles.tutorAvatar}>
                     <Ionicons name="person" size={24} color="#95a5a6" />
@@ -585,79 +626,80 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
                 </TouchableOpacity>
               ))}
             </View>
-          )}
+          ) : null}
         </>
       )}
     </>
   );
   
-  // Create footer component for the FlatList
   const FooterComponent = () => (
     <>
-      {/* Time Arrived */}
-      <View style={styles.formSection}>
-        <Text style={styles.label}>Arrival Time</Text>
-        <TouchableOpacity 
-          style={styles.timePickerButton}
-          onPress={() => setShowTimePicker(true)}
-        >
-          <Ionicons name="time-outline" size={20} color="#3498db" />
-          <Text style={styles.timePickerText}>
-            {format(arrivalTime, 'HH:mm')}
-          </Text>
-        </TouchableOpacity>
-        
-        {showTimePicker && (
-          <DateTimePicker
-            value={arrivalTime}
-            mode="time"
-            is24Hour={true}
-            display="default"
-            onChange={handleTimeChange}
-          />
-        )}
-      </View>
+      {!isFormDisabled && (
+        <>
+          <View style={styles.formSection}>
+            <Text style={styles.label}>Arrival Time</Text>
+            <TouchableOpacity 
+              style={[styles.timePickerButton, isFormDisabled && styles.disabledButton]}
+              onPress={() => !isFormDisabled && setShowTimePicker(true)}
+              disabled={isFormDisabled}
+            >
+              <Ionicons name="time-outline" size={20} color="#3498db" />
+              <Text style={styles.timePickerText}>
+                {format(arrivalTime, 'HH:mm')}
+              </Text>
+            </TouchableOpacity>
+            
+            {showTimePicker && (
+              <DateTimePicker
+                value={arrivalTime}
+                mode="time"
+                is24Hour={true}
+                display="default"
+                onChange={handleTimeChange}
+              />
+            )}
+          </View>
+          
+          <View style={styles.formSection}>
+            <Text style={styles.label}>Expected Status</Text>
+            <View style={[styles.expectedStatus, { backgroundColor: getStatusColor(expectedStatus) }]}>
+              <Ionicons name={getStatusIcon(expectedStatus)} size={20} color="#fff" />
+              <Text style={styles.expectedStatusText}>
+                {expectedStatus.charAt(0).toUpperCase() + expectedStatus.slice(1)}
+              </Text>
+            </View>
+            <Text style={styles.helperText}>
+              Status is automatically determined based on activity schedule and arrival time
+            </Text>
+          </View>
+          
+          <View style={styles.formSection}>
+            <Text style={styles.label}>Verification Notes (Required)</Text>
+            <TextInput
+              style={[styles.notesInput, isFormDisabled && styles.disabledInput]}
+              placeholder="Enter verification notes..."
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+              editable={!isFormDisabled}
+            />
+          </View>
+        </>
+      )}
       
-      {/* Expected Status */}
-      <View style={styles.formSection}>
-        <Text style={styles.label}>Expected Status</Text>
-        <View style={[styles.expectedStatus, { backgroundColor: getStatusColor(expectedStatus) }]}>
-          <Ionicons name={getStatusIcon(expectedStatus)} size={20} color="#fff" />
-          <Text style={styles.expectedStatusText}>
-            {expectedStatus.charAt(0).toUpperCase() + expectedStatus.slice(1)}
-          </Text>
-        </View>
-        <Text style={styles.helperText}>
-          Status is automatically determined based on activity schedule and arrival time
-        </Text>
-      </View>
-      
-      {/* Notes Input */}
-      <View style={styles.formSection}>
-        <Text style={styles.label}>Verification Notes (Required)</Text>
-        <TextInput
-          style={styles.notesInput}
-          placeholder="Enter verification notes..."
-          value={notes}
-          onChangeText={setNotes}
-          multiline
-          numberOfLines={3}
-          textAlignVertical="top"
-        />
-      </View>
-      
-      {/* Buttons */}
       <View style={styles.buttonSection}>
         <TouchableOpacity 
-          style={styles.submitButton}
+          style={[styles.submitButton, isFormDisabled && styles.disabledSubmitButton]}
           onPress={handleSubmit}
-          disabled={loading || tutorAttendanceLoading}
+          disabled={loading || tutorAttendanceLoading || isFormDisabled}
         >
           {(loading || tutorAttendanceLoading) ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Text style={styles.submitButtonText}>
-              Record {attendanceMode === 'student' ? 'Student' : 'Tutor'} Attendance
+            <Text style={[styles.submitButtonText, isFormDisabled && styles.disabledSubmitButtonText]}>
+              {isFormDisabled ? 'Form Disabled' : `Record ${attendanceMode === 'student' ? 'Student' : 'Tutor'} Attendance`}
             </Text>
           )}
         </TouchableOpacity>
@@ -682,12 +724,10 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
         style={styles.container}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        {/* Activity Info */}
         <View style={styles.activityInfo}>
           <Text style={styles.activityName}>{activityName || 'Activity'}</Text>
           <Text style={styles.activityDate}>{activityDate || 'Date not specified'}</Text>
           
-          {/* Show Kelompok info for Bimbel activities */}
           {isBimbelActivity && kelompokName && (
             <View style={styles.kelompokInfoContainer}>
               <Text style={styles.kelompokInfo}>Group: {kelompokName}</Text>
@@ -695,16 +735,17 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
           )}
         </View>
         
-        {/* Attendance Mode Toggle */}
         <View style={styles.modeToggleContainer}>
           <Text style={styles.modeToggleLabel}>Attendance Mode</Text>
           <View style={styles.modeToggleButtons}>
             <TouchableOpacity
               style={[
                 styles.modeToggleButton,
-                attendanceMode === 'student' && styles.modeToggleButtonActive
+                attendanceMode === 'student' && styles.modeToggleButtonActive,
+                isFormDisabled && styles.disabledButton
               ]}
-              onPress={() => setAttendanceMode('student')}
+              onPress={() => !isFormDisabled && setAttendanceMode('student')}
+              disabled={isFormDisabled}
             >
               <Text style={[
                 styles.modeToggleButtonText,
@@ -717,9 +758,11 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
             <TouchableOpacity
               style={[
                 styles.modeToggleButton,
-                attendanceMode === 'tutor' && styles.modeToggleButtonActive
+                attendanceMode === 'tutor' && styles.modeToggleButtonActive,
+                isFormDisabled && styles.disabledButton
               ]}
-              onPress={() => setAttendanceMode('tutor')}
+              onPress={() => !isFormDisabled && setAttendanceMode('tutor')}
+              disabled={isFormDisabled}
             >
               <Text style={[
                 styles.modeToggleButtonText,
@@ -731,7 +774,13 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
           </View>
         </View>
         
-        {/* Network Status Indicator */}
+        {activityStatus.show && (
+          <View style={[styles.activityStatusAlert, { backgroundColor: activityStatus.color }]}>
+            <Ionicons name={activityStatus.icon} size={18} color="#fff" />
+            <Text style={styles.activityStatusText}>{activityStatus.text}</Text>
+          </View>
+        )}
+        
         {!isConnected && (
           <View style={styles.offlineIndicator}>
             <Ionicons name="cloud-offline" size={18} color="#fff" />
@@ -739,7 +788,6 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
           </View>
         )}
         
-        {/* Duplicate Alert */}
         {showDuplicateAlert && (
           <View style={styles.duplicateAlert}>
             <Ionicons name="alert-circle" size={20} color="#fff" />
@@ -755,32 +803,30 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
           </View>
         )}
         
-        {/* Error Message */}
         {(error || tutorAttendanceError) && (
           <ErrorMessage message={error || tutorAttendanceError} />
         )}
         {studentError && <ErrorMessage message={studentError} onRetry={fetchAllStudents} />}
         
-        {/* Main Form Content */}
         <View style={styles.formContainer}>
           {isAnyLoading ? (
             <ActivityIndicator size="large" color="#3498db" style={styles.loadingIndicator} />
           ) : (
             attendanceMode === 'student' ? (
               <FlatList
-                data={filteredStudents}
+                data={isFormDisabled ? [] : filteredStudents}
                 renderItem={renderStudentItem}
                 keyExtractor={(item) => item.id_anak.toString()}
                 ListHeaderComponent={HeaderComponent}
                 ListFooterComponent={FooterComponent}
                 ListEmptyComponent={
-                  <Text style={styles.emptyListText}>No students found</Text>
+                  !isFormDisabled ? <Text style={styles.emptyListText}>No students found</Text> : null
                 }
                 contentContainerStyle={styles.studentListContent}
               />
             ) : (
               <FlatList
-                data={[]} // Empty data since tutors are rendered in header
+                data={[]}
                 renderItem={() => null}
                 ListHeaderComponent={HeaderComponent}
                 ListFooterComponent={FooterComponent}
@@ -790,7 +836,6 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
           )}
         </View>
         
-        {/* Loading Overlay */}
         {isAnyLoading && (
           <LoadingSpinner 
             fullScreen 
@@ -803,6 +848,37 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
+  activityStatusAlert: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 8,
+  },
+  activityStatusText: {
+    color: '#fff',
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  disabledInput: {
+    backgroundColor: '#f5f5f5',
+    color: '#999',
+  },
+  disabledItem: {
+    opacity: 0.5,
+  },
+  disabledSubmitButton: {
+    backgroundColor: '#bdc3c7',
+  },
+  disabledSubmitButtonText: {
+    color: '#7f8c8d',
+  },
   modeToggleContainer: {
     backgroundColor: '#f8f9fa',
     padding: 16,
@@ -1097,6 +1173,19 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: '#7f8c8d',
     fontSize: 16,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginLeft: 10,
+    color: '#7f8c8d',
+  },
+  errorContainer: {
+    margin: 16,
   },
 });
 

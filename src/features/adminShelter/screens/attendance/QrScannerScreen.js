@@ -13,7 +13,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
 import { Audio } from 'expo-av';
-import { format } from 'date-fns';
+import { format, isToday, isFuture, isPast, startOfDay } from 'date-fns';
 
 import QrScanner from '../../components/QrScanner';
 
@@ -77,6 +77,7 @@ const QrScannerScreen = ({ navigation, route }) => {
   const [kelompokStudentIds, setKelompokStudentIds] = useState([]);
   const [loadingKelompokData, setLoadingKelompokData] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [activityDateStatus, setActivityDateStatus] = useState('valid');
   
   useEffect(() => {
     const loadSound = async () => {
@@ -121,7 +122,9 @@ const QrScannerScreen = ({ navigation, route }) => {
     if (activityType === 'Bimbel' && kelompokId) {
       fetchKelompokStudents(kelompokId);
     }
-  }, [activityType, kelompokId]);
+    
+    validateActivityDate();
+  }, [activityType, kelompokId, activityDate]);
   
   useEffect(() => {
     if (duplicateError || tutorDuplicateError) {
@@ -143,6 +146,24 @@ const QrScannerScreen = ({ navigation, route }) => {
       handleAttendanceRecording(validationResult.token.token, validationResult.anak.id_anak);
     }
   }, [validationResult, isBimbelActivity, kelompokStudentIds]);
+  
+  const validateActivityDate = () => {
+    if (!activityDate) {
+      setActivityDateStatus('unknown');
+      return;
+    }
+    
+    const today = startOfDay(new Date());
+    const actDate = startOfDay(new Date(activityDate));
+    
+    if (isFuture(actDate)) {
+      setActivityDateStatus('future');
+    } else if (isPast(actDate)) {
+      setActivityDateStatus('past');
+    } else {
+      setActivityDateStatus('valid');
+    }
+  };
   
   const fetchKelompokStudents = async (kelompokId) => {
     if (!kelompokId) return;
@@ -217,6 +238,27 @@ const QrScannerScreen = ({ navigation, route }) => {
       return;
     }
     
+    if (activityDateStatus === 'future') {
+      Alert.alert('Activity Not Started', 'This activity has not started yet. Please wait until the activity date.');
+      return;
+    }
+    
+    if (activityDateStatus === 'past') {
+      Alert.alert(
+        'Past Activity', 
+        'This activity was in the past. Attendance will be marked as absent.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Continue', onPress: () => proceedWithScan(qrData) }
+        ]
+      );
+      return;
+    }
+    
+    proceedWithScan(qrData);
+  }, [id_aktivitas, isProcessing, activityDateStatus]);
+  
+  const proceedWithScan = useCallback(async (qrData) => {
     setIsProcessing(true);
     
     try {
@@ -239,7 +281,7 @@ const QrScannerScreen = ({ navigation, route }) => {
         setIsProcessing(false);
       }, 1000);
     }
-  }, [id_aktivitas, isProcessing, dispatch]);
+  }, [dispatch]);
   
   const validateIfTutorToken = useCallback(async (token) => {
     try {
@@ -393,12 +435,36 @@ const QrScannerScreen = ({ navigation, route }) => {
     }
   };
 
+  const getActivityStatusInfo = () => {
+    switch(activityDateStatus) {
+      case 'future':
+        return {
+          show: true,
+          color: '#f39c12',
+          icon: 'time-outline',
+          text: 'Activity has not started yet'
+        };
+      case 'past':
+        return {
+          show: true,
+          color: '#e74c3c',
+          icon: 'alert-circle',
+          text: 'Past activity - attendance will be marked as absent'
+        };
+      default:
+        return { show: false };
+    }
+  };
+
+  const activityStatus = getActivityStatusInfo();
+
   return (
     <SafeAreaView style={styles.container}>
       <QrScanner 
         onScan={handleScan}
         onClose={handleClose}
         isLoading={isLoading}
+        disabled={activityDateStatus === 'future'}
       />
       
       <View style={styles.bottomBar}>
@@ -412,12 +478,23 @@ const QrScannerScreen = ({ navigation, route }) => {
           </Text>
         )}
         
-        <View style={styles.autoDetectionNote}>
-          <Ionicons name="time-outline" size={16} color="#fff" />
-          <Text style={styles.autoDetectionText}>
-            Attendance status will be automatically determined based on schedule
-          </Text>
-        </View>
+        {activityStatus.show && (
+          <View style={[styles.activityStatusNote, { backgroundColor: activityStatus.color }]}>
+            <Ionicons name={activityStatus.icon} size={16} color="#fff" />
+            <Text style={styles.activityStatusText}>
+              {activityStatus.text}
+            </Text>
+          </View>
+        )}
+        
+        {activityDateStatus === 'valid' && (
+          <View style={styles.autoDetectionNote}>
+            <Ionicons name="time-outline" size={16} color="#fff" />
+            <Text style={styles.autoDetectionText}>
+              Attendance status will be automatically determined based on schedule
+            </Text>
+          </View>
+        )}
         
         {!isConnected && (
           <View style={styles.offlineIndicator}>
@@ -469,6 +546,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 10,
     opacity: 0.8,
+  },
+  activityStatusNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+    borderRadius: 6,
+    marginBottom: 10,
+  },
+  activityStatusText: {
+    color: '#fff',
+    marginLeft: 8,
+    fontSize: 12,
+    textAlign: 'center',
+    fontWeight: '500',
   },
   autoDetectionNote: {
     flexDirection: 'row',
