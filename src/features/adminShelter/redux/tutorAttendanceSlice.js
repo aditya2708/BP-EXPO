@@ -15,6 +15,12 @@ export const recordTutorAttendanceByQr = createAsyncThunk(
           existingRecord: error.response.data.data
         });
       }
+      if (error.response?.status === 422) {
+        return rejectWithValue({
+          message: error.response.data.message || 'Invalid activity date',
+          isDateValidationError: true
+        });
+      }
       return rejectWithValue(error.response?.data || { message: error.message });
     }
   }
@@ -32,6 +38,12 @@ export const recordTutorAttendanceManually = createAsyncThunk(
           message: error.response.data.message || 'Tutor attendance already recorded for this activity',
           isDuplicate: true,
           existingRecord: error.response.data.data
+        });
+      }
+      if (error.response?.status === 422) {
+        return rejectWithValue({
+          message: error.response.data.message || 'Invalid activity date',
+          isDateValidationError: true
         });
       }
       return rejectWithValue(error.response?.data || { message: error.message });
@@ -84,6 +96,7 @@ const initialState = {
   loading: false,
   error: null,
   duplicateError: null,
+  dateValidationError: null,
   lastUpdated: null,
   offlineQueue: [],
   isSyncing: false
@@ -96,6 +109,13 @@ const tutorAttendanceSlice = createSlice({
     resetTutorAttendanceError: (state) => {
       state.error = null;
       state.duplicateError = null;
+      state.dateValidationError = null;
+    },
+    resetTutorDuplicateError: (state) => {
+      state.duplicateError = null;
+    },
+    resetTutorDateValidationError: (state) => {
+      state.dateValidationError = null;
     },
     queueOfflineTutorAttendance: (state, action) => {
       state.offlineQueue.push(action.payload);
@@ -120,6 +140,7 @@ const tutorAttendanceSlice = createSlice({
         state.loading = true;
         state.error = null;
         state.duplicateError = null;
+        state.dateValidationError = null;
       })
       .addCase(recordTutorAttendanceByQr.fulfilled, (state, action) => {
         state.loading = false;
@@ -138,6 +159,8 @@ const tutorAttendanceSlice = createSlice({
             const record = action.payload.existingRecord;
             state.attendanceRecords[record.id_absen] = record;
           }
+        } else if (action.payload?.isDateValidationError) {
+          state.dateValidationError = action.payload.message;
         } else {
           state.error = action.payload?.message || 'Failed to record tutor attendance';
         }
@@ -146,6 +169,7 @@ const tutorAttendanceSlice = createSlice({
         state.loading = true;
         state.error = null;
         state.duplicateError = null;
+        state.dateValidationError = null;
       })
       .addCase(recordTutorAttendanceManually.fulfilled, (state, action) => {
         state.loading = false;
@@ -164,6 +188,8 @@ const tutorAttendanceSlice = createSlice({
             const record = action.payload.existingRecord;
             state.attendanceRecords[record.id_absen] = record;
           }
+        } else if (action.payload?.isDateValidationError) {
+          state.dateValidationError = action.payload.message;
         } else {
           state.error = action.payload?.message || 'Failed to record tutor attendance manually';
         }
@@ -229,7 +255,9 @@ const tutorAttendanceSlice = createSlice({
 });
 
 export const { 
-  resetTutorAttendanceError, 
+  resetTutorAttendanceError,
+  resetTutorDuplicateError,
+  resetTutorDateValidationError,
   queueOfflineTutorAttendance, 
   removeFromOfflineQueue, 
   setSyncing,
@@ -244,6 +272,7 @@ const selectTutorRecordsState = state => state.tutorAttendance.tutorRecords;
 export const selectTutorAttendanceLoading = (state) => state.tutorAttendance.loading;
 export const selectTutorAttendanceError = (state) => state.tutorAttendance.error;
 export const selectTutorDuplicateError = (state) => state.tutorAttendance.duplicateError;
+export const selectTutorDateValidationError = (state) => state.tutorAttendance.dateValidationError;
 export const selectTutorAttendanceRecords = (state) => state.tutorAttendance.attendanceRecords;
 export const selectTutorTokens = (state) => state.tutorAttendance.tokens;
 export const selectCurrentTutorToken = (state) => state.tutorAttendance.currentToken;

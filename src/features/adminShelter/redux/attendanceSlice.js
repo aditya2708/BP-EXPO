@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import { attendanceApi } from '../api/attendanceApi';
 
-// Async thunks
 export const recordAttendanceByQr = createAsyncThunk(
   'attendance/recordByQr',
   async ({ id_anak, id_aktivitas, status, token, arrival_time }, { rejectWithValue }) => {
@@ -9,12 +8,17 @@ export const recordAttendanceByQr = createAsyncThunk(
       const response = await attendanceApi.recordAttendanceByQr(id_anak, id_aktivitas, status, token, arrival_time);
       return response.data;
     } catch (error) {
-      // Special handling for duplicate records (409 Conflict)
       if (error.response?.status === 409) {
         return rejectWithValue({
           message: error.response.data.message || 'Attendance already recorded for this student in this activity',
           isDuplicate: true,
           existingRecord: error.response.data.data
+        });
+      }
+      if (error.response?.status === 422) {
+        return rejectWithValue({
+          message: error.response.data.message || 'Invalid activity date',
+          isDateValidationError: true
         });
       }
       return rejectWithValue(error.response?.data || { message: error.message });
@@ -29,12 +33,17 @@ export const recordAttendanceManually = createAsyncThunk(
       const response = await attendanceApi.recordAttendanceManually(id_anak, id_aktivitas, status, notes, arrival_time);
       return response.data;
     } catch (error) {
-      // Special handling for duplicate records (409 Conflict)
       if (error.response?.status === 409) {
         return rejectWithValue({
           message: error.response.data.message || 'Attendance already recorded for this student in this activity',
           isDuplicate: true,
           existingRecord: error.response.data.data
+        });
+      }
+      if (error.response?.status === 422) {
+        return rejectWithValue({
+          message: error.response.data.message || 'Invalid activity date',
+          isDateValidationError: true
         });
       }
       return rejectWithValue(error.response?.data || { message: error.message });
@@ -114,7 +123,6 @@ export const generateStats = createAsyncThunk(
   }
 );
 
-// Initial state
 const initialState = {
   attendanceRecords: {},
   activityRecords: {},
@@ -124,13 +132,12 @@ const initialState = {
   loading: false,
   error: null,
   duplicateError: null,
+  dateValidationError: null,
   lastUpdated: null,
-  // Offline support
   offlineQueue: [],
   isSyncing: false
 };
 
-// Slice
 const attendanceSlice = createSlice({
   name: 'attendance',
   initialState,
@@ -138,8 +145,14 @@ const attendanceSlice = createSlice({
     resetAttendanceError: (state) => {
       state.error = null;
       state.duplicateError = null;
+      state.dateValidationError = null;
     },
-    // For offline support
+    resetDuplicateError: (state) => {
+      state.duplicateError = null;
+    },
+    resetDateValidationError: (state) => {
+      state.dateValidationError = null;
+    },
     queueOfflineAttendance: (state, action) => {
       state.offlineQueue.push(action.payload);
     },
@@ -152,11 +165,11 @@ const attendanceSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Record attendance by QR
       .addCase(recordAttendanceByQr.pending, (state) => {
         state.loading = true;
         state.error = null;
         state.duplicateError = null;
+        state.dateValidationError = null;
       })
       .addCase(recordAttendanceByQr.fulfilled, (state, action) => {
         state.loading = false;
@@ -169,23 +182,24 @@ const attendanceSlice = createSlice({
       .addCase(recordAttendanceByQr.rejected, (state, action) => {
         state.loading = false;
         
-        // Special handling for duplicate records
         if (action.payload?.isDuplicate) {
           state.duplicateError = action.payload.message;
           if (action.payload.existingRecord) {
             const record = action.payload.existingRecord;
             state.attendanceRecords[record.id_absen] = record;
           }
+        } else if (action.payload?.isDateValidationError) {
+          state.dateValidationError = action.payload.message;
         } else {
           state.error = action.payload?.message || 'Failed to record attendance';
         }
       })
       
-      // Record attendance manually
       .addCase(recordAttendanceManually.pending, (state) => {
         state.loading = true;
         state.error = null;
         state.duplicateError = null;
+        state.dateValidationError = null;
       })
       .addCase(recordAttendanceManually.fulfilled, (state, action) => {
         state.loading = false;
@@ -198,19 +212,19 @@ const attendanceSlice = createSlice({
       .addCase(recordAttendanceManually.rejected, (state, action) => {
         state.loading = false;
         
-        // Special handling for duplicate records
         if (action.payload?.isDuplicate) {
           state.duplicateError = action.payload.message;
           if (action.payload.existingRecord) {
             const record = action.payload.existingRecord;
             state.attendanceRecords[record.id_absen] = record;
           }
+        } else if (action.payload?.isDateValidationError) {
+          state.dateValidationError = action.payload.message;
         } else {
           state.error = action.payload?.message || 'Failed to record attendance manually';
         }
       })
       
-      // Get attendance by activity
       .addCase(getAttendanceByActivity.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -221,7 +235,6 @@ const attendanceSlice = createSlice({
           const id_aktivitas = action.meta.arg.id_aktivitas;
           state.activityRecords[id_aktivitas] = action.payload.data;
           
-          // Also update individual attendance records
           action.payload.data.forEach(record => {
             state.attendanceRecords[record.id_absen] = record;
           });
@@ -233,7 +246,6 @@ const attendanceSlice = createSlice({
         state.error = action.payload?.message || 'Failed to get attendance records';
       })
       
-      // Get attendance by student
       .addCase(getAttendanceByStudent.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -244,7 +256,6 @@ const attendanceSlice = createSlice({
           const id_anak = action.meta.arg.id_anak;
           state.studentRecords[id_anak] = action.payload.data;
           
-          // Also update individual attendance records
           action.payload.data.forEach(record => {
             state.attendanceRecords[record.id_absen] = record;
           });
@@ -256,7 +267,6 @@ const attendanceSlice = createSlice({
         state.error = action.payload?.message || 'Failed to get student attendance records';
       })
       
-      // Manual verify
       .addCase(manualVerify.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -270,7 +280,6 @@ const attendanceSlice = createSlice({
           state.attendanceRecords[id_absen].verification_status = 'manual';
         }
         
-        // Update in activity records if present
         Object.keys(state.activityRecords).forEach(activityId => {
           state.activityRecords[activityId] = state.activityRecords[activityId].map(record => {
             if (record.id_absen === id_absen) {
@@ -284,7 +293,6 @@ const attendanceSlice = createSlice({
           });
         });
         
-        // Update in student records if present
         Object.keys(state.studentRecords).forEach(studentId => {
           state.studentRecords[studentId] = state.studentRecords[studentId].map(record => {
             if (record.id_absen === id_absen) {
@@ -305,7 +313,6 @@ const attendanceSlice = createSlice({
         state.error = action.payload?.message || 'Failed to verify attendance';
       })
       
-      // Reject verification
       .addCase(rejectVerification.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -319,7 +326,6 @@ const attendanceSlice = createSlice({
           state.attendanceRecords[id_absen].verification_status = 'rejected';
         }
         
-        // Update in activity records if present
         Object.keys(state.activityRecords).forEach(activityId => {
           state.activityRecords[activityId] = state.activityRecords[activityId].map(record => {
             if (record.id_absen === id_absen) {
@@ -333,7 +339,6 @@ const attendanceSlice = createSlice({
           });
         });
         
-        // Update in student records if present
         Object.keys(state.studentRecords).forEach(studentId => {
           state.studentRecords[studentId] = state.studentRecords[studentId].map(record => {
             if (record.id_absen === id_absen) {
@@ -354,7 +359,6 @@ const attendanceSlice = createSlice({
         state.error = action.payload?.message || 'Failed to reject verification';
       })
       
-      // Get verification history
       .addCase(getVerificationHistory.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -370,7 +374,6 @@ const attendanceSlice = createSlice({
         state.error = action.payload?.message || 'Failed to get verification history';
       })
       
-      // Generate stats
       .addCase(generateStats.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -387,46 +390,42 @@ const attendanceSlice = createSlice({
   }
 });
 
-// Actions
 export const { 
-  resetAttendanceError, 
+  resetAttendanceError,
+  resetDuplicateError,
+  resetDateValidationError,
   queueOfflineAttendance, 
   removeFromOfflineQueue, 
   setSyncing 
 } = attendanceSlice.actions;
 
-// Memoized selectors
 const emptyArray = [];
 const selectAttendanceState = state => state.attendance;
 const selectActivityRecords = state => state.attendance.activityRecords;
 const selectStudentRecords = state => state.attendance.studentRecords;
 const selectVerificationHistoryRecords = state => state.attendance.verificationHistory;
 
-// Selectors
 export const selectAttendanceLoading = state => state.attendance.loading;
 export const selectAttendanceError = state => state.attendance.error;
 export const selectDuplicateError = state => state.attendance.duplicateError;
+export const selectDateValidationError = state => state.attendance.dateValidationError;
 export const selectAttendanceRecords = state => state.attendance.attendanceRecords;
 
-// Memoized selector for activity attendance to prevent unnecessary re-renders
 export const selectActivityAttendance = createSelector(
   [selectActivityRecords, (_, id_aktivitas) => id_aktivitas],
   (activityRecords, id_aktivitas) => activityRecords[id_aktivitas] || emptyArray
 );
 
-// Memoized selector for student attendance
 export const selectStudentAttendance = createSelector(
   [selectStudentRecords, (_, id_anak) => id_anak],
   (studentRecords, id_anak) => studentRecords[id_anak] || emptyArray
 );
 
-// Memoized selector for verification history
 export const selectVerificationHistory = createSelector(
   [selectVerificationHistoryRecords, (_, id_absen) => id_absen],
   (verificationHistory, id_absen) => verificationHistory[id_absen] || emptyArray
 );
 
-// Selectors for filtering by status
 export const selectPresentAttendance = createSelector(
   [selectAttendanceRecords],
   (records) => Object.values(records).filter(record => record.absen === 'Ya')
