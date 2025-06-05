@@ -8,7 +8,6 @@ import {
 import { formatDateToIndonesian } from '../../../../common/utils/dateFormatter';
 
 const KeluargaFormReview = ({ formData, dropdownData, isEditMode }) => {
-  // Find display names for dropdown values
   const findKacabName = (id) => {
     const kacab = dropdownData.kacab.find(k => k.id_kacab.toString() === id);
     return kacab ? kacab.nama_kacab : '-';
@@ -24,7 +23,6 @@ const KeluargaFormReview = ({ formData, dropdownData, isEditMode }) => {
     return bank ? bank.nama_bank : '-';
   };
   
-  // Format education level
   const formatEducationLevel = (level) => {
     const levelMap = {
       'belum_sd': 'Belum Sekolah',
@@ -41,7 +39,6 @@ const KeluargaFormReview = ({ formData, dropdownData, isEditMode }) => {
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <Text style={styles.reviewTitle}>Please review all information before {isEditMode ? 'updating' : 'saving'}</Text>
       
-      {/* Family Information */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Family Information</Text>
         
@@ -92,7 +89,6 @@ const KeluargaFormReview = ({ formData, dropdownData, isEditMode }) => {
         )}
       </View>
       
-      {/* Father Information */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Father Information</Text>
         
@@ -143,7 +139,6 @@ const KeluargaFormReview = ({ formData, dropdownData, isEditMode }) => {
         )}
       </View>
       
-      {/* Mother Information */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Mother Information</Text>
         
@@ -194,7 +189,6 @@ const KeluargaFormReview = ({ formData, dropdownData, isEditMode }) => {
         )}
       </View>
       
-      {/* Guardian Information - only show if data present */}
       {formData.nik_wali || formData.nama_wali ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Guardian Information</Text>
@@ -238,7 +232,6 @@ const KeluargaFormReview = ({ formData, dropdownData, isEditMode }) => {
         </View>
       ) : null}
       
-      {/* Child Information */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Child Information</Text>
         
@@ -280,11 +273,6 @@ const KeluargaFormReview = ({ formData, dropdownData, isEditMode }) => {
         </View>
         
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Program:</Text>
-          <Text style={styles.infoValue}>{formData.jenis_anak_binaan || '-'}</Text>
-        </View>
-        
-        <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Hafalan:</Text>
           <Text style={styles.infoValue}>{formData.hafalan || '-'}</Text>
         </View>
@@ -315,7 +303,6 @@ const KeluargaFormReview = ({ formData, dropdownData, isEditMode }) => {
         </View>
       </View>
       
-      {/* Education Information */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Education Information</Text>
         
@@ -373,6 +360,180 @@ const KeluargaFormReview = ({ formData, dropdownData, isEditMode }) => {
             </View>
           </>
         )}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Survey - Basic Information</Text>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Head Job:</Text>
+          <Text style={styles.infoValue}>{formData.pekerjaan_kepala_keluarga || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Head Education:</Text>
+          <Text style={styles.infoValue}>{formData.pendidikan_kepala_keluarga || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Dependents:</Text>
+          <Text style={styles.infoValue}>{formData.jumlah_tanggungan || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Child Status:</Text>
+          <Text style={styles.infoValue}>{formData.status_anak || '-'}</Text>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Survey - Financial Information</Text>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Income:</Text>
+          <Text style={styles.infoValue}>{formData.penghasilan || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Savings:</Text>
+          <Text style={styles.infoValue}>{formData.kepemilikan_tabungan || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Education Cost:</Text>
+          <Text style={styles.infoValue}>{formData.biaya_pendidikan_perbulan ? `Rp ${formData.biaya_pendidikan_perbulan}` : '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Other Aid:</Text>
+          <Text style={styles.infoValue}>{formData.bantuan_lembaga_formal_lain || '-'}</Text>
+        </View>
+        
+        {formData.bantuan_lembaga_formal_lain === 'Ya' && (
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Aid Amount:</Text>
+            <Text style={styles.infoValue}>{formData.bantuan_lembaga_formal_lain_sebesar ? `Rp ${formData.bantuan_lembaga_formal_lain_sebesar}` : '-'}</Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Survey - Assets Information</Text>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Land Ownership:</Text>
+          <Text style={styles.infoValue}>{formData.kepemilikan_tanah || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>House Ownership:</Text>
+          <Text style={styles.infoValue}>{formData.kepemilikan_rumah || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Wall Condition:</Text>
+          <Text style={styles.infoValue}>{formData.kondisi_rumah_dinding || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Floor Condition:</Text>
+          <Text style={styles.infoValue}>{formData.kondisi_rumah_lantai || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Vehicle:</Text>
+          <Text style={styles.infoValue}>{formData.kepemilikan_kendaraan || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Electronics:</Text>
+          <Text style={styles.infoValue}>{formData.kepemilikan_elektronik || '-'}</Text>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Survey - Health Information</Text>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Meals per Day:</Text>
+          <Text style={styles.infoValue}>{formData.jumlah_makan || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Water Source:</Text>
+          <Text style={styles.infoValue}>{formData.sumber_air_bersih || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Toilet:</Text>
+          <Text style={styles.infoValue}>{formData.jamban_limbah || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Trash Bin:</Text>
+          <Text style={styles.infoValue}>{formData.tempat_sampah || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Smoker:</Text>
+          <Text style={styles.infoValue}>{formData.perokok || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Alcohol Consumer:</Text>
+          <Text style={styles.infoValue}>{formData.konsumen_miras || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>First Aid Kit:</Text>
+          <Text style={styles.infoValue}>{formData.persediaan_p3k || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Fruits & Vegetables:</Text>
+          <Text style={styles.infoValue}>{formData.makan_buah_sayur || '-'}</Text>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Survey - Religious & Social</Text>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Five Daily Prayers:</Text>
+          <Text style={styles.infoValue}>{formData.solat_lima_waktu || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Reading Quran:</Text>
+          <Text style={styles.infoValue}>{formData.membaca_alquran || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Religious Study:</Text>
+          <Text style={styles.infoValue}>{formData.majelis_taklim || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Reading News:</Text>
+          <Text style={styles.infoValue}>{formData.membaca_koran || '-'}</Text>
+        </View>
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Organization Member:</Text>
+          <Text style={styles.infoValue}>{formData.pengurus_organisasi || '-'}</Text>
+        </View>
+        
+        {formData.pengurus_organisasi === 'Ya' && (
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Position:</Text>
+            <Text style={styles.infoValue}>{formData.pengurus_organisasi_sebagai || '-'}</Text>
+          </View>
+        )}
+        
+        <View style={styles.infoRow}>
+          <Text style={styles.infoLabel}>Beneficiary Condition:</Text>
+          <Text style={styles.infoValue}>{formData.kondisi_penerima_manfaat || '-'}</Text>
+        </View>
       </View>
     </ScrollView>
   );

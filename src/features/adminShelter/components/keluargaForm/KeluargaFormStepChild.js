@@ -11,7 +11,6 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 
-// Import components
 import TextInput from '../../../../common/components/TextInput';
 import Button from '../../../../common/components/Button';
 import { formatDateForApi } from '../../../../common/utils/dateFormatter';
@@ -22,10 +21,8 @@ const KeluargaFormStepChild = ({
   setStepValid,
   validateStep
 }) => {
-  // State for date picker
   const [showDatePicker, setShowDatePicker] = useState(false);
   
-  // Validate on mount and when form data changes
   useEffect(() => {
     const isValid = validateStep();
     setStepValid(isValid);
@@ -36,10 +33,9 @@ const KeluargaFormStepChild = ({
     formData.tanggal_lahir,
     formData.jenis_kelamin,
     formData.agama,
-    formData.jenis_anak_binaan
+    formData.tinggal_bersama
   ]);
   
-  // Religion options
   const religionOptions = [
     { label: '-- Pilih Agama --', value: '' },
     { label: 'Islam', value: 'Islam' },
@@ -50,14 +46,12 @@ const KeluargaFormStepChild = ({
     { label: 'Konghucu', value: 'Konghucu' },
   ];
   
-  // Gender options
   const genderOptions = [
     { label: '-- Pilih Jenis Kelamin --', value: '' },
      { label: 'Laki-laki', value: 'Laki-laki' },
   { label: 'Perempuan', value: 'Perempuan' },
   ];
   
-  // Living with options
   const livingWithOptions = [
     { label: '-- Pilih Tinggal Bersama --', value: '' },
     { label: 'Father', value: 'Ayah' },
@@ -65,21 +59,12 @@ const KeluargaFormStepChild = ({
     { label: 'Guardian', value: 'Wali' },
   ];
   
-  // Child type options
-  const childTypeOptions = [
-    { label: '-- Pilih Jenis Binaan --', value: '' },
-    { label: 'BPCB (Binaan Penuh Calon Beasiswa)', value: 'BPCB' },
-    { label: 'NPB (Non Penerima Beasiswa)', value: 'NPB' },
-  ];
-  
-  // Hafalan options
   const hafalanOptions = [
     { label: '-- Pilih Hafalan --', value: '' },
     { label: 'Tahfidz', value: 'Tahfidz' },
     { label: 'Non-Tahfidz', value: 'Non-Tahfidz' },
   ];
   
-  // Transportation options
   const transportationOptions = [
     { label: '-- Pilih transportasi --', value: '' },
     { label: 'Jalan Kaki', value: 'Jalan Kaki' },
@@ -90,17 +75,14 @@ const KeluargaFormStepChild = ({
     { label: 'Lainnya', value: 'Lainnya' },
   ];
   
-  // Toggle date picker
   const toggleDatePicker = () => {
     setShowDatePicker(!showDatePicker);
   };
   
-  // Handle date change
   const handleDateChange = (event, selectedDate) => {
   toggleDatePicker();
   
   if (selectedDate) {
-    // Format date as DD-MM-YYYY
     const day = String(selectedDate.getDate()).padStart(2, '0');
     const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
     const year = selectedDate.getFullYear();
@@ -110,10 +92,8 @@ const KeluargaFormStepChild = ({
   }
 };
   
-  // Handle select image
   const handleSelectImage = async () => {
     try {
-      // Request permission
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (status !== 'granted') {
@@ -121,7 +101,6 @@ const KeluargaFormStepChild = ({
         return;
       }
       
-      // Launch image picker
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -142,7 +121,6 @@ const KeluargaFormStepChild = ({
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>Data Anak</Text>
       
-      {/* Photo */}
       <View style={styles.photoContainer}>
         <Text style={styles.label}>Foto Anak</Text>
         <View style={styles.photoContent}>
@@ -168,7 +146,6 @@ const KeluargaFormStepChild = ({
         </View>
       </View>
       
-      {/* NIK */}
       <TextInput
         label="NIK Anak*"
         value={formData.nik_anak}
@@ -178,7 +155,6 @@ const KeluargaFormStepChild = ({
         inputProps={{ maxLength: 16, keyboardType: 'numeric' }}
       />
       
-      {/* Birth Info */}
       <View style={styles.rowContainer}>
         <View style={[styles.inputContainer, styles.inputHalf]}>
           <Text style={styles.label}>Anak ke*</Text>
@@ -201,7 +177,6 @@ const KeluargaFormStepChild = ({
         </View>
       </View>
       
-      {/* Names */}
       <TextInput
         label="Nama Panggilan Anak*"
         value={formData.nick_name}
@@ -218,7 +193,6 @@ const KeluargaFormStepChild = ({
         leftIcon={<Ionicons name="person-outline" size={20} color="#777" />}
       />
       
-      {/* Gender */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Jenis Kelamin*</Text>
         <View style={styles.pickerContainer}>
@@ -238,7 +212,6 @@ const KeluargaFormStepChild = ({
         </View>
       </View>
       
-      {/* Religion */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Agama Anak*</Text>
         <View style={styles.pickerContainer}>
@@ -258,7 +231,6 @@ const KeluargaFormStepChild = ({
         </View>
       </View>
       
-      {/* Birth place and date */}
       <TextInput
         label="Tempat Lahir*"
         value={formData.tempat_lahir}
@@ -290,7 +262,6 @@ const KeluargaFormStepChild = ({
         )}
       </View>
       
-      {/* Living With */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Tinggal Bersama*</Text>
         <View style={styles.pickerContainer}>
@@ -310,27 +281,6 @@ const KeluargaFormStepChild = ({
         </View>
       </View>
       
-      {/* Child Type */}
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Pilih Jenis Binaan*</Text>
-        <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={formData.jenis_anak_binaan}
-            onValueChange={(value) => onChange('jenis_anak_binaan', value)}
-            style={styles.picker}
-          >
-            {childTypeOptions.map((option, index) => (
-              <Picker.Item 
-                key={index}
-                label={option.label} 
-                value={option.value} 
-              />
-            ))}
-          </Picker>
-        </View>
-      </View>
-      
-      {/* Hafalan */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Jenis Hafalan*</Text>
         <View style={styles.pickerContainer}>
@@ -350,7 +300,6 @@ const KeluargaFormStepChild = ({
         </View>
       </View>
       
-      {/* Favorite Subject */}
       <TextInput
         label="Pelajaran Favorit"
         value={formData.pelajaran_favorit}
@@ -359,7 +308,6 @@ const KeluargaFormStepChild = ({
         leftIcon={<Ionicons name="book-outline" size={20} color="#777" />}
       />
       
-      {/* Hobby */}
       <TextInput
         label="Hobi"
         value={formData.hobi}
@@ -368,7 +316,6 @@ const KeluargaFormStepChild = ({
         leftIcon={<Ionicons name="happy-outline" size={20} color="#777" />}
       />
       
-      {/* Achievements */}
       <TextInput
         label="Prestasi"
         value={formData.prestasi}
@@ -379,7 +326,6 @@ const KeluargaFormStepChild = ({
         inputProps={{ numberOfLines: 3 }}
       />
       
-      {/* Distance from Home */}
       <TextInput
         label="Jarak dari rumah"
         value={formData.jarak_rumah}
@@ -389,7 +335,6 @@ const KeluargaFormStepChild = ({
         inputProps={{ keyboardType: 'numeric' }}
       />
       
-      {/* Transportation */}
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Transportasi*</Text>
         <View style={styles.pickerContainer}>
