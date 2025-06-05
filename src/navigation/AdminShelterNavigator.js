@@ -57,12 +57,7 @@ import KeluargaFormScreen from '../features/adminShelter/screens/KeluargaFormScr
 import PengajuanAnakSearchScreen from '../features/adminShelter/screens/PengajuanAnakSearchScreen';
 import PengajuanAnakFormScreen from '../features/adminShelter/screens/PengajuanAnakFormScreen';
 
-import SurveyManagementScreen from '../features/adminShelter/screens/SurveyManagementScreen';
-import SurveyDetailScreen from '../features/adminShelter/screens/SurveyDetailScreen';
-import SurveyFormScreen from '../features/adminShelter/screens/SurveyFormScreen';
 
-import SurveyValidationDetailScreen from '../features/adminShelter/screens/SurveyValidationDetailScreen';
-import SurveyValidationManagementScreen from '../features/adminShelter/screens/SurveyValidationManagementScreen';
 import QrTokenGenerationScreen from '../features/adminShelter/screens/attendance/QrTokenGenerationScreen';
 
 import PenilaianListScreen from '../features/adminShelter/screens/PenilaianListScreen';
@@ -396,37 +391,6 @@ const ManagementStackNavigator = () => {
   component={AddChildrenToKelompokScreen} 
   options={{ headerTitle: 'Add Children to Group' }}
 />
-
-      {/* Survey Screens */}
-      <ManagementStack.Screen 
-        name="SurveyManagement" 
-        component={SurveyManagementScreen} 
-        options={{ headerTitle: 'Survei' }}
-      />
-      <ManagementStack.Screen 
-        name="SurveyDetail" 
-        component={SurveyDetailScreen} 
-        options={({ route }) => ({ 
-          headerTitle: route.params?.title || 'Survey Detail'
-        })}
-      />
-      <ManagementStack.Screen 
-        name="SurveyForm" 
-        component={SurveyFormScreen} 
-        options={({ route }) => ({ 
-          headerTitle: route.params?.surveyData ? 'Edit Survei' : 'Buat Survei'
-        })}
-      />
-      <ManagementStack.Screen 
-        name="SurveyValidationDetail" 
-        component={SurveyValidationDetailScreen} 
-        options={{ headerTitle: 'Validate Survey' }}
-      />
-      <ManagementStack.Screen 
-        name="SurveyValidationManagement" 
-        component={SurveyValidationManagementScreen} 
-        options={{ headerTitle: 'Survey Validation' }}
-      />
       
       {/* Attendance/Activities Screens in Management Stack */}
       <ManagementStack.Screen

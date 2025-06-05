@@ -103,15 +103,7 @@ PENGAJUAN_ANAK: {
   VALIDATE_KK: '/admin-shelter/pengajuan-anak/validate-kk',
   SUBMIT: '/admin-shelter/pengajuan-anak/submit'
 },
- SURVEY: {
-    LIST: '/admin-shelter/survey',
-    DETAIL: (id_keluarga) => `/admin-shelter/survey/${id_keluarga}`,
-  },
-  SURVEY_VALIDATION: {
-  LIST: '/admin-shelter/survey-validation',
-  VALIDATE: (id_survey) => `/admin-shelter/survey-validation/${id_survey}`,
-  SUMMARY: '/admin-shelter/survey-validation/summary'
-},
+
 AKTIVITAS: {
   LIST: '/admin-shelter/aktivitas',
   DETAIL: (id) => `/admin-shelter/aktivitas/${id}`,
