@@ -42,9 +42,14 @@ export const ADMIN_PUSAT_ENDPOINTS = {
 // Admin Cabang endpoints
 export const ADMIN_CABANG_ENDPOINTS = {
   DASHBOARD: '/admin-cabang/dashboard',
-  PROFILE: '/admin-cabang/profile'
+  PROFILE: '/admin-cabang/profile',
+  SURVEY_APPROVAL: {
+    LIST: '/admin-cabang/survey-approval',
+    DETAIL: (id) => `/admin-cabang/survey-approval/${id}`,
+    APPROVE: (id) => `/admin-cabang/survey-approval/${id}/approve`,
+    REJECT: (id) => `/admin-cabang/survey-approval/${id}/reject`
+  }
 };
-
 // Admin Shelter endpoints
 export const ADMIN_SHELTER_ENDPOINTS = {
   DASHBOARD: '/admin-shelter/dashboard',
