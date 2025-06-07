@@ -24,7 +24,7 @@ const AdminCabangDashboardScreen = () => {
   const navigation = useNavigation();
   const { user, profile } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
-  const [pendingSurveysCount, setPendingSurveysCount] = useState(0);
+  const [surveyStats, setSurveyStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -32,13 +32,13 @@ const AdminCabangDashboardScreen = () => {
   const fetchDashboardData = async () => {
     try {
       setError(null);
-      const [dashboardResponse, surveysResponse] = await Promise.all([
+      const [dashboardResponse, statsResponse] = await Promise.all([
         adminCabangApi.getDashboard(),
-        adminCabangSurveyApi.getAllPendingSurveys({ per_page: 1 })
+        adminCabangSurveyApi.getStats()
       ]);
       
       setDashboardData(dashboardResponse.data.data);
-      setPendingSurveysCount(surveysResponse.data.data.total || 0);
+      setSurveyStats(statsResponse.data.data);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
       setError('Failed to load dashboard data. Please try again.');
@@ -57,7 +57,8 @@ const AdminCabangDashboardScreen = () => {
     fetchDashboardData();
   };
 
-  const navigateToSurveyApproval = () => navigation.navigate('Management');
+  const navigateToSurveyManagement = () => navigation.navigate('Management');
+  const navigateToProcessedSurveys = () => navigation.navigate('ProcessedSurveys');
   const navigateToProfile = () => navigation.navigate('ProfileTab');
 
   if (loading && !refreshing) {
@@ -130,8 +131,29 @@ const AdminCabangDashboardScreen = () => {
         <View style={styles.statCard}>
           <Ionicons name="document-text-outline" size={28} color="#f39c12" />
           <View style={styles.statTextContainer}>
-            <Text style={styles.statNumber}>{pendingSurveysCount}</Text>
+            <Text style={styles.statNumber}>{surveyStats.pending || 0}</Text>
             <Text style={styles.statLabel}>Pending Surveys</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.surveyStatsSection}>
+        <Text style={styles.sectionTitle}>Survey Statistics</Text>
+        <View style={styles.surveyStatsGrid}>
+          <View style={styles.surveyStatCard}>
+            <Ionicons name="time-outline" size={24} color="#f39c12" />
+            <Text style={styles.surveyStatNumber}>{surveyStats.pending || 0}</Text>
+            <Text style={styles.surveyStatLabel}>Pending</Text>
+          </View>
+          <View style={styles.surveyStatCard}>
+            <Ionicons name="checkmark-circle-outline" size={24} color="#27ae60" />
+            <Text style={styles.surveyStatNumber}>{surveyStats.approved || 0}</Text>
+            <Text style={styles.surveyStatLabel}>Approved</Text>
+          </View>
+          <View style={styles.surveyStatCard}>
+            <Ionicons name="close-circle-outline" size={24} color="#e74c3c" />
+            <Text style={styles.surveyStatNumber}>{surveyStats.rejected || 0}</Text>
+            <Text style={styles.surveyStatLabel}>Rejected</Text>
           </View>
         </View>
       </View>
@@ -141,39 +163,42 @@ const AdminCabangDashboardScreen = () => {
         <View style={styles.quickActionsGrid}>
           <TouchableOpacity
             style={styles.actionCard}
-            onPress={navigateToSurveyApproval}
+            onPress={navigateToSurveyManagement}
           >
             <View style={[styles.actionIconContainer, { backgroundColor: '#f39c12' }]}>
               <Ionicons name="document-text" size={26} color="#fff" />
             </View>
-            <Text style={styles.actionTitle}>Survey Approval</Text>
+            <Text style={styles.actionTitle}>Survey Management</Text>
             <Text style={styles.actionDescription}>
-              Review and approve pending surveys
+              Manage all survey approvals
             </Text>
-            {pendingSurveysCount > 0 && (
+            {surveyStats.pending > 0 && (
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>{pendingSurveysCount}</Text>
+                <Text style={styles.badgeText}>{surveyStats.pending}</Text>
               </View>
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionCard}>
+          <TouchableOpacity
+            style={styles.actionCard}
+            onPress={navigateToProcessedSurveys}
+          >
             <View style={[styles.actionIconContainer, { backgroundColor: '#3498db' }]}>
-              <Ionicons name="stats-chart" size={26} color="#fff" />
+              <Ionicons name="checkmark-done" size={26} color="#fff" />
             </View>
-            <Text style={styles.actionTitle}>Reports</Text>
+            <Text style={styles.actionTitle}>Processed Surveys</Text>
             <Text style={styles.actionDescription}>
-              View approval statistics
+              View completed approvals
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionCard}>
             <View style={[styles.actionIconContainer, { backgroundColor: '#9b59b6' }]}>
-              <Ionicons name="settings" size={26} color="#fff" />
+              <Ionicons name="stats-chart" size={26} color="#fff" />
             </View>
-            <Text style={styles.actionTitle}>Settings</Text>
+            <Text style={styles.actionTitle}>Reports</Text>
             <Text style={styles.actionDescription}>
-              Manage account settings
+              View approval statistics
             </Text>
           </TouchableOpacity>
 
@@ -324,6 +349,40 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     color: '#666',
+  },
+  surveyStatsSection: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  surveyStatsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  surveyStatCard: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+    marginHorizontal: 4,
+  },
+  surveyStatNumber: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 8,
+  },
+  surveyStatLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
   },
   sectionContainer: {
     backgroundColor: '#fff',
