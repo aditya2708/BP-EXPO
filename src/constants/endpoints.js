@@ -40,11 +40,13 @@ export const ADMIN_PUSAT_ENDPOINTS = {
 };
 
 // Admin Cabang endpoints
+
 export const ADMIN_CABANG_ENDPOINTS = {
   DASHBOARD: '/admin-cabang/dashboard',
   PROFILE: '/admin-cabang/profile',
   SURVEY_APPROVAL: {
     LIST: '/admin-cabang/survey-approval',
+    STATS: '/admin-cabang/survey-approval/stats',
     DETAIL: (id) => `/admin-cabang/survey-approval/${id}`,
     APPROVE: (id) => `/admin-cabang/survey-approval/${id}/approve`,
     REJECT: (id) => `/admin-cabang/survey-approval/${id}/reject`
