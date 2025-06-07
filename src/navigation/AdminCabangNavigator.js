@@ -5,7 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 import AdminCabangDashboardScreen from '../features/adminCabang/screen/AdminCabangDashboardScreen';
 import AdminCabangProfileScreen from '../features/adminCabang/screen/AdminCabangProfileScreen';
-import SurveyApprovalListScreen from '../features/adminCabang/screen/SurveyApprovalListScreen';
+import SurveyStatusFilterScreen from '../features/adminCabang/screen/SurveyStatusFilterScreen';
+import ProcessedSurveyListScreen from '../features/adminCabang/screen/ProcessedSurveyListScreen';
 import SurveyApprovalDetailScreen from '../features/adminCabang/screen/SurveyApprovalDetailScreen';
 
 const Tab = createBottomTabNavigator();
@@ -21,6 +22,16 @@ const HomeStackNavigator = () => {
         component={AdminCabangDashboardScreen} 
         options={{ headerTitle: 'Admin Cabang Dashboard' }}
       />
+      <HomeStack.Screen 
+        name="ProcessedSurveys" 
+        component={ProcessedSurveyListScreen} 
+        options={{ headerTitle: 'Processed Surveys' }}
+      />
+      <HomeStack.Screen 
+        name="SurveyDetail" 
+        component={SurveyApprovalDetailScreen} 
+        options={{ headerTitle: 'Survey Detail' }}
+      />
     </HomeStack.Navigator>
   );
 };
@@ -29,9 +40,9 @@ const ManagementStackNavigator = () => {
   return (
     <ManagementStack.Navigator>
       <ManagementStack.Screen 
-        name="SurveyApprovalList" 
-        component={SurveyApprovalListScreen} 
-        options={{ headerTitle: 'Survey Approval' }}
+        name="SurveyStatusFilter" 
+        component={SurveyStatusFilterScreen} 
+        options={{ headerTitle: 'Survey Management' }}
       />
       <ManagementStack.Screen 
         name="SurveyApprovalDetail" 
@@ -84,7 +95,7 @@ const AdminCabangNavigator = () => {
       <Tab.Screen 
         name="Management" 
         component={ManagementStackNavigator} 
-        options={{ tabBarLabel: 'Survey Approval' }}
+        options={{ tabBarLabel: 'Survey Management' }}
       />
       <Tab.Screen 
         name="ProfileTab" 
