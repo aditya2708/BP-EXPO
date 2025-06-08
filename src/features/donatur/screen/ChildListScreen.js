@@ -99,7 +99,7 @@ const ChildListScreen = () => {
           {item.umur ? `${item.umur} years old` : 'Age unknown'}
         </Text>
         <Text style={styles.childDetails}>
-          {item.jenis_kelamin === 'L' ? 'Male' : item.jenis_kelamin === 'P' ? 'Female' : 'Gender unknown'}
+          {item.jenis_kelamin === 'Laki-laki' ? 'Male' : item.jenis_kelamin === 'Perempuan' ? 'Female' : 'Gender unknown'}
         </Text>
         {item.shelter && (
           <Text style={styles.childShelter}>

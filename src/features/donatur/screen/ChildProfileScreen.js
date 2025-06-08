@@ -122,7 +122,7 @@ const ChildProfileScreen = () => {
           <View style={styles.infoItem}>
             <Text style={styles.infoLabel}>Gender</Text>
             <Text style={styles.infoValue}>
-              {child.jenis_kelamin === 'L' ? 'Male' : child.jenis_kelamin === 'P' ? 'Female' : 'N/A'}
+              {child.jenis_kelamin === 'Laki-laki' ? 'Male' : child.jenis_kelamin === 'Perempuan' ? 'Female' : 'N/A'}
             </Text>
           </View>
           <View style={styles.infoItem}>

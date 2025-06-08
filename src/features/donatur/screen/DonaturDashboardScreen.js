@@ -52,6 +52,7 @@ const DonaturDashboardScreen = () => {
   };
 
   const navigateToMyChildren = () => navigation.navigate('Children', { screen: 'ChildList' });
+  const navigateToMarketplace = () => navigation.navigate('Marketplace', { screen: 'MarketplaceList' });
   const navigateToProfile = () => navigation.navigate('ProfileTab');
   const navigateToBerita = () => navigation.navigate('BeritaList');
   const viewChildDetails = (childId, childName) => navigation.navigate('Children', { screen: 'ChildProfile', params: { childId, childName } });
@@ -88,16 +89,6 @@ const DonaturDashboardScreen = () => {
             style={styles.profileButton}
             onPress={navigateToProfile}
           >
-            {/* {profile?.foto ? (
-              <Image
-                source={{ uri: `https://berbagipendidikan.org/storage/Donatur/${profile.id_donatur}/${profile.foto}` }}
-                style={styles.profileImage}
-              />
-            ) : (
-              <View style={styles.profileImagePlaceholder}>
-                <Ionicons name="person" size={24} color="#ffffff" />
-              </View>
-            )} */}
           </TouchableOpacity>
         </View>
       </View>
@@ -117,9 +108,19 @@ const DonaturDashboardScreen = () => {
           
           <TouchableOpacity 
             style={styles.actionItem}
-            onPress={navigateToBerita}
+            onPress={navigateToMarketplace}
           >
             <View style={[styles.actionIcon, { backgroundColor: '#e74c3c' }]}>
+              <Ionicons name="heart" size={24} color="#ffffff" />
+            </View>
+            <Text style={styles.actionText}>Cari Anak</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.actionItem}
+            onPress={navigateToBerita}
+          >
+            <View style={[styles.actionIcon, { backgroundColor: '#3498db' }]}>
               <Ionicons name="newspaper" size={24} color="#ffffff" />
             </View>
             <Text style={styles.actionText}>Berita</Text>
