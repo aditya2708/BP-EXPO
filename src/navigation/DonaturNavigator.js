@@ -18,10 +18,15 @@ import ChildAktivitasListScreen from '../features/donatur/screen/ChildAktivitasL
 import ChildAktivitasDetailScreen from '../features/donatur/screen/ChildAktivitasDetailScreen';
 import BeritaListScreen from '../features/donatur/screen/BeritaListScreen';
 import BeritaDetailScreen from '../features/donatur/screen/BeritaDetailScreen';
+import AvailableChildrenMarketplaceScreen from '../features/donatur/screen/AvailableChildrenMarketplaceScreen';
+import ChildMarketplaceDetailScreen from '../features/donatur/screen/ChildMarketplaceDetailScreen';
+import SponsorshipConfirmationScreen from '../features/donatur/screen/SponsorshipConfirmationScreen';
+import SponsorshipSuccessScreen from '../features/donatur/screen/SponsorshipSuccessScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
 const ChildrenStack = createStackNavigator();
+const MarketplaceStack = createStackNavigator();
 const ProfileStack = createStackNavigator();
 
 const HomeStackNavigator = () => {
@@ -49,7 +54,7 @@ const HomeStackNavigator = () => {
 const ChildrenStackNavigator = () => {
   return (
     <ChildrenStack.Navigator>
-       <ChildrenStack.Screen 
+      <ChildrenStack.Screen 
         name="ChildList" 
         component={ChildListScreen} 
         options={{ headerTitle: 'Anak Asuh' }}
@@ -110,6 +115,35 @@ const ChildrenStackNavigator = () => {
   );
 };
 
+const MarketplaceStackNavigator = () => {
+  return (
+    <MarketplaceStack.Navigator>
+      <MarketplaceStack.Screen 
+        name="MarketplaceList" 
+        component={AvailableChildrenMarketplaceScreen} 
+        options={{ headerTitle: 'Cari Anak Asuh' }}
+      />
+      <MarketplaceStack.Screen 
+        name="ChildMarketplaceDetail" 
+        component={ChildMarketplaceDetailScreen} 
+        options={({ route }) => ({ 
+          headerTitle: route.params?.childName || 'Profile Anak' 
+        })}
+      />
+      <MarketplaceStack.Screen 
+        name="SponsorshipConfirmation" 
+        component={SponsorshipConfirmationScreen} 
+        options={{ headerTitle: 'Konfirmasi Sponsorship' }}
+      />
+      <MarketplaceStack.Screen 
+        name="SponsorshipSuccess" 
+        component={SponsorshipSuccessScreen} 
+        options={{ headerTitle: 'Sponsorship Berhasil', headerLeft: null }}
+      />
+    </MarketplaceStack.Navigator>
+  );
+};
+
 const ProfileStackNavigator = () => {
   return (
     <ProfileStack.Navigator>
@@ -133,6 +167,8 @@ const DonaturNavigator = () => {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Children') {
             iconName = focused ? 'people' : 'people-outline';
+          } else if (route.name === 'Marketplace') {
+            iconName = focused ? 'heart' : 'heart-outline';
           } else if (route.name === 'ProfileTab') {
             iconName = focused ? 'person' : 'person-outline';
           }
@@ -153,6 +189,11 @@ const DonaturNavigator = () => {
         name="Children" 
         component={ChildrenStackNavigator} 
         options={{ tabBarLabel: 'My Children' }}
+      />
+      <Tab.Screen 
+        name="Marketplace" 
+        component={MarketplaceStackNavigator} 
+        options={{ tabBarLabel: 'Cari Anak' }}
       />
       <Tab.Screen 
         name="ProfileTab" 

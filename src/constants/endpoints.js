@@ -1,14 +1,9 @@
-// Authentication endpoints
 export const AUTH_ENDPOINTS = {
   LOGIN: '/auth/login',
   LOGOUT: '/auth/logout',
   USER: '/auth/user'
 };
 
-// Admin Pusat endpoints
-// Add this to src/constants/endpoints.js
-
-// Admin Pusat endpoints
 export const ADMIN_PUSAT_ENDPOINTS = {
   DASHBOARD: '/admin-pusat/dashboard',
   PROFILE: '/admin-pusat/profile',
@@ -39,8 +34,6 @@ export const ADMIN_PUSAT_ENDPOINTS = {
 }
 };
 
-// Admin Cabang endpoints
-
 export const ADMIN_CABANG_ENDPOINTS = {
   DASHBOARD: '/admin-cabang/dashboard',
   PROFILE: '/admin-cabang/profile',
@@ -52,7 +45,7 @@ export const ADMIN_CABANG_ENDPOINTS = {
     REJECT: (id) => `/admin-cabang/survey-approval/${id}/reject`
   }
 };
-// Admin Shelter endpoints
+
 export const ADMIN_SHELTER_ENDPOINTS = {
   DASHBOARD: '/admin-shelter/dashboard',
   PROFILE: '/admin-shelter/profile',
@@ -69,18 +62,18 @@ export const ADMIN_SHELTER_ENDPOINTS = {
   },
  PRESTASI: {
   LIST: (childId) => `/admin-shelter/anak/${childId}/prestasi`,
-  CREATE: (childId) => `/admin-shelter/anak/${childId}/prestasi`,  // Same as LIST
+  CREATE: (childId) => `/admin-shelter/anak/${childId}/prestasi`,
   DETAIL: (childId, prestasiId) => `/admin-shelter/anak/${childId}/prestasi/${prestasiId}`,
-  UPDATE: (childId, prestasiId) => `/admin-shelter/anak/${childId}/prestasi/${prestasiId}`, // Same as DETAIL
-  DELETE: (childId, prestasiId) => `/admin-shelter/anak/${childId}/prestasi/${prestasiId}`  // Same as DETAIL
+  UPDATE: (childId, prestasiId) => `/admin-shelter/anak/${childId}/prestasi/${prestasiId}`,
+  DELETE: (childId, prestasiId) => `/admin-shelter/anak/${childId}/prestasi/${prestasiId}`
 },
 
 RIWAYAT: {
   LIST: (childId) => `/admin-shelter/anak/${childId}/riwayat`,
-  CREATE: (childId) => `/admin-shelter/anak/${childId}/riwayat`,  // Same as LIST
+  CREATE: (childId) => `/admin-shelter/anak/${childId}/riwayat`,
   DETAIL: (childId, riwayatId) => `/admin-shelter/anak/${childId}/riwayat/${riwayatId}`,
-  UPDATE: (childId, riwayatId) => `/admin-shelter/anak/${childId}/riwayat/${riwayatId}`, // Same as DETAIL
-  DELETE: (childId, riwayatId) => `/admin-shelter/anak/${childId}/riwayat/${riwayatId}`  // Same as DETAIL
+  UPDATE: (childId, riwayatId) => `/admin-shelter/anak/${childId}/riwayat/${riwayatId}`,
+  DELETE: (childId, riwayatId) => `/admin-shelter/anak/${childId}/riwayat/${riwayatId}`
 },
 TUTOR: {
     LIST: '/admin-shelter/tutor',
@@ -133,14 +126,12 @@ RAPORT_FORMAL: {
 },
 };
 
-// Donatur endpoints
 export const DONATUR_ENDPOINTS = {
   DASHBOARD: '/donatur/dashboard',
   PROFILE: '/donatur/profile',
   CHILDREN: '/donatur/children',
   CHILD_DETAIL: (childId) => `/donatur/children/${childId}`,
   
-  // Surat endpoints
   SURAT: {
     LIST: (childId) => `/donatur/children/${childId}/surat`,
     CREATE: (childId) => `/donatur/children/${childId}/surat`,
@@ -148,43 +139,43 @@ export const DONATUR_ENDPOINTS = {
     MARK_READ: (childId, suratId) => `/donatur/children/${childId}/surat/${suratId}/read`
   },
   
-  // Prestasi endpoints
   PRESTASI: {
     LIST: (childId) => `/donatur/children/${childId}/prestasi`,
     DETAIL: (childId, prestasiId) => `/donatur/children/${childId}/prestasi/${prestasiId}`,
     MARK_READ: (childId, prestasiId) => `/donatur/children/${childId}/prestasi/${prestasiId}/read`
   },
   
-  // Raport endpoints
   RAPORT: {
     LIST: (childId) => `/donatur/children/${childId}/raport`,
     DETAIL: (childId, raportId) => `/donatur/children/${childId}/raport/${raportId}`,
     SUMMARY: (childId) => `/donatur/children/${childId}/raport-summary`
   },
   
-  // Aktivitas endpoints
   AKTIVITAS: {
     LIST: (childId) => `/donatur/children/${childId}/aktivitas`,
     DETAIL: (childId, aktivitasId) => `/donatur/children/${childId}/aktivitas/${aktivitasId}`,
     ATTENDANCE_SUMMARY: (childId) => `/donatur/children/${childId}/attendance-summary`
+  },
+
+  MARKETPLACE: {
+    AVAILABLE_CHILDREN: '/donatur/marketplace/available-children',
+    CHILD_PROFILE: (childId) => `/donatur/marketplace/children/${childId}/profile`,
+    SPONSOR_CHILD: (childId) => `/donatur/marketplace/children/${childId}/sponsor`,
+    FILTERS: '/donatur/marketplace/filters',
+    FEATURED_CHILDREN: '/donatur/marketplace/featured-children'
   }
 };
 
-// Management endpoints (for admin roles)
 export const MANAGEMENT_ENDPOINTS = {
-  // User management
   USERS: '/users',
   USER_DETAIL: (id) => `/users/${id}`,
   
-  // Kacab management
   KACAB: '/kacab',
   KACAB_DETAIL: (id) => `/kacab/${id}`,
   
-  // Wilbin management
   WILBIN: '/wilbin',
   WILBIN_DETAIL: (id) => `/wilbin/${id}`,
   
-  // Shelter management
   SHELTER: '/shelter',
   SHELTER_DETAIL: (id) => `/shelter/${id}`
 };
