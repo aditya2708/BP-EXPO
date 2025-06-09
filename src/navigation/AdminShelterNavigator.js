@@ -3,26 +3,22 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 
-// Import existing screens
 import AdminShelterDashboardScreen from '../features/adminShelter/screens/AdminShelterDashboardScreen';
 import AdminShelterProfileScreen from '../features/adminShelter/screens/AdminShelterProfileScreen';
 import AnakManagementScreen from '../features/adminShelter/screens/AnakManagementScreen';
 import AnakDetailScreen from '../features/adminShelter/screens/AnakDetailScreen';
 import AnakFormScreen from '../features/adminShelter/screens/AnakFormScreen';
 
-// Import attendance-related screens (Phase 1)
 import QrScannerScreen from '../features/adminShelter/screens/attendance/QrScannerScreen';
 import AttendanceListScreen from '../features/adminShelter/screens/attendance/AttendanceListScreen';
 import AttendanceDetailScreen from '../features/adminShelter/screens/attendance/AttendanceDetailScreen';
 import ManualAttendanceScreen from '../features/adminShelter/screens/attendance/ManualAttendanceScreen';
 import AttendanceReportScreen from '../features/adminShelter/screens/attendance/AttendanceReportScreen';
 
-// Import activities-related screens
 import ActivitiesListScreen from '../features/adminShelter/screens/attendance/ActivitiesListScreen';
 import ActivityFormScreen from '../features/adminShelter/screens/attendance/ActivityFormScreen';
 import ActivityDetailScreen from '../features/adminShelter/screens/attendance/ActivityDetailScreen';
 
-// Import Anak Detail Screens
 import InformasiAnakScreen from '../features/adminShelter/screens/anakDetail/InformasiAnakScreen';
 import RaportScreen from '../features/adminShelter/screens/anakDetail/RaportScreen';
 import AddRaportScreen from '../features/adminShelter/screens/anakDetail/AddRaportScreen';
@@ -41,15 +37,16 @@ import RiwayatFormScreen from '../features/adminShelter/screens/anakDetail/Riway
 import NilaiAnakScreen from '../features/adminShelter/screens/anakDetail/NilaiAnakScreen';
 import RaporShelterScreen from '../features/adminShelter/screens/anakDetail/RaporShelterScreen';
 
-// Tutor Screens
 import TutorManagementScreen from '../features/adminShelter/screens/TutorManagementScreen';
 import TutorFormScreen from '../features/adminShelter/screens/TutorFormScreen';
 import TutorDetailScreen from '../features/adminShelter/screens/TutorDetailScreen';
+import TutorCompetencyListScreen from '../features/adminShelter/screens/TutorCompetencyListScreen';
+import TutorCompetencyFormScreen from '../features/adminShelter/screens/TutorCompetencyFormScreen';
+import TutorCompetencyDetailScreen from '../features/adminShelter/screens/TutorCompetencyDetailScreen';
 import KelompokManagementScreen from '../features/adminShelter/screens/KelompokManagementScreen';
 import KelompokFormScreen from '../features/adminShelter/screens/KelompokFormScreen';
 import KelompokDetailScreen from '../features/adminShelter/screens/KelompokDetailScreen';
 import AddChildrenToKelompokScreen from '../features/adminShelter/screens/AddChildrenToKelompokScreen';
-
 
 import KeluargaManagementScreen from '../features/adminShelter/screens/KeluargaManagementScreen';
 import KeluargaDetailScreen from '../features/adminShelter/screens/KeluargaDetailScreen';
@@ -57,12 +54,10 @@ import KeluargaFormScreen from '../features/adminShelter/screens/KeluargaFormScr
 import PengajuanAnakSearchScreen from '../features/adminShelter/screens/PengajuanAnakSearchScreen';
 import PengajuanAnakFormScreen from '../features/adminShelter/screens/PengajuanAnakFormScreen';
 
-
 import QrTokenGenerationScreen from '../features/adminShelter/screens/attendance/QrTokenGenerationScreen';
 
 import PenilaianListScreen from '../features/adminShelter/screens/PenilaianListScreen';
 import PenilaianFormScreen from '../features/adminShelter/screens/PenilaianFormScreen';
-//import NilaiSikapFormScreen from '../features/adminShelter/screens/NilaiSikapFormScreen';
 import RaportViewScreen from '../features/adminShelter/screens/RaportViewScreen';
 import RaportGenerateScreen from '../features/adminShelter/screens/RaportGenerateScreen';
 import SemesterManagementScreen from '../features/adminShelter/screens/SemesterManagementScreen';
@@ -73,14 +68,13 @@ import TutorActivityHistoryScreen from '../features/adminShelter/screens/TutorAc
 import RaportFormalScreen from '../features/adminShelter/screens/anakDetail/RaportFormalScreen';
 import RaportFormalDetailScreen from '../features/adminShelter/screens/anakDetail/RaportFormalDetailScreen';
 import RaportFormalFormScreen from '../features/adminShelter/screens/anakDetail/RaportFormalFormScreen';
-// Create navigators
+
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
 const ManagementStack = createStackNavigator();
 const ProfileStack = createStackNavigator();
-const AttendanceStack = createStackNavigator(); // New stack for attendance
+const AttendanceStack = createStackNavigator();
 
-// Home Stack Navigator
 const HomeStackNavigator = () => {
   return (
     <HomeStack.Navigator>
@@ -89,19 +83,15 @@ const HomeStackNavigator = () => {
         component={AdminShelterDashboardScreen} 
         options={{ headerTitle: 'Admin Shelter Dashboard' }}
       />
-    
-      {/* Add attendance-related screens */}
       <HomeStack.Screen
         name="AttendanceStack"
         component={AttendanceStackNavigator}
         options={{ headerShown: false }}
       />
-
     </HomeStack.Navigator>
   );
 };
 
-// Attendance Stack Navigator
 const AttendanceStackNavigator = () => {
   return (
     <AttendanceStack.Navigator>
@@ -153,24 +143,23 @@ const AttendanceStackNavigator = () => {
         options={{ headerTitle: 'Attendance Report' }}
       />
       <AttendanceStack.Screen
-  name="QrTokenGeneration"
-  component={QrTokenGenerationScreen}
-  options={{ headerTitle: 'Generate QR Codes' }}
-/>
+        name="QrTokenGeneration"
+        component={QrTokenGenerationScreen}
+        options={{ headerTitle: 'Generate QR Codes' }}
+      />
     </AttendanceStack.Navigator>
   );
 };
 
-// Management Stack Navigator
 const ManagementStackNavigator = () => {
   return (
     <ManagementStack.Navigator>
       <ManagementStack.Screen 
-  name="TutorActivityHistory" 
-  component={TutorActivityHistoryScreen} 
-  options={{ headerTitle: 'Riwayat Aktivitas Tutor' }}
-/>
-    <ManagementStack.Screen 
+        name="TutorActivityHistory" 
+        component={TutorActivityHistoryScreen} 
+        options={{ headerTitle: 'Riwayat Aktivitas Tutor' }}
+      />
+      <ManagementStack.Screen 
         name="Surat" 
         component={SuratScreen} 
         options={{ headerTitle: 'Surat Anak' }}
@@ -193,51 +182,44 @@ const ManagementStackNavigator = () => {
         })}
       />
       <ManagementStack.Screen 
-  name="SemesterManagement" 
-  component={SemesterManagementScreen} 
-  options={{ headerTitle: 'Semester' }}
-/>
-<ManagementStack.Screen 
-  name="SemesterForm" 
-  component={SemesterFormScreen} 
-  options={({ route }) => ({ 
-    headerTitle: route.params?.semester ? 'Edit Semester' : 'Tambah Semester'
-  })}
-/>
-<ManagementStack.Screen 
-  name="SemesterDetail" 
-  component={SemesterDetailScreen} 
-  options={{ headerTitle: 'Detail Semester' }}
-/>
+        name="SemesterManagement" 
+        component={SemesterManagementScreen} 
+        options={{ headerTitle: 'Semester' }}
+      />
       <ManagementStack.Screen 
-  name="PenilaianList" 
-  component={PenilaianListScreen} 
-  options={{ headerTitle: 'Nilai Anak' }}
-/>
-<ManagementStack.Screen 
-  name="PenilaianForm" 
-  component={PenilaianFormScreen} 
-  options={({ route }) => ({ 
-    headerTitle: route.params?.penilaian ? 'Edit Nilai' : 'Input Nilai'
-  })}
-/>
-{/* <ManagementStack.Screen 
-  name="NilaiSikapForm" 
-  component={NilaiSikapFormScreen} 
-  options={({ route }) => ({ 
-    headerTitle: route.params?.nilaiSikap ? 'Edit Nilai Sikap' : 'Input Nilai Sikap'
-  })}
-/> */}
-<ManagementStack.Screen 
-  name="RaportView" 
-  component={RaportViewScreen} 
-  options={{ headerTitle: 'Raport Anak' }}
-/>
-<ManagementStack.Screen 
-  name="RaportGenerate" 
-  component={RaportGenerateScreen} 
-  options={{ headerTitle: 'Generate Raport' }}
-/>
+        name="SemesterForm" 
+        component={SemesterFormScreen} 
+        options={({ route }) => ({ 
+          headerTitle: route.params?.semester ? 'Edit Semester' : 'Tambah Semester'
+        })}
+      />
+      <ManagementStack.Screen 
+        name="SemesterDetail" 
+        component={SemesterDetailScreen} 
+        options={{ headerTitle: 'Detail Semester' }}
+      />
+      <ManagementStack.Screen 
+        name="PenilaianList" 
+        component={PenilaianListScreen} 
+        options={{ headerTitle: 'Nilai Anak' }}
+      />
+      <ManagementStack.Screen 
+        name="PenilaianForm" 
+        component={PenilaianFormScreen} 
+        options={({ route }) => ({ 
+          headerTitle: route.params?.penilaian ? 'Edit Nilai' : 'Input Nilai'
+        })}
+      />
+      <ManagementStack.Screen 
+        name="RaportView" 
+        component={RaportViewScreen} 
+        options={{ headerTitle: 'Raport Anak' }}
+      />
+      <ManagementStack.Screen 
+        name="RaportGenerate" 
+        component={RaportGenerateScreen} 
+        options={{ headerTitle: 'Generate Raport' }}
+      />
       <ManagementStack.Screen 
         name="KeluargaManagement" 
         component={KeluargaManagementScreen} 
@@ -280,13 +262,11 @@ const ManagementStackNavigator = () => {
           headerTitle: route.params?.isNew ? 'Tambah Anak' : (route.params?.title || 'Detail Anak')
         })}
       />
-      
-<ManagementStack.Screen 
-  name="AnakForm" 
-  component={AnakFormScreen} 
-  options={{ headerTitle: 'Edit Anak' }}
-/>
-      {/* Anak Detail Screens */}
+      <ManagementStack.Screen 
+        name="AnakForm" 
+        component={AnakFormScreen} 
+        options={{ headerTitle: 'Edit Anak' }}
+      />
       <ManagementStack.Screen 
         name="InformasiAnak" 
         component={InformasiAnakScreen} 
@@ -307,8 +287,6 @@ const ManagementStackNavigator = () => {
         component={RaportDetailScreen} 
         options={{ headerTitle: 'Detail Raport' }}
       />
-      
-      {/* Prestasi Screens */}
       <ManagementStack.Screen 
         name="Prestasi" 
         component={PrestasiScreen} 
@@ -326,8 +304,6 @@ const ManagementStackNavigator = () => {
           headerTitle: route.params?.isEdit ? 'Edit Prestasi' : 'Tambah Prestasi'
         })}
       />
-      
-      {/* Riwayat Screens */}
       <ManagementStack.Screen 
         name="Riwayat" 
         component={RiwayatScreen} 
@@ -356,7 +332,6 @@ const ManagementStackNavigator = () => {
         options={{ headerTitle: 'Rapor Shelter' }}
       />
 
-      {/* Tutor Screens */}
       <ManagementStack.Screen 
         name="TutorManagement" 
         component={TutorManagementScreen} 
@@ -375,6 +350,23 @@ const ManagementStackNavigator = () => {
         options={{ headerTitle: 'Tutor Detail' }}
       />
       <ManagementStack.Screen 
+        name="TutorCompetencyList" 
+        component={TutorCompetencyListScreen} 
+        options={{ headerTitle: 'Kompetensi Tutor' }}
+      />
+      <ManagementStack.Screen 
+        name="TutorCompetencyForm" 
+        component={TutorCompetencyFormScreen} 
+        options={({ route }) => ({ 
+          headerTitle: route.params?.isEdit ? 'Edit Kompetensi' : 'Tambah Kompetensi'
+        })}
+      />
+      <ManagementStack.Screen 
+        name="TutorCompetencyDetail" 
+        component={TutorCompetencyDetailScreen} 
+        options={{ headerTitle: 'Detail Kompetensi' }}
+      />
+      <ManagementStack.Screen 
         name="KelompokManagement" 
         component={KelompokManagementScreen} 
         options={{ headerTitle: 'Kelompok Anak Binaan' }}
@@ -391,13 +383,12 @@ const ManagementStackNavigator = () => {
         component={KelompokDetailScreen} 
         options={{ headerTitle: 'Group Details' }}
       />
-     <ManagementStack.Screen 
-  name="AddChildrenToKelompok" 
-  component={AddChildrenToKelompokScreen} 
-  options={{ headerTitle: 'Add Children to Group' }}
-/>
+      <ManagementStack.Screen 
+        name="AddChildrenToKelompok" 
+        component={AddChildrenToKelompokScreen} 
+        options={{ headerTitle: 'Add Children to Group' }}
+      />
       
-      {/* Attendance/Activities Screens in Management Stack */}
       <ManagementStack.Screen
         name="ActivitiesList"
         component={ActivitiesListScreen}
@@ -446,27 +437,26 @@ const ManagementStackNavigator = () => {
         options={{ headerTitle: 'Laporan Aktivitas' }}
       />
       <ManagementStack.Screen 
-  name="RaportFormal" 
-  component={RaportFormalScreen} 
-  options={{ headerTitle: 'Raport Formal' }}
-/>
-<ManagementStack.Screen 
-  name="RaportFormalDetail" 
-  component={RaportFormalDetailScreen} 
-  options={{ headerTitle: 'Detail Raport Formal' }}
-/>
-<ManagementStack.Screen 
-  name="RaportFormalForm" 
-  component={RaportFormalFormScreen} 
-  options={({ route }) => ({ 
-    headerTitle: route.params?.isEdit ? 'Edit Raport Formal' : 'Tambah Raport Formal'
-  })}
-/>
+        name="RaportFormal" 
+        component={RaportFormalScreen} 
+        options={{ headerTitle: 'Raport Formal' }}
+      />
+      <ManagementStack.Screen 
+        name="RaportFormalDetail" 
+        component={RaportFormalDetailScreen} 
+        options={{ headerTitle: 'Detail Raport Formal' }}
+      />
+      <ManagementStack.Screen 
+        name="RaportFormalForm" 
+        component={RaportFormalFormScreen} 
+        options={({ route }) => ({ 
+          headerTitle: route.params?.isEdit ? 'Edit Raport Formal' : 'Tambah Raport Formal'
+        })}
+      />
     </ManagementStack.Navigator>
   );
 };
 
-// Profile Stack Navigator
 const ProfileStackNavigator = () => {
   return (
     <ProfileStack.Navigator>
@@ -479,11 +469,7 @@ const ProfileStackNavigator = () => {
   );
 };
 
-// Main Tab Navigator for Admin Shelter
 const AdminShelterNavigator = () => {
-  // Only show dev tab in development mode
-  const isDev = __DEV__;
-  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -529,8 +515,6 @@ const AdminShelterNavigator = () => {
         component={ProfileStackNavigator} 
         options={{ tabBarLabel: 'Profil' }}
       />
-      
-    
     </Tab.Navigator>
   );
 };

@@ -1,6 +1,7 @@
 import { combineReducers } from '@reduxjs/toolkit';
 import authReducer from '../features/auth/redux/authSlice';
 import tutorReducer from '../features/adminShelter/redux/tutorSlice';
+import tutorCompetencyReducer from '../features/adminShelter/redux/tutorCompetencySlice';
 import qrTokenReducer from '../features/adminShelter/redux/qrTokenSlice';
 import attendanceReducer from '../features/adminShelter/redux/attendanceSlice';
 import aktivitasReducer from '../features/adminShelter/redux/aktivitasSlice';
@@ -9,10 +10,10 @@ import raportReducer from '../features/adminShelter/redux/raportSlice';
 import semesterReducer from '../features/adminShelter/redux/semesterSlice';
 import tutorAttendaceReducer from '../features/adminShelter/redux/tutorAttendanceSlice';
 
-// Create the root reducer
 const appReducer = combineReducers({
   auth: authReducer,
   tutor: tutorReducer,
+  tutorCompetency: tutorCompetencyReducer,
   qrToken: qrTokenReducer,
   attendance: attendanceReducer,
    aktivitas: aktivitasReducer,
@@ -22,11 +23,8 @@ const appReducer = combineReducers({
   tutorAttendance: tutorAttendaceReducer,
 });
 
-// Reset the entire redux state when logout action is dispatched
 const rootReducer = (state, action) => {
-  // Check if the action type is 'auth/logout/fulfilled'
   if (action.type === 'auth/logout/fulfilled') {
-    // Return undefined to reset state to initial values defined in each reducer
     return appReducer(undefined, action);
   }
   
