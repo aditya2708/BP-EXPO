@@ -377,6 +377,82 @@ const InformasiAnakScreen = () => {
           <Text style={styles.emptyText}>Data pendidikan tidak tersedia</Text>
         )}
       </View>
+
+      <View style={styles.infoSection}>
+        <Text style={styles.sectionTitle}>Informasi Marketplace</Text>
+        
+        <View style={styles.infoRow}>
+          <View style={styles.infoLabel}>
+            <Ionicons name="star-outline" size={20} color="#666" />
+            <Text style={styles.infoLabelText}>Status Featured</Text>
+          </View>
+          <View style={styles.featuredContainer}>
+            {anakData?.marketplace_featured ? (
+              <View style={styles.featuredBadge}>
+                <Ionicons name="star" size={16} color="#fff" />
+                <Text style={styles.featuredBadgeText}>Featured</Text>
+              </View>
+            ) : (
+              <Text style={styles.infoValue}>Tidak featured</Text>
+            )}
+          </View>
+        </View>
+
+        {anakData?.background_story && (
+          <View style={styles.infoRow}>
+            <View style={styles.infoLabel}>
+              <Ionicons name="book-outline" size={20} color="#666" />
+              <Text style={styles.infoLabelText}>Cerita Latar Belakang</Text>
+            </View>
+            <Text style={styles.infoValueMultiline}>{anakData.background_story}</Text>
+          </View>
+        )}
+
+        {anakData?.educational_goals && (
+          <View style={styles.infoRow}>
+            <View style={styles.infoLabel}>
+              <Ionicons name="school-outline" size={20} color="#666" />
+              <Text style={styles.infoLabelText}>Tujuan Pendidikan</Text>
+            </View>
+            <Text style={styles.infoValueMultiline}>{anakData.educational_goals}</Text>
+          </View>
+        )}
+
+        {anakData?.personality_traits && (
+          <View style={styles.infoRow}>
+            <View style={styles.infoLabel}>
+              <Ionicons name="happy-outline" size={20} color="#666" />
+              <Text style={styles.infoLabelText}>Sifat Kepribadian</Text>
+            </View>
+            <View style={styles.personalityContainer}>
+              {(Array.isArray(anakData.personality_traits) 
+                ? anakData.personality_traits 
+                : anakData.personality_traits.split(',')
+              ).map((trait, index) => (
+                <View key={index} style={styles.personalityTag}>
+                  <Text style={styles.personalityTagText}>{trait.trim()}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {anakData?.special_needs && (
+          <View style={styles.infoRow}>
+            <View style={styles.infoLabel}>
+              <Ionicons name="medical-outline" size={20} color="#e74c3c" />
+              <Text style={[styles.infoLabelText, styles.warningLabel]}>Kebutuhan Khusus</Text>
+            </View>
+            <View style={styles.warningContainer}>
+              <Text style={styles.warningText}>{anakData.special_needs}</Text>
+            </View>
+          </View>
+        )}
+
+        {!anakData?.background_story && !anakData?.educational_goals && !anakData?.personality_traits && !anakData?.special_needs && (
+          <Text style={styles.emptyText}>Data marketplace tidak tersedia</Text>
+        )}
+      </View>
     </ScrollView>
   );
 };
@@ -421,6 +497,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     paddingLeft: 28,
+  },
+  infoValueMultiline: {
+    fontSize: 16,
+    color: '#333',
+    paddingLeft: 28,
+    lineHeight: 22,
   },
   statusContainer: {
     paddingLeft: 28,
@@ -497,6 +579,59 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#34495e',
     fontWeight: '500',
+  },
+  featuredContainer: {
+    paddingLeft: 28,
+  },
+  featuredBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#f39c12',
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  featuredBadgeText: {
+    fontSize: 14,
+    color: '#ffffff',
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+  personalityContainer: {
+    paddingLeft: 28,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  personalityTag: {
+    backgroundColor: '#3498db',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    marginRight: 8,
+    marginBottom: 4,
+  },
+  personalityTagText: {
+    fontSize: 12,
+    color: '#ffffff',
+    fontWeight: '500',
+  },
+  warningLabel: {
+    color: '#e74c3c',
+    fontWeight: '600',
+  },
+  warningContainer: {
+    paddingLeft: 28,
+    backgroundColor: '#fdf2f2',
+    padding: 8,
+    borderRadius: 6,
+    borderLeftWidth: 4,
+    borderLeftColor: '#e74c3c',
+  },
+  warningText: {
+    fontSize: 16,
+    color: '#e74c3c',
+    lineHeight: 22,
   },
   emptyText: {
     fontSize: 14,

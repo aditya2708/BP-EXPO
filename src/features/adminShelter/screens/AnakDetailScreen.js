@@ -13,12 +13,10 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-// Import components
 import Button from '../../../common/components/Button';
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../common/components/ErrorMessage';
 
-// Import API
 import { adminShelterAnakApi } from '../api/adminShelterAnakApi';
 
 const { width } = Dimensions.get('window');
@@ -32,8 +30,12 @@ const AnakDetailScreen = () => {
   const [loading, setLoading] = useState(!isNew);
   const [error, setError] = useState(null);
 
-  // Define menu items
   const menuItems = [
+  {
+    title: 'Edit Data',
+    screen: 'AnakForm',
+    icon: '✏️'
+  },
   {
     title: 'Prestasi',
     screen: 'Prestasi',
@@ -60,25 +62,23 @@ const AnakDetailScreen = () => {
     icon: '📝'
   },
   {
-    title: 'Raport Shelter',  // Updated title
+    title: 'Raport Shelter',
     screen: 'Raport',
     icon: '📚'
   },
   {
-    title: 'Raport Formal',   // New menu item
+    title: 'Raport Formal',
     screen: 'RaportFormal',
     icon: '🎓'
   }
 ];
 
-  // Fetch anak data
   useEffect(() => {
     if (!isNew && id) {
       fetchAnakDetail();
     }
   }, [id, isNew]);
 
-  // Set screen title based on mode
   useEffect(() => {
     let title = isNew 
       ? 'Tambah Anak Baru' 
@@ -101,7 +101,6 @@ const AnakDetailScreen = () => {
     });
   }, [isNew, anakData, navigation]);
 
-  // Fetch anak detail
   const fetchAnakDetail = async () => {
     try {
       setLoading(true);
@@ -122,7 +121,6 @@ const AnakDetailScreen = () => {
     }
   };
 
-  // Handle delete
   const handleDelete = () => {
     Alert.alert(
       'Hapus Anak',
@@ -164,16 +162,18 @@ const AnakDetailScreen = () => {
     );
   };
 
-  // Navigate to a menu screen
   const navigateToScreen = (screen) => {
-    // Special handling for Surat screen
-    if (screen === 'Surat') {
+    if (screen === 'AnakForm') {
+      navigation.navigate(screen, { 
+        anakData,
+        isEdit: true
+      });
+    } else if (screen === 'Surat') {
       navigation.navigate(screen, { 
         childId: id,
         childName: anakData?.full_name || anakData?.nick_name || 'Anak'
       });
     } else {
-      // Default navigation for other screens
       navigation.navigate(screen, { 
         anakData, 
         anakId: id,
@@ -182,7 +182,6 @@ const AnakDetailScreen = () => {
     }
   };
 
-  // Render menu item
   const renderMenuItem = ({ item }) => (
     <TouchableOpacity
       style={styles.menuItem}
@@ -193,14 +192,12 @@ const AnakDetailScreen = () => {
     </TouchableOpacity>
   );
 
-  // Loading state
   if (loading) {
     return <LoadingSpinner fullScreen message="Memuat data anak..." />;
   }
 
   return (
     <ScrollView style={styles.container}>
-      {/* Error Message */}
       {error && (
         <ErrorMessage
           message={error}
@@ -209,7 +206,6 @@ const AnakDetailScreen = () => {
         />
       )}
 
-      {/* Profile Header */}
       <View style={styles.profileHeader}>
         <View style={styles.profileImageContainer}>
           {anakData?.foto_url ? (
@@ -236,7 +232,6 @@ const AnakDetailScreen = () => {
           </Text>
         </View>
 
-        {/* Toggle status button */}
         <Button
           title={anakData?.status_validasi === 'aktif' ? 'Ubah ke Non-Aktif' : 'Ubah ke Aktif'}
           onPress={async () => {
@@ -258,7 +253,6 @@ const AnakDetailScreen = () => {
         />
       </View>
 
-      {/* Menu Grid */}
       <View style={styles.menuContainer}>
         <Text style={styles.menuSectionTitle}>Menu</Text>
         <FlatList
