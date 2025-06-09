@@ -79,6 +79,13 @@ const TutorDetailScreen = () => {
     });
   };
 
+  const handleViewCompetencies = () => {
+    navigation.navigate('TutorCompetencyList', {
+      tutorId: tutor.id_tutor,
+      tutorName: tutor.nama
+    });
+  };
+
   const handleCallTutor = () => {
     if (tutor.no_hp) {
       Linking.openURL(`tel:${tutor.no_hp}`);
@@ -146,6 +153,13 @@ const TutorDetailScreen = () => {
         >
           <Ionicons name="calendar" size={24} color="#3498db" />
           <Text style={styles.contactButtonText}>Riwayat</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.contactButton}
+          onPress={handleViewCompetencies}
+        >
+          <Ionicons name="ribbon" size={24} color="#3498db" />
+          <Text style={styles.contactButtonText}>Kompetensi</Text>
         </TouchableOpacity>
       </View>
 
@@ -238,25 +252,26 @@ const styles = StyleSheet.create({
   contactActions: {
     flexDirection: 'row',
     justifyContent: 'center',
+    flexWrap: 'wrap',
     marginBottom: 20,
-    gap: 12,
+    gap: 8,
   },
   contactButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ffffff',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 8,
     elevation: 2,
-    minWidth: 80,
+    minWidth: 70,
     justifyContent: 'center',
   },
   contactButtonText: {
-    marginLeft: 8,
+    marginLeft: 6,
     color: '#3498db',
     fontWeight: '500',
-    fontSize: 13,
+    fontSize: 12,
   },
   detailSection: {
     backgroundColor: '#ffffff',
