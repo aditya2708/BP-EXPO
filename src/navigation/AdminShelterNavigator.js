@@ -8,7 +8,7 @@ import AdminShelterDashboardScreen from '../features/adminShelter/screens/AdminS
 import AdminShelterProfileScreen from '../features/adminShelter/screens/AdminShelterProfileScreen';
 import AnakManagementScreen from '../features/adminShelter/screens/AnakManagementScreen';
 import AnakDetailScreen from '../features/adminShelter/screens/AnakDetailScreen';
-
+import AnakFormScreen from '../features/adminShelter/screens/AnakFormScreen';
 
 // Import attendance-related screens (Phase 1)
 import QrScannerScreen from '../features/adminShelter/screens/attendance/QrScannerScreen';
@@ -281,6 +281,11 @@ const ManagementStackNavigator = () => {
         })}
       />
       
+<ManagementStack.Screen 
+  name="AnakForm" 
+  component={AnakFormScreen} 
+  options={{ headerTitle: 'Edit Anak' }}
+/>
       {/* Anak Detail Screens */}
       <ManagementStack.Screen 
         name="InformasiAnak" 
