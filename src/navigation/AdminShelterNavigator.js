@@ -42,6 +42,9 @@ import TutorFormScreen from '../features/adminShelter/screens/TutorFormScreen';
 import TutorDetailScreen from '../features/adminShelter/screens/TutorDetailScreen';
 import TutorHonorScreen from '../features/adminShelter/screens/TutorHonorScreen';
 import TutorHonorDetailScreen from '../features/adminShelter/screens/TutorHonorDetailScreen';
+import TutorActivityHistoryScreen from '../features/adminShelter/screens/TutorActivityHistoryScreen';
+import TutorHonorHistory from '../features/adminShelter/screens/TutorHonorHistoryScreen';
+
 import TutorCompetencyListScreen from '../features/adminShelter/screens/TutorCompetencyListScreen';
 import TutorCompetencyFormScreen from '../features/adminShelter/screens/TutorCompetencyFormScreen';
 import TutorCompetencyDetailScreen from '../features/adminShelter/screens/TutorCompetencyDetailScreen';
@@ -66,10 +69,10 @@ import SemesterManagementScreen from '../features/adminShelter/screens/SemesterM
 import SemesterFormScreen from '../features/adminShelter/screens/SemesterFormScreen';
 import SemesterDetailScreen from '../features/adminShelter/screens/SemesterDetailScreen';
 
-import TutorActivityHistoryScreen from '../features/adminShelter/screens/TutorActivityHistoryScreen';
 import RaportFormalScreen from '../features/adminShelter/screens/anakDetail/RaportFormalScreen';
 import RaportFormalDetailScreen from '../features/adminShelter/screens/anakDetail/RaportFormalDetailScreen';
 import RaportFormalFormScreen from '../features/adminShelter/screens/anakDetail/RaportFormalFormScreen';
+import TutorHonorHistoryScreen from '../features/adminShelter/screens/TutorHonorHistoryScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
@@ -160,6 +163,11 @@ const ManagementStackNavigator = () => {
         name="TutorActivityHistory" 
         component={TutorActivityHistoryScreen} 
         options={{ headerTitle: 'Riwayat Aktivitas Tutor' }}
+      />
+        <ManagementStack.Screen 
+        name="TutorHonorHistory" 
+        component={TutorHonorHistoryScreen} 
+        options={{ headerTitle: 'Riwayat Honor Tutor' }}
       />
       <ManagementStack.Screen 
         name="Surat" 
