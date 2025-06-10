@@ -5,6 +5,14 @@ export const tutorHonorApi = {
     return await api.get(`/admin-shelter/tutor-honor/tutor/${tutorId}`, { params });
   },
 
+  getHonorHistory: async (tutorId, params = {}) => {
+    return await api.get(`/admin-shelter/tutor-honor/tutor/${tutorId}/history`, { params });
+  },
+
+  getHonorStatistics: async (tutorId, params = {}) => {
+    return await api.get(`/admin-shelter/tutor-honor/tutor/${tutorId}/statistics`, { params });
+  },
+
   getMonthlyDetail: async (tutorId, month, year) => {
     return await api.get(`/admin-shelter/tutor-honor/tutor/${tutorId}/month/${month}/year/${year}`);
   },

@@ -23,7 +23,26 @@ const initialState = {
     calculate: null,
     approve: null,
     markPaid: null
-  }
+  },
+  // New state for history and statistics
+  honorHistory: [],
+  honorStatistics: null,
+  historyFilters: {
+    start_date: null,
+    end_date: null,
+    status: '',
+    year: null
+  },
+  historyPagination: {
+    current_page: 1,
+    last_page: 1,
+    per_page: 10,
+    total: 0
+  },
+  historyLoading: false,
+  statisticsLoading: false,
+  historyError: null,
+  statisticsError: null
 };
 
 export const fetchTutorHonor = createAsyncThunk(
@@ -98,6 +117,30 @@ export const fetchHonorStats = createAsyncThunk(
   }
 );
 
+export const fetchHonorHistory = createAsyncThunk(
+  'tutorHonor/fetchHonorHistory',
+  async ({ tutorId, filters }, { rejectWithValue }) => {
+    try {
+      const response = await tutorHonorApi.getHonorHistory(tutorId, filters);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch honor history');
+    }
+  }
+);
+
+export const fetchHonorStatistics = createAsyncThunk(
+  'tutorHonor/fetchHonorStatistics',
+  async ({ tutorId, filters }, { rejectWithValue }) => {
+    try {
+      const response = await tutorHonorApi.getHonorStatistics(tutorId, filters);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch honor statistics');
+    }
+  }
+);
+
 const tutorHonorSlice = createSlice({
   name: 'tutorHonor',
   initialState,
@@ -123,9 +166,37 @@ const tutorHonorSlice = createSlice({
     },
     updateSummary: (state, action) => {
       state.summary = { ...state.summary, ...action.payload };
+    },
+    // New reducers for history and statistics
+    setHistoryFilters: (state, action) => {
+      state.historyFilters = { ...state.historyFilters, ...action.payload };
+    },
+    resetHistoryFilters: (state) => {
+      state.historyFilters = {
+        start_date: null,
+        end_date: null,
+        status: '',
+        year: null
+      };
+    },
+    resetHistoryError: (state) => {
+      state.historyError = null;
+    },
+    resetStatisticsError: (state) => {
+      state.statisticsError = null;
+    },
+    clearHonorHistory: (state) => {
+      state.honorHistory = [];
+      state.historyPagination = {
+        current_page: 1,
+        last_page: 1,
+        per_page: 10,
+        total: 0
+      };
     }
   },
   extraReducers: (builder) => {
+    // Fetch Tutors Honor
     builder
       .addCase(fetchTutorHonor.pending, (state) => {
         state.loading = true;
@@ -146,6 +217,7 @@ const tutorHonorSlice = createSlice({
         state.error = action.payload;
       })
       
+    // Fetch Monthly Detail
       .addCase(fetchMonthlyDetail.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -160,6 +232,7 @@ const tutorHonorSlice = createSlice({
         state.error = action.payload;
       })
       
+    // Calculate Honor
       .addCase(calculateHonor.pending, (state) => {
         state.actionStatus.calculate = 'loading';
         state.actionError.calculate = null;
@@ -189,6 +262,7 @@ const tutorHonorSlice = createSlice({
         state.actionError.calculate = action.payload;
       })
       
+    // Approve Honor
       .addCase(approveHonor.pending, (state) => {
         state.actionStatus.approve = 'loading';
         state.actionError.approve = null;
@@ -211,6 +285,7 @@ const tutorHonorSlice = createSlice({
         state.actionError.approve = action.payload;
       })
       
+    // Mark as Paid
       .addCase(markAsPaid.pending, (state) => {
         state.actionStatus.markPaid = 'loading';
         state.actionError.markPaid = null;
@@ -233,19 +308,64 @@ const tutorHonorSlice = createSlice({
         state.actionError.markPaid = action.payload;
       })
       
+    // Fetch Honor Stats
       .addCase(fetchHonorStats.fulfilled, (state, action) => {
         state.stats = action.payload.data;
+      })
+      
+      // Fetch Honor History
+      .addCase(fetchHonorHistory.pending, (state) => {
+        state.historyLoading = true;
+        state.historyError = null;
+      })
+      .addCase(fetchHonorHistory.fulfilled, (state, action) => {
+        state.historyLoading = false;
+        state.honorHistory = action.payload.data || [];
+        
+        if (action.payload.pagination) {
+          state.historyPagination = {
+            current_page: action.payload.pagination.current_page || 1,
+            last_page: action.payload.pagination.last_page || 1,
+            per_page: action.payload.pagination.per_page || 10,
+            total: action.payload.pagination.total || 0
+          };
+        }
+      })
+      .addCase(fetchHonorHistory.rejected, (state, action) => {
+        state.historyLoading = false;
+        state.historyError = action.payload || 'Failed to fetch honor history';
+      })
+      
+      // Fetch Honor Statistics
+      .addCase(fetchHonorStatistics.pending, (state) => {
+        state.statisticsLoading = true;
+        state.statisticsError = null;
+      })
+      .addCase(fetchHonorStatistics.fulfilled, (state, action) => {
+        state.statisticsLoading = false;
+        state.honorStatistics = action.payload.data;
+      })
+      .addCase(fetchHonorStatistics.rejected, (state, action) => {
+        state.statisticsLoading = false;
+        state.statisticsError = action.payload || 'Failed to fetch honor statistics';
       });
   }
 });
 
+// Export actions
 export const {
   resetHonorDetail,
   resetError,
   resetActionStatus,
-  updateSummary
+  updateSummary,
+  setHistoryFilters,
+  resetHistoryFilters,
+  resetHistoryError,
+  resetStatisticsError,
+  clearHonorHistory
 } = tutorHonorSlice.actions;
 
+// Export selectors
 export const selectHonorList = state => state.tutorHonor.honorList;
 export const selectSelectedHonor = state => state.tutorHonor.selectedHonor;
 export const selectMonthlyDetail = state => state.tutorHonor.monthlyDetail;
@@ -255,5 +375,15 @@ export const selectHonorError = state => state.tutorHonor.error;
 export const selectHonorSummary = state => state.tutorHonor.summary;
 export const selectHonorActionStatus = (state, action) => state.tutorHonor.actionStatus[action];
 export const selectHonorActionError = (state, action) => state.tutorHonor.actionError[action];
+
+// New selectors for history and statistics
+export const selectHonorHistory = state => state.tutorHonor.honorHistory;
+export const selectHonorStatistics = state => state.tutorHonor.honorStatistics;
+export const selectHistoryFilters = state => state.tutorHonor.historyFilters;
+export const selectHistoryPagination = state => state.tutorHonor.historyPagination;
+export const selectHistoryLoading = state => state.tutorHonor.historyLoading;
+export const selectStatisticsLoading = state => state.tutorHonor.statisticsLoading;
+export const selectHistoryError = state => state.tutorHonor.historyError;
+export const selectStatisticsError = state => state.tutorHonor.statisticsError;
 
 export default tutorHonorSlice.reducer;
