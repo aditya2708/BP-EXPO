@@ -40,6 +40,8 @@ import RaporShelterScreen from '../features/adminShelter/screens/anakDetail/Rapo
 import TutorManagementScreen from '../features/adminShelter/screens/TutorManagementScreen';
 import TutorFormScreen from '../features/adminShelter/screens/TutorFormScreen';
 import TutorDetailScreen from '../features/adminShelter/screens/TutorDetailScreen';
+import TutorHonorScreen from '../features/adminShelter/screens/TutorHonorScreen';
+import TutorHonorDetailScreen from '../features/adminShelter/screens/TutorHonorDetailScreen';
 import TutorCompetencyListScreen from '../features/adminShelter/screens/TutorCompetencyListScreen';
 import TutorCompetencyFormScreen from '../features/adminShelter/screens/TutorCompetencyFormScreen';
 import TutorCompetencyDetailScreen from '../features/adminShelter/screens/TutorCompetencyDetailScreen';
@@ -348,6 +350,16 @@ const ManagementStackNavigator = () => {
         name="TutorDetail" 
         component={TutorDetailScreen} 
         options={{ headerTitle: 'Tutor Detail' }}
+      />
+      <ManagementStack.Screen 
+        name="TutorHonor" 
+        component={TutorHonorScreen} 
+        options={{ headerTitle: 'Honor Tutor' }}
+      />
+      <ManagementStack.Screen 
+        name="TutorHonorDetail" 
+        component={TutorHonorDetailScreen} 
+        options={{ headerTitle: 'Detail Honor' }}
       />
       <ManagementStack.Screen 
         name="TutorCompetencyList" 

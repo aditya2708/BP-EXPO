@@ -2,6 +2,7 @@ import { combineReducers } from '@reduxjs/toolkit';
 import authReducer from '../features/auth/redux/authSlice';
 import tutorReducer from '../features/adminShelter/redux/tutorSlice';
 import tutorCompetencyReducer from '../features/adminShelter/redux/tutorCompetencySlice';
+import tutorHonorReducer from '../features/adminShelter/redux/tutorHonorSlice';
 import qrTokenReducer from '../features/adminShelter/redux/qrTokenSlice';
 import attendanceReducer from '../features/adminShelter/redux/attendanceSlice';
 import aktivitasReducer from '../features/adminShelter/redux/aktivitasSlice';
@@ -14,6 +15,7 @@ const appReducer = combineReducers({
   auth: authReducer,
   tutor: tutorReducer,
   tutorCompetency: tutorCompetencyReducer,
+  tutorHonor: tutorHonorReducer,
   qrToken: qrTokenReducer,
   attendance: attendanceReducer,
    aktivitas: aktivitasReducer,
