@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Button from '../../../common/components/Button';
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../common/components/ErrorMessage';
+import HonorSummaryCard from '../components/HonorSummaryCard';
 
 import {
   fetchTutorDetail,
@@ -81,6 +82,13 @@ const TutorDetailScreen = () => {
 
   const handleViewCompetencies = () => {
     navigation.navigate('TutorCompetencyList', {
+      tutorId: tutor.id_tutor,
+      tutorName: tutor.nama
+    });
+  };
+
+  const handleViewHonor = () => {
+    navigation.navigate('TutorHonor', {
       tutorId: tutor.id_tutor,
       tutorName: tutor.nama
     });
@@ -162,6 +170,11 @@ const TutorDetailScreen = () => {
           <Text style={styles.contactButtonText}>Kompetensi</Text>
         </TouchableOpacity>
       </View>
+
+      <HonorSummaryCard 
+        tutorId={tutor.id_tutor}
+        onPress={handleViewHonor}
+      />
 
       <View style={styles.detailSection}>
         <View style={styles.detailRow}>
