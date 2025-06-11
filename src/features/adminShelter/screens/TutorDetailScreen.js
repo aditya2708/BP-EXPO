@@ -94,6 +94,13 @@ const TutorDetailScreen = () => {
     });
   };
 
+  const handleViewHonorHistory = () => {
+    navigation.navigate('TutorHonorHistory', {
+      tutorId: tutor.id_tutor,
+      tutorName: tutor.nama
+    });
+  };
+
   const handleCallTutor = () => {
     if (tutor.no_hp) {
       Linking.openURL(`tel:${tutor.no_hp}`);
@@ -161,6 +168,13 @@ const TutorDetailScreen = () => {
         >
           <Ionicons name="calendar" size={24} color="#3498db" />
           <Text style={styles.contactButtonText}>Riwayat</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.contactButton}
+          onPress={handleViewHonorHistory}
+        >
+          <Ionicons name="document-text" size={24} color="#3498db" />
+          <Text style={styles.contactButtonText}>Honor</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.contactButton}
