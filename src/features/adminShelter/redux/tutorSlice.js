@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 import { adminShelterTutorApi } from '../api/adminShelterTutorApi';
 
 // Initial state
@@ -231,6 +231,9 @@ export const {
   resetActionStatus
 } = tutorSlice.actions;
 
+// Basic selectors
+const selectTutorState = state => state.tutor;
+
 // Export selectors
 export const selectAllTutors = state => state.tutor.tutorList;
 export const selectTutorById = (state, tutorId) => 
@@ -238,12 +241,18 @@ export const selectTutorById = (state, tutorId) =>
 export const selectSelectedTutor = state => state.tutor.selectedTutor;
 export const selectTutorStatus = state => state.tutor.status;
 export const selectTutorError = state => state.tutor.error;
-export const selectTutorPagination = state => ({
-  currentPage: state.tutor.currentPage,
-  totalPages: state.tutor.totalPages,
-  total: state.tutor.total,
-  perPage: state.tutor.perPage
-});
+
+// Memoized pagination selector to prevent unnecessary rerenders
+export const selectTutorPagination = createSelector(
+  [selectTutorState],
+  (tutorState) => ({
+    currentPage: tutorState.currentPage,
+    totalPages: tutorState.totalPages,
+    total: tutorState.total,
+    perPage: tutorState.perPage
+  })
+);
+
 export const selectTutorFilters = state => state.tutor.filters;
 export const selectTutorActionStatus = (state, action) => state.tutor.actionStatus[action];
 export const selectTutorActionError = (state, action) => state.tutor.actionError[action];
