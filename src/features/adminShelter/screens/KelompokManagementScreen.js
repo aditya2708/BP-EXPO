@@ -9,22 +9,22 @@ import {
   RefreshControl,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
-import Button from '../../../common/components/Button';
+// Import components
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../common/components/ErrorMessage';
+import Button from '../../../common/components/Button';
 
-import { adminShelterKeluargaApi } from '../api/adminShelterKeluargaApi';
-import { useAuth } from '../../../common/hooks/useAuth';
+// Import API
+import { adminShelterKelompokApi } from '../api/adminShelterKelompokApi';
 
-const KeluargaManagementScreen = () => {
+const KelompokManagementScreen = () => {
   const navigation = useNavigation();
-  const { profile } = useAuth();
-  
-  const [keluargaList, setKeluargaList] = useState([]);
+  const [kelompokList, setKelompokList] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -32,17 +32,11 @@ const KeluargaManagementScreen = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [levels, setLevels] = useState([]);
+  const [selectedLevel, setSelectedLevel] = useState('');
 
-  useEffect(() => {
-    const timerId = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 300);
-
-    return () => clearTimeout(timerId);
-  }, [searchQuery]);
-
-  const fetchKeluargaData = async (page = 1, refresh = false) => {
+  // Fetch kelompok data
+  const fetchKelompokData = async (page = 1, refresh = false) => {
     try {
       if (refresh) {
         setCurrentPage(1);
@@ -51,23 +45,36 @@ const KeluargaManagementScreen = () => {
       
       setError(null);
       
+      // Prepare params
       const params = {
         page,
-        per_page: 10,
-        search: debouncedSearchQuery.trim()
+        per_page: 10
       };
       
-      const response = await adminShelterKeluargaApi.getAllKeluarga(params);
+      // Add search query if provided
+      if (searchQuery.trim()) {
+        params.search = searchQuery.trim();
+      }
+      
+      // Add level filter if selected
+      if (selectedLevel) {
+        params.id_level_anak_binaan = selectedLevel;
+      }
+      
+      const response = await adminShelterKelompokApi.getAllKelompok(params);
       
       if (response.data.success) {
         const newData = response.data.data || [];
         
+        // If refreshing or first page, replace data
+        // Otherwise, append data
         if (refresh || page === 1) {
-          setKeluargaList(newData);
+          setKelompokList(newData);
         } else {
-          setKeluargaList(prev => [...prev, ...newData]);
+          setKelompokList(prev => [...prev, ...newData]);
         }
         
+        // Set pagination info
         if (response.data.pagination) {
           setCurrentPage(response.data.pagination.current_page);
           setTotalPages(response.data.pagination.last_page);
@@ -76,8 +83,8 @@ const KeluargaManagementScreen = () => {
         setError(response.data.message || 'Failed to load data');
       }
     } catch (err) {
-      console.error('Error fetching keluarga:', err);
-      setError('Failed to load family data. Please try again.');
+      console.error('Error fetching kelompok:', err);
+      setError('Failed to load kelompok. Please try again.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -85,42 +92,80 @@ const KeluargaManagementScreen = () => {
     }
   };
 
-  useEffect(() => {
-    fetchKeluargaData(1, true);
-  }, [debouncedSearchQuery]);
-
-  useEffect(() => {
-    fetchKeluargaData();
-  }, []);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchKeluargaData(1, true);
+  // Fetch levels data
+  const fetchLevels = async () => {
+    try {
+      const response = await adminShelterKelompokApi.getLevels();
+      if (response.data.success) {
+        setLevels(response.data.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching levels:', err);
+    }
   };
 
+  // Initial data fetch
+  useEffect(() => {
+    Promise.all([
+      fetchKelompokData(),
+      fetchLevels()
+    ]);
+  }, []);
+
+  // Handle refresh
+  const handleRefresh = () => {
+    setRefreshing(true);
+    Promise.all([
+      fetchKelompokData(1, true),
+      fetchLevels()
+    ]);
+  };
+
+  // Handle load more
   const handleLoadMore = () => {
     if (loadingMore || currentPage >= totalPages) return;
     
     setLoadingMore(true);
-    fetchKeluargaData(currentPage + 1);
+    fetchKelompokData(currentPage + 1);
   };
 
+  // Handle search
+  const handleSearch = () => {
+    // Reset to first page and fetch with search query
+    setCurrentPage(1);
+    fetchKelompokData(1, true);
+  };
+
+  // Clear search
   const clearSearch = () => {
     setSearchQuery('');
+    setCurrentPage(1);
+    fetchKelompokData(1, true);
   };
 
-  const handleViewKeluarga = (keluargaId) => {
-    navigation.navigate('KeluargaDetail', { id: keluargaId });
+  // Handle level filter
+  const handleLevelFilter = (levelId) => {
+    setSelectedLevel(levelId === selectedLevel ? '' : levelId);
+    setCurrentPage(1);
+    // The filter will be applied on the next fetchKelompokData call
+    fetchKelompokData(1, true);
   };
 
-  const handleAddKeluarga = () => {
-    navigation.navigate('KeluargaForm', { isNew: true });
+  // Navigate to kelompok detail screen
+  const handleViewKelompok = (kelompokId) => {
+    navigation.navigate('KelompokDetail', { id: kelompokId });
   };
 
-  const handleDeleteKeluarga = (keluarga) => {
+  // Navigate to add new kelompok screen
+  const handleAddKelompok = () => {
+    navigation.navigate('KelompokForm');
+  };
+
+  // Handle delete kelompok
+  const handleDeleteKelompok = (kelompok) => {
     Alert.alert(
-      'Delete Family',
-      `Are you sure you want to delete family "${keluarga.kepala_keluarga}"? This will also delete all associated data including children.`,
+      'Delete Group',
+      `Are you sure you want to delete ${kelompok.nama_kelompok}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         { 
@@ -129,14 +174,15 @@ const KeluargaManagementScreen = () => {
           onPress: async () => {
             try {
               setLoading(true);
-              await adminShelterKeluargaApi.deleteKeluarga(keluarga.id_keluarga);
+              await adminShelterKelompokApi.deleteKelompok(kelompok.id_kelompok);
               
+              // Refresh data after deleting
               handleRefresh();
               
-              Alert.alert('Success', 'Family has been deleted');
+              Alert.alert('Success', 'Group has been deleted');
             } catch (err) {
-              console.error('Error deleting keluarga:', err);
-              Alert.alert('Error', 'Failed to delete family');
+              console.error('Error deleting kelompok:', err);
+              Alert.alert('Error', 'Failed to delete group');
             } finally {
               setLoading(false);
             }
@@ -146,71 +192,66 @@ const KeluargaManagementScreen = () => {
     );
   };
 
+  // Render footer (loading indicator when loading more data)
   const renderFooter = () => {
     if (!loadingMore) return null;
     
     return (
       <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color="#e74c3c" />
+        <ActivityIndicator size="small" color="#9b59b6" />
         <Text style={styles.footerText}>Loading more...</Text>
       </View>
     );
   };
 
-  const renderKeluargaItem = ({ item }) => {
-    const keluarga = item;
+  // Render kelompok item
+  const renderKelompokItem = ({ item }) => {
+    const kelompok = item;
+    const levelName = kelompok.level_anak_binaan?.nama_level_binaan || 'No Level';
     
     return (
       <TouchableOpacity 
-        style={styles.keluargaItem}
-        onPress={() => handleViewKeluarga(keluarga.id_keluarga)}
+        style={styles.kelompokItem}
+        onPress={() => handleViewKelompok(kelompok.id_kelompok)}
       >
-        <View style={styles.keluargaContent}>
-          <View style={styles.keluargaHeader}>
-            <Text style={styles.keluargaName}>{keluarga.kepala_keluarga}</Text>
-            <View style={styles.keluargaActions}>
+        <View style={styles.kelompokContent}>
+          <View style={styles.kelompokHeader}>
+            <Text style={styles.kelompokName}>{kelompok.nama_kelompok}</Text>
+            <View style={styles.kelompokActions}>
               <TouchableOpacity
                 style={styles.actionButton}
-                onPress={() => navigation.navigate('KeluargaForm', { keluarga })}
+                onPress={() => navigation.navigate('KelompokForm', { kelompok })}
               >
                 <Ionicons name="create-outline" size={18} color="#3498db" />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.actionButton}
-                onPress={() => handleDeleteKeluarga(keluarga)}
+                onPress={() => handleDeleteKelompok(kelompok)}
               >
                 <Ionicons name="trash-outline" size={18} color="#e74c3c" />
               </TouchableOpacity>
             </View>
           </View>
           
-          <View style={styles.keluargaDetails}>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>No. KK:</Text>
-              <Text style={styles.detailValue}>{keluarga.no_kk || '-'}</Text>
+          <View style={styles.kelompokMeta}>
+            <View style={styles.levelBadge}>
+              <Text style={styles.levelText}>{levelName}</Text>
             </View>
-            
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Status:</Text>
-              <Text style={styles.detailValue}>{keluarga.status_ortu || '-'}</Text>
-            </View>
-            
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Shelter:</Text>
-              <Text style={styles.detailValue}>{keluarga.shelter?.nama_shelter || '-'}</Text>
-            </View>
+          
           </View>
         </View>
       </TouchableOpacity>
     );
   };
 
+  // Loading state
   if (loading && !refreshing && !loadingMore) {
-    return <LoadingSpinner fullScreen message="Memuat..." />;
+    return <LoadingSpinner fullScreen message="Loading groups..." />;
   }
 
   return (
     <View style={styles.container}>
+      {/* Error Message */}
       {error && (
         <ErrorMessage
           message={error}
@@ -219,14 +260,17 @@ const KeluargaManagementScreen = () => {
         />
       )}
       
+      {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Ionicons name="search" size={20} color="#999999" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Cari Keluarga atau KK"
+            placeholder="Cari Kelompok..."
             value={searchQuery}
             onChangeText={setSearchQuery}
+            returnKeyType="search"
+            onSubmitEditing={handleSearch}
             clearButtonMode="while-editing"
           />
           {searchQuery.length > 0 && (
@@ -235,13 +279,61 @@ const KeluargaManagementScreen = () => {
             </TouchableOpacity>
           )}
         </View>
+        
+        <Button
+          leftIcon={<Ionicons name="add" size={20} color="#ffffff" />}
+          type="primary"
+          onPress={handleAddKelompok}
+          style={styles.addButton}
+        />
       </View>
       
-      {keluargaList.length > 0 ? (
+      {/* Level Filters */}
+      {levels.length > 0 && (
+        <View style={styles.filterContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                selectedLevel === '' && styles.filterButtonActive
+              ]}
+              onPress={() => handleLevelFilter('')}
+            >
+              <Text style={[
+                styles.filterButtonText,
+                selectedLevel === '' && styles.filterButtonTextActive
+              ]}>
+                All
+              </Text>
+            </TouchableOpacity>
+            
+            {levels.map((level) => (
+              <TouchableOpacity
+                key={level.id_level_anak_binaan}
+                style={[
+                  styles.filterButton,
+                  selectedLevel === level.id_level_anak_binaan && styles.filterButtonActive
+                ]}
+                onPress={() => handleLevelFilter(level.id_level_anak_binaan)}
+              >
+                <Text style={[
+                  styles.filterButtonText,
+                  selectedLevel === level.id_level_anak_binaan && styles.filterButtonTextActive
+                ]}>
+                  {level.nama_level_binaan}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+      
+      {/* Kelompok List */}
+      {kelompokList.length > 0 ? (
         <FlatList
-          data={keluargaList}
-          renderItem={renderKeluargaItem}
-          keyExtractor={(item) => item.id_keluarga?.toString()}
+          data={kelompokList}
+          renderItem={renderKelompokItem}
+          keyExtractor={(item) => item.id_kelompok?.toString()}
           contentContainerStyle={styles.listContainer}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
@@ -255,7 +347,7 @@ const KeluargaManagementScreen = () => {
           {searchQuery.trim() !== '' ? (
             <>
               <Ionicons name="search" size={60} color="#cccccc" />
-              <Text style={styles.emptyText}>No families found with "{searchQuery}"</Text>
+              <Text style={styles.emptyText}>No groups found with "{searchQuery}"</Text>
               <Button 
                 title="Clear Search" 
                 onPress={clearSearch} 
@@ -265,11 +357,11 @@ const KeluargaManagementScreen = () => {
             </>
           ) : (
             <>
-              <Ionicons name="people" size={60} color="#cccccc" />
-              <Text style={styles.emptyText}>No families registered yet</Text>
+              <Ionicons name="people-circle" size={60} color="#cccccc" />
+              <Text style={styles.emptyText}>No groups created yet</Text>
               <Button 
-                title="Add First Family" 
-                onPress={handleAddKeluarga} 
+                title="Create First Group" 
+                onPress={handleAddKelompok} 
                 type="primary"
                 style={styles.emptyButton}
               />
@@ -278,9 +370,10 @@ const KeluargaManagementScreen = () => {
         </View>
       )}
       
+      {/* Floating Add Button */}
       <TouchableOpacity 
         style={styles.floatingButton}
-        onPress={handleAddKeluarga}
+        onPress={handleAddKelompok}
       >
         <Ionicons name="add" size={30} color="#ffffff" />
       </TouchableOpacity>
@@ -294,17 +387,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   searchContainer: {
+    flexDirection: 'row',
     padding: 16,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#eeeeee',
   },
   searchBar: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f2f2f2',
     borderRadius: 8,
     paddingHorizontal: 12,
+    marginRight: 12,
   },
   searchIcon: {
     marginRight: 8,
@@ -318,11 +414,45 @@ const styles = StyleSheet.create({
   clearButton: {
     padding: 4,
   },
+  addButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    padding: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#9b59b6',
+  },
+  filterContainer: {
+    backgroundColor: '#ffffff',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eeeeee',
+  },
+  filterButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginRight: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#9b59b6',
+  },
+  filterButtonActive: {
+    backgroundColor: '#9b59b6',
+  },
+  filterButtonText: {
+    fontSize: 14,
+    color: '#9b59b6',
+  },
+  filterButtonTextActive: {
+    color: '#ffffff',
+  },
   listContainer: {
     padding: 16,
-    paddingBottom: 80,
+    paddingBottom: 80, // Extra padding for floating button
   },
-  keluargaItem: {
+  kelompokItem: {
     backgroundColor: '#ffffff',
     borderRadius: 8,
     marginBottom: 12,
@@ -333,47 +463,43 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  keluargaContent: {
+  kelompokContent: {
     padding: 16,
   },
-  keluargaHeader: {
+  kelompokHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
-  keluargaName: {
+  kelompokName: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
     flex: 1,
   },
-  keluargaActions: {
+  kelompokActions: {
     flexDirection: 'row',
   },
   actionButton: {
     padding: 6,
     marginLeft: 8,
   },
-  keluargaDetails: {
-    marginBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    paddingBottom: 12,
-  },
-  detailRow: {
+  kelompokMeta: {
     flexDirection: 'row',
-    marginBottom: 4,
+    alignItems: 'center',
   },
-  detailLabel: {
-    width: 70,
-    fontSize: 14,
-    color: '#777',
+  levelBadge: {
+    backgroundColor: '#f2e5ff',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    marginRight: 8,
   },
-  detailValue: {
-    flex: 1,
-    fontSize: 14,
-    color: '#333',
+  levelText: {
+    fontSize: 12,
+    color: '#9b59b6',
+    fontWeight: '500',
   },
   emptyContainer: {
     flex: 1,
@@ -409,7 +535,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#e74c3c',
+    backgroundColor: '#9b59b6',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 5,
@@ -420,4 +546,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default KeluargaManagementScreen;
+export default KelompokManagementScreen;
