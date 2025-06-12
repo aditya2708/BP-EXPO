@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../common/components/ErrorMessage';
 import Button from '../../../common/components/Button';
+import HonorCalculationModal from '../components/HonorCalculationModal';
 
 import {
   fetchTutorHonor,
@@ -34,6 +35,7 @@ const TutorHonorScreen = () => {
 
   const { tutorId, tutorName } = route.params;
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [showCalculationModal, setShowCalculationModal] = useState(false);
 
   const honorList = useSelector(selectHonorList);
   const loading = useSelector(selectHonorLoading);
@@ -77,6 +79,14 @@ const TutorHonorScreen = () => {
         }
       ]
     );
+  };
+
+  const handleOpenCalculationModal = () => {
+    setShowCalculationModal(true);
+  };
+
+  const handleCalculationSuccess = () => {
+    fetchData();
   };
 
   const getMonthName = (month) => {
@@ -164,9 +174,10 @@ const TutorHonorScreen = () => {
         Hitung honor tutor untuk melihat data
       </Text>
       <Button
-        title="Hitung Honor Bulan Ini"
-        onPress={() => handleCalculateHonor(new Date().getMonth() + 1)}
+        title="Hitung Honor"
+        onPress={handleOpenCalculationModal}
         style={styles.calculateHonorButton}
+        leftIcon={<Ionicons name="calculator" size={20} color="#fff" />}
       />
     </View>
   );
@@ -178,8 +189,18 @@ const TutorHonorScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.summaryCard}>
-        <Text style={styles.tutorName}>{tutorName}</Text>
-        <Text style={styles.yearText}>Tahun {selectedYear}</Text>
+        <View style={styles.summaryHeader}>
+          <View>
+            <Text style={styles.tutorName}>{tutorName}</Text>
+            <Text style={styles.yearText}>Tahun {selectedYear}</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={handleOpenCalculationModal}
+          >
+            <Ionicons name="add" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryValue}>Rp {summary.yearlyTotal?.toLocaleString('id-ID')}</Text>
@@ -210,6 +231,14 @@ const TutorHonorScreen = () => {
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
       />
+
+      <HonorCalculationModal
+        visible={showCalculationModal}
+        onClose={() => setShowCalculationModal(false)}
+        tutorId={tutorId}
+        tutorName={tutorName}
+        onSuccess={handleCalculationSuccess}
+      />
     </View>
   );
 };
@@ -225,6 +254,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e1e8ed'
   },
+  summaryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   tutorName: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -235,9 +270,16 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4
   },
+  addButton: {
+    backgroundColor: '#3498db',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   summaryRow: {
     flexDirection: 'row',
-    marginTop: 16,
     justifyContent: 'space-around'
   },
   summaryItem: {
