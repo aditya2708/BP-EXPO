@@ -24,7 +24,6 @@ const initialState = {
     approve: null,
     markPaid: null
   },
-  // New state for history and statistics
   honorHistory: [],
   honorStatistics: null,
   historyFilters: {
@@ -167,7 +166,6 @@ const tutorHonorSlice = createSlice({
     updateSummary: (state, action) => {
       state.summary = { ...state.summary, ...action.payload };
     },
-    // New reducers for history and statistics
     setHistoryFilters: (state, action) => {
       state.historyFilters = { ...state.historyFilters, ...action.payload };
     },
@@ -196,7 +194,6 @@ const tutorHonorSlice = createSlice({
     }
   },
   extraReducers: (builder) => {
-    // Fetch Tutors Honor
     builder
       .addCase(fetchTutorHonor.pending, (state) => {
         state.loading = true;
@@ -217,7 +214,6 @@ const tutorHonorSlice = createSlice({
         state.error = action.payload;
       })
       
-    // Fetch Monthly Detail
       .addCase(fetchMonthlyDetail.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -232,7 +228,6 @@ const tutorHonorSlice = createSlice({
         state.error = action.payload;
       })
       
-    // Calculate Honor
       .addCase(calculateHonor.pending, (state) => {
         state.actionStatus.calculate = 'loading';
         state.actionError.calculate = null;
@@ -248,7 +243,11 @@ const tutorHonorSlice = createSlice({
         if (existingIndex !== -1) {
           state.honorList[existingIndex] = calculatedHonor;
         } else {
-          state.honorList.push(calculatedHonor);
+          state.honorList.unshift(calculatedHonor);
+          state.honorList.sort((a, b) => {
+            if (a.tahun !== b.tahun) return b.tahun - a.tahun;
+            return b.bulan - a.bulan;
+          });
         }
         
         if (state.monthlyDetail && 
@@ -256,13 +255,16 @@ const tutorHonorSlice = createSlice({
             state.monthlyDetail.tahun === calculatedHonor.tahun) {
           state.monthlyDetail = calculatedHonor;
         }
+        
+        state.summary.yearlyTotal = state.honorList
+          .filter(h => h.tahun === calculatedHonor.tahun)
+          .reduce((sum, h) => sum + parseFloat(h.total_honor || 0), 0);
       })
       .addCase(calculateHonor.rejected, (state, action) => {
         state.actionStatus.calculate = 'failed';
         state.actionError.calculate = action.payload;
       })
       
-    // Approve Honor
       .addCase(approveHonor.pending, (state) => {
         state.actionStatus.approve = 'loading';
         state.actionError.approve = null;
@@ -285,7 +287,6 @@ const tutorHonorSlice = createSlice({
         state.actionError.approve = action.payload;
       })
       
-    // Mark as Paid
       .addCase(markAsPaid.pending, (state) => {
         state.actionStatus.markPaid = 'loading';
         state.actionError.markPaid = null;
@@ -308,12 +309,10 @@ const tutorHonorSlice = createSlice({
         state.actionError.markPaid = action.payload;
       })
       
-    // Fetch Honor Stats
       .addCase(fetchHonorStats.fulfilled, (state, action) => {
         state.stats = action.payload.data;
       })
       
-      // Fetch Honor History
       .addCase(fetchHonorHistory.pending, (state) => {
         state.historyLoading = true;
         state.historyError = null;
@@ -336,7 +335,6 @@ const tutorHonorSlice = createSlice({
         state.historyError = action.payload || 'Failed to fetch honor history';
       })
       
-      // Fetch Honor Statistics
       .addCase(fetchHonorStatistics.pending, (state) => {
         state.statisticsLoading = true;
         state.statisticsError = null;
@@ -352,7 +350,6 @@ const tutorHonorSlice = createSlice({
   }
 });
 
-// Export actions
 export const {
   resetHonorDetail,
   resetError,
@@ -365,7 +362,6 @@ export const {
   clearHonorHistory
 } = tutorHonorSlice.actions;
 
-// Export selectors
 export const selectHonorList = state => state.tutorHonor.honorList;
 export const selectSelectedHonor = state => state.tutorHonor.selectedHonor;
 export const selectMonthlyDetail = state => state.tutorHonor.monthlyDetail;
@@ -375,8 +371,6 @@ export const selectHonorError = state => state.tutorHonor.error;
 export const selectHonorSummary = state => state.tutorHonor.summary;
 export const selectHonorActionStatus = (state, action) => state.tutorHonor.actionStatus[action];
 export const selectHonorActionError = (state, action) => state.tutorHonor.actionError[action];
-
-// New selectors for history and statistics
 export const selectHonorHistory = state => state.tutorHonor.honorHistory;
 export const selectHonorStatistics = state => state.tutorHonor.honorStatistics;
 export const selectHistoryFilters = state => state.tutorHonor.historyFilters;
