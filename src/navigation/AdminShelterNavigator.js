@@ -44,6 +44,7 @@ import TutorHonorScreen from '../features/adminShelter/screens/TutorHonorScreen'
 import TutorHonorDetailScreen from '../features/adminShelter/screens/TutorHonorDetailScreen';
 import TutorActivityHistoryScreen from '../features/adminShelter/screens/TutorActivityHistoryScreen';
 import TutorHonorHistory from '../features/adminShelter/screens/TutorHonorHistoryScreen';
+import HonorCalculation from '../features/adminShelter/screens/HonorCalculationScreen';
 
 import TutorCompetencyListScreen from '../features/adminShelter/screens/TutorCompetencyListScreen';
 import TutorCompetencyFormScreen from '../features/adminShelter/screens/TutorCompetencyFormScreen';
@@ -73,6 +74,7 @@ import RaportFormalScreen from '../features/adminShelter/screens/anakDetail/Rapo
 import RaportFormalDetailScreen from '../features/adminShelter/screens/anakDetail/RaportFormalDetailScreen';
 import RaportFormalFormScreen from '../features/adminShelter/screens/anakDetail/RaportFormalFormScreen';
 import TutorHonorHistoryScreen from '../features/adminShelter/screens/TutorHonorHistoryScreen';
+import HonorCalculationScreen from '../features/adminShelter/screens/HonorCalculationScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
@@ -391,6 +393,11 @@ const ManagementStackNavigator = () => {
         component={KelompokManagementScreen} 
         options={{ headerTitle: 'Kelompok Anak Binaan' }}
       />
+      <ManagementStack.Screen 
+  name="HonorCalculation" 
+  component={HonorCalculationScreen}
+  options={{ title: 'Hitung Honor' }}
+/>
       <ManagementStack.Screen 
         name="KelompokForm" 
         component={KelompokFormScreen} 
