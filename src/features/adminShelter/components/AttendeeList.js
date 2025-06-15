@@ -132,7 +132,7 @@ const AttendeeList = ({ activityId, onRefresh }) => {
   
   // Show loading spinner
   if (loading && !refreshing && attendees.length === 0) {
-    return <LoadingSpinner message="Memuat..." />;
+    return <LoadingSpinner message="Memuat Data..." />;
   }
   
   return (
