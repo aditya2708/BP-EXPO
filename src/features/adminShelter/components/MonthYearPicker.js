@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Modal,
-  FlatList,
+  ScrollView,
   Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +24,14 @@ const MonthYearPicker = ({
   const [selectedMonth, setSelectedMonth] = useState(initialMonth);
   const [selectedYear, setSelectedYear] = useState(initialYear);
   const [currentView, setCurrentView] = useState('month');
+
+  useEffect(() => {
+    if (visible) {
+      setSelectedMonth(initialMonth);
+      setSelectedYear(initialYear);
+      setCurrentView('month');
+    }
+  }, [visible, initialMonth, initialYear]);
 
   const months = [
     { value: 1, name: 'Januari' },
@@ -57,39 +65,7 @@ const MonthYearPicker = ({
     onClose();
   };
 
-  const renderMonthItem = ({ item }) => (
-    <TouchableOpacity
-      style={[
-        styles.pickItem,
-        selectedMonth === item.value && styles.pickItemSelected
-      ]}
-      onPress={() => setSelectedMonth(item.value)}
-    >
-      <Text style={[
-        styles.pickItemText,
-        selectedMonth === item.value && styles.pickItemTextSelected
-      ]}>
-        {item.name}
-      </Text>
-    </TouchableOpacity>
-  );
-
-  const renderYearItem = ({ item }) => (
-    <TouchableOpacity
-      style={[
-        styles.pickItem,
-        selectedYear === item && styles.pickItemSelected
-      ]}
-      onPress={() => setSelectedYear(item)}
-    >
-      <Text style={[
-        styles.pickItemText,
-        selectedYear === item && styles.pickItemTextSelected
-      ]}>
-        {item}
-      </Text>
-    </TouchableOpacity>
-  );
+  if (!visible) return null;
 
   return (
     <Modal
@@ -147,27 +123,47 @@ const MonthYearPicker = ({
             </TouchableOpacity>
           </View>
 
-          <View style={styles.listContainer}>
-            {currentView === 'month' ? (
-              <FlatList
-                data={months}
-                renderItem={renderMonthItem}
-                keyExtractor={(item) => item.value.toString()}
-                numColumns={3}
-                contentContainerStyle={styles.gridContainer}
-                showsVerticalScrollIndicator={false}
-              />
-            ) : (
-              <FlatList
-                data={years}
-                renderItem={renderYearItem}
-                keyExtractor={(item) => item.toString()}
-                numColumns={4}
-                contentContainerStyle={styles.gridContainer}
-                showsVerticalScrollIndicator={false}
-              />
-            )}
-          </View>
+          <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
+            <View style={styles.gridContainer}>
+              {currentView === 'month' ? (
+                months.map((month) => (
+                  <TouchableOpacity
+                    key={month.value}
+                    style={[
+                      styles.monthItem,
+                      selectedMonth === month.value && styles.pickItemSelected
+                    ]}
+                    onPress={() => setSelectedMonth(month.value)}
+                  >
+                    <Text style={[
+                      styles.pickItemText,
+                      selectedMonth === month.value && styles.pickItemTextSelected
+                    ]}>
+                      {month.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                years.map((year) => (
+                  <TouchableOpacity
+                    key={year}
+                    style={[
+                      styles.yearItem,
+                      selectedYear === year && styles.pickItemSelected
+                    ]}
+                    onPress={() => setSelectedYear(year)}
+                  >
+                    <Text style={[
+                      styles.pickItemText,
+                      selectedYear === year && styles.pickItemTextSelected
+                    ]}>
+                      {year}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </View>
+          </ScrollView>
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity
@@ -248,15 +244,26 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   listContainer: {
-    flex: 1,
     maxHeight: 300,
   },
   gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     padding: 16,
+    justifyContent: 'space-between',
   },
-  pickItem: {
-    flex: 1,
-    margin: 4,
+  monthItem: {
+    width: '30%',
+    marginBottom: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    backgroundColor: '#f8f9fa',
+    alignItems: 'center',
+  },
+  yearItem: {
+    width: '22%',
+    marginBottom: 12,
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderRadius: 8,
