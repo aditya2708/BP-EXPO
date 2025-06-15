@@ -191,7 +191,7 @@ const AnakManagementScreen = () => {
     }
   };
 
-  // Render footer (loading indicator when loading more data)
+  
   const renderFooter = () => {
     if (!loadingMore) return null;
     
