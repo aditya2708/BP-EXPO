@@ -241,7 +241,7 @@ const ManagementStackNavigator = () => {
         name="KeluargaDetail" 
         component={KeluargaDetailScreen} 
         options={({ route }) => ({ 
-          headerTitle: route.params?.title || 'Family Detail'
+          headerTitle: route.params?.title || 'Detail Keluarga'
         })}
       />
       <ManagementStack.Screen 
@@ -254,12 +254,12 @@ const ManagementStackNavigator = () => {
       <ManagementStack.Screen 
         name="PengajuanAnakSearch" 
         component={PengajuanAnakSearchScreen} 
-        options={{ headerTitle: 'Add Child to Family' }}
+        options={{ headerTitle: 'Pengajuan Anak Binaan' }}
       />
       <ManagementStack.Screen 
         name="PengajuanAnakForm" 
         component={PengajuanAnakFormScreen} 
-        options={{ headerTitle: 'Add Child Form' }}
+        options={{ headerTitle: 'Tambah Anak' }}
       />
 
       <ManagementStack.Screen 
@@ -359,7 +359,7 @@ const ManagementStackNavigator = () => {
       <ManagementStack.Screen 
         name="TutorDetail" 
         component={TutorDetailScreen} 
-        options={{ headerTitle: 'Tutor Detail' }}
+        options={{ headerTitle: 'Detail Tutor' }}
       />
       <ManagementStack.Screen 
         name="TutorHonor" 
@@ -408,12 +408,12 @@ const ManagementStackNavigator = () => {
       <ManagementStack.Screen 
         name="KelompokDetail" 
         component={KelompokDetailScreen} 
-        options={{ headerTitle: 'Group Details' }}
+        options={{ headerTitle: 'Detail Grup' }}
       />
       <ManagementStack.Screen 
         name="AddChildrenToKelompok" 
         component={AddChildrenToKelompokScreen} 
-        options={{ headerTitle: 'Add Children to Group' }}
+        options={{ headerTitle: 'Tambah Anak Ke Grup' }}
       />
       
       <ManagementStack.Screen
