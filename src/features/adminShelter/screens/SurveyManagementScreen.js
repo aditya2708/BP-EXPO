@@ -180,14 +180,13 @@ const SurveyManagementScreen = () => {
     navigation.navigate('SurveyValidationManagement');
   };
 
-  // Render footer (loading indicator when loading more data)
   const renderFooter = () => {
     if (!loadingMore) return null;
     
     return (
       <View style={styles.footerLoader}>
         <ActivityIndicator size="small" color="#e74c3c" />
-        <Text style={styles.footerText}>Loading more...</Text>
+        <Text style={styles.footerText}>Memuat Lebih Banyak...</Text>
       </View>
     );
   };
@@ -239,7 +238,7 @@ const SurveyManagementScreen = () => {
 
   // Loading state
   if (loading && !refreshing && !loadingMore) {
-    return <LoadingSpinner fullScreen={false} message="Memuat..." />;
+    return <LoadingSpinner fullScreen={false} message="Memuat Data..." />;
   }
 
   return (

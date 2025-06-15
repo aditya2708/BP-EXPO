@@ -192,14 +192,13 @@ const KelompokManagementScreen = () => {
     );
   };
 
-  // Render footer (loading indicator when loading more data)
   const renderFooter = () => {
     if (!loadingMore) return null;
     
     return (
       <View style={styles.footerLoader}>
         <ActivityIndicator size="small" color="#9b59b6" />
-        <Text style={styles.footerText}>Loading more...</Text>
+        <Text style={styles.footerText}>Memuat data...</Text>
       </View>
     );
   };

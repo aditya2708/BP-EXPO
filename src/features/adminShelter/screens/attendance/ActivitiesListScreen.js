@@ -216,13 +216,12 @@ const ActivitiesListScreen = ({ navigation }) => {
     </View>
   );
   
-  // Render footer for loading more
   const renderFooter = () => {
     if (!isLoadingMore) return null;
     
     return (
       <View style={styles.footerLoader}>
-        <Text style={styles.loadingMoreText}>Loading more activities...</Text>
+        <Text style={styles.loadingMoreText}>Memuat Lebih Banyak...</Text>
       </View>
     );
   };

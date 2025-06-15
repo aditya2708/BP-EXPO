@@ -89,7 +89,7 @@ const PengajuanAnakSearchScreen = () => {
               style: 'cancel'
             },
             {
-              text: 'Create New Family',
+              text: 'Buat Keluarga Baru',
               onPress: () => navigation.navigate('KeluargaForm', { isNew: true })
             }
           ]
@@ -128,10 +128,10 @@ const PengajuanAnakSearchScreen = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Pengajuan Anak Binaan</Text>
+      {/* <View style={styles.header}>
+        <Text style={styles.title}></Text>
         
-      </View>
+      </View> */}
       
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -188,7 +188,7 @@ const PengajuanAnakSearchScreen = () => {
           contentContainerStyle={styles.resultsList}
           ListHeaderComponent={
             <Text style={styles.resultsHeader}>
-              Found {searchResults.length} result{searchResults.length > 1 ? 's' : ''}
+              Ditemukan {searchResults.length} Hasil{searchResults.length > 1 ? '' : ''}
             </Text>
           }
         />
@@ -197,7 +197,7 @@ const PengajuanAnakSearchScreen = () => {
           <Ionicons name="search" size={60} color="#ddd" />
           <Text style={styles.emptyText}>Nomor KK Tidak ditemukan</Text>
           <Button
-            title="Create New Family"
+            title="Buat Keluarga Baru"
             onPress={handleCreateNewFamily}
             type="primary"
             style={styles.createButton}
@@ -210,7 +210,7 @@ const PengajuanAnakSearchScreen = () => {
             Search for an existing family by KK number to add a child, or create a new family.
           </Text> */}
           <Button
-            title="Create New Family"
+            title="Buat Keluarga Baru"
             onPress={handleCreateNewFamily}
             type="outline"
             style={styles.createButton}

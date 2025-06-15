@@ -130,7 +130,6 @@ const TutorManagementScreen = () => {
     />
   );
 
-  // Render footer for loading more
   const renderFooter = () => {
     if (!isLoadingMore) return null;
     return <LoadingSpinner size="small" />;

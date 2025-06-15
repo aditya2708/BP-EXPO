@@ -126,7 +126,7 @@ const KeluargaDetailScreen = () => {
   // Add child
   const handleAddChild = () => {
     // Pass family data to pre-populate child form
-    navigation.navigate('AnakDetail', { 
+    navigation.navigate('PengajuanAnakSearch', { 
       isNew: true, 
       familyData: keluargaData.keluarga 
     });
@@ -134,7 +134,7 @@ const KeluargaDetailScreen = () => {
   
   // Loading state
   if (loading && !refreshing) {
-    return <LoadingSpinner fullScreen message="Memuat..." />;
+    return <LoadingSpinner fullScreen message="Memuat Data..." />;
   }
   
   // Extract data objects for easier reference
@@ -457,7 +457,7 @@ const KeluargaDetailScreen = () => {
                 <Ionicons name="people-outline" size={40} color="#ddd" />
                 <Text style={styles.emptyText}>Tidak ada anak yang terdaftar di keluarga ini</Text>
                 <Button
-                  title="Add Child"
+                  title="Tambah Anak"
                   onPress={handleAddChild}
                   type="outline"
                   size="small"
