@@ -9,13 +9,12 @@ import {
   Alert
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../common/components/ErrorMessage';
 import Button from '../../../common/components/Button';
-import HonorCalculationModal from '../components/HonorCalculationModal';
 
 import {
   fetchTutorHonor,
@@ -35,7 +34,6 @@ const TutorHonorScreen = () => {
 
   const { tutorId, tutorName } = route.params;
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [showCalculationModal, setShowCalculationModal] = useState(false);
 
   const honorList = useSelector(selectHonorList);
   const loading = useSelector(selectHonorLoading);
@@ -43,9 +41,11 @@ const TutorHonorScreen = () => {
   const summary = useSelector(selectHonorSummary);
   const calculateStatus = useSelector(state => selectHonorActionStatus(state, 'calculate'));
 
-  useEffect(() => {
-    fetchData();
-  }, [selectedYear]);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchData();
+    }, [selectedYear])
+  );
 
   const fetchData = () => {
     dispatch(fetchTutorHonor({ 
@@ -82,11 +82,7 @@ const TutorHonorScreen = () => {
   };
 
   const handleOpenCalculationModal = () => {
-    setShowCalculationModal(true);
-  };
-
-  const handleCalculationSuccess = () => {
-    fetchData();
+    navigation.navigate('HonorCalculation', { tutorId, tutorName });
   };
 
   const getMonthName = (month) => {
@@ -230,14 +226,6 @@ const TutorHonorScreen = () => {
         }
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
-      />
-
-      <HonorCalculationModal
-        visible={showCalculationModal}
-        onClose={() => setShowCalculationModal(false)}
-        tutorId={tutorId}
-        tutorName={tutorName}
-        onSuccess={handleCalculationSuccess}
       />
     </View>
   );
