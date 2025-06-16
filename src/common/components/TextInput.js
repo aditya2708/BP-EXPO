@@ -58,6 +58,7 @@ const TextInput = ({
     isFocused && styles[`${mode}Focused`],
     error && styles.error,
     disabled && styles.disabled,
+    multiline && styles.multilineContainer,
     style
   ];
 
@@ -146,6 +147,11 @@ const styles = StyleSheet.create({
     height: 48,
     backgroundColor: 'white',
   },
+  multilineContainer: {
+    height: 'auto',
+    minHeight: 100,
+    alignItems: 'flex-start',
+  },
   // Input mode styles
   outlined: {
     borderWidth: 1,
@@ -190,7 +196,7 @@ const styles = StyleSheet.create({
   multilineInput: {
     minHeight: 100,
     textAlignVertical: 'top',
-    paddingTop: 12,
+    paddingVertical: 12,
   },
   // Label styles
   label: {
