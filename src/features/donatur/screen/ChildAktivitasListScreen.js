@@ -191,7 +191,7 @@ const ChildAktivitasListScreen = () => {
       ) : (
         <View style={styles.emptyContainer}>
           <Ionicons name="calendar-outline" size={60} color="#cccccc" />
-          <Text style={styles.emptyText}>No activities yet</Text>
+          <Text style={styles.emptyText}>Belum Ada Aktivitas</Text>
           <Text style={styles.emptySubText}>
             {childName}'s learning activities will appear here when available
           </Text>

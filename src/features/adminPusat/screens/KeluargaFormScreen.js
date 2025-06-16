@@ -367,18 +367,18 @@ const KeluargaFormScreen = () => {
         );
       
       case STEPS.PARENTS:
-        // Either father or mother info should be provided
+        
         return (
           (data.nama_ayah && data.nik_ayah) ||
           (data.nama_ibu && data.nik_ibu)
         );
       
       case STEPS.GUARDIAN:
-        // Guardian is optional
+        
         return true;
       
       case STEPS.CHILD:
-        // Basic child info validation
+        
         return !!(
           data.nik_anak &&
           data.anak_ke &&

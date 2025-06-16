@@ -161,7 +161,7 @@ const KeluargaFormStepGuardian = ({
         leftIcon={<Ionicons name="location-outline" size={20} color="#777" />}
       />
       
-      {/* Date of Birth */}
+      
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Tanggal Lahir Wali</Text>
         <TouchableOpacity
@@ -191,7 +191,6 @@ const KeluargaFormStepGuardian = ({
         value={formData.alamat_wali}
         onChangeText={(value) => onChange('alamat_wali', value)}
         placeholder=""
-        leftIcon={<Ionicons name="home-outline" size={20} color="#777" />}
         multiline
         inputProps={{ numberOfLines: 3 }}
       />

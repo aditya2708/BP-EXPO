@@ -181,9 +181,8 @@ const KeluargaFormStepEducation = ({
             value={formData.alamat_sekolah}
             onChangeText={(value) => onChange('alamat_sekolah', value)}
             placeholder=""
-            leftIcon={<Ionicons name="location-outline" size={20} color="#777" />}
-            multiline
-            inputProps={{ numberOfLines: 3 }}
+            
+            
           />
         </>
       )}
@@ -236,8 +235,7 @@ const KeluargaFormStepEducation = ({
             onChangeText={(value) => onChange('alamat_pt', value)}
             placeholder=""
             leftIcon={<Ionicons name="location-outline" size={20} color="#777" />}
-            multiline
-            inputProps={{ numberOfLines: 3 }}
+           
           />
         </>
       )}

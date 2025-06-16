@@ -207,7 +207,7 @@ const DonaturProfileScreen = () => {
         <View style={styles.editButtonContainer}>
           {!isEditing ? (
             <Button
-              title="Edit Profile"
+              title="Edit Profil"
               onPress={() => setIsEditing(true)}
               leftIcon={<Ionicons name="create-outline" size={20} color="white" />}
               type="primary"
@@ -221,7 +221,7 @@ const DonaturProfileScreen = () => {
                 style={styles.cancelButton}
               />
               <Button
-                title="Save"
+                title="Simpan"
                 onPress={handleUpdateProfile}
                 loading={loading}
                 disabled={loading}

@@ -147,7 +147,7 @@ const KeluargaFormStepParents = ({
         leftIcon={<Ionicons name="location-outline" size={20} color="#777" />}
       />
       
-      {/* Date of Birth */}
+      
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Tanggal Lahir Ayah</Text>
         <TouchableOpacity
@@ -177,9 +177,9 @@ const KeluargaFormStepParents = ({
         value={formData.alamat_ayah}
         onChangeText={(value) => onChange('alamat_ayah', value)}
         placeholder=""
-        leftIcon={<Ionicons name="home-outline" size={20} color="#777" />}
         multiline
         inputProps={{ numberOfLines: 3 }}
+        
       />
       
       {/* Income */}
@@ -290,7 +290,7 @@ const KeluargaFormStepParents = ({
         leftIcon={<Ionicons name="location-outline" size={20} color="#777" />}
       />
       
-      {/* Date of Birth */}
+      
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Tanggal Lahir</Text>
         <TouchableOpacity
@@ -320,7 +320,6 @@ const KeluargaFormStepParents = ({
         value={formData.alamat_ibu}
         onChangeText={(value) => onChange('alamat_ibu', value)}
         placeholder=""
-        leftIcon={<Ionicons name="home-outline" size={20} color="#777" />}
         multiline
         inputProps={{ numberOfLines: 3 }}
       />

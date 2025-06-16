@@ -190,7 +190,7 @@ const ChildProfileScreen = () => {
           </View>
           
           <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Date of Birth</Text>
+            <Text style={styles.detailLabel}>Tanggal Lahir</Text>
             <Text style={styles.detailValue}>{child.tanggal_lahir || '-'}</Text>
           </View>
           
