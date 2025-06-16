@@ -163,7 +163,7 @@ const KeluargaFormStepGuardian = ({
         leftIcon={<Ionicons name="location-outline" size={20} color="#777" />}
       />
       
-      {/* Date of Birth */}
+ 
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Tanggal Lahir Wali</Text>
         <TouchableOpacity

@@ -321,7 +321,6 @@ const KeluargaFormStepChild = ({
         value={formData.prestasi}
         onChangeText={(value) => onChange('prestasi', value)}
         placeholder=""
-        leftIcon={<Ionicons name="trophy-outline" size={20} color="#777" />}
         multiline
         inputProps={{ numberOfLines: 3 }}
       />

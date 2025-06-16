@@ -150,7 +150,7 @@ const KeluargaFormStepParents = ({
         leftIcon={<Ionicons name="location-outline" size={20} color="#777" />}
       />
       
-      {/* Date of Birth */}
+     
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Tanggal Lahir Ayah</Text>
         <TouchableOpacity
@@ -180,7 +180,6 @@ const KeluargaFormStepParents = ({
         value={formData.alamat_ayah}
         onChangeText={(value) => onChange('alamat_ayah', value)}
         placeholder=""
-        leftIcon={<Ionicons name="home-outline" size={20} color="#777" />}
         multiline
         inputProps={{ numberOfLines: 3 }}
       />
@@ -293,9 +292,9 @@ const KeluargaFormStepParents = ({
         leftIcon={<Ionicons name="location-outline" size={20} color="#777" />}
       />
       
-      {/* Date of Birth */}
+     
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Date of Birth</Text>
+        <Text style={styles.label}>Tanggal Lahir</Text>
         <TouchableOpacity
           style={styles.dateInput}
           onPress={() => toggleDatePicker('motherBirth')}
@@ -323,7 +322,6 @@ const KeluargaFormStepParents = ({
         value={formData.alamat_ibu}
         onChangeText={(value) => onChange('alamat_ibu', value)}
         placeholder=""
-        leftIcon={<Ionicons name="home-outline" size={20} color="#777" />}
         multiline
         inputProps={{ numberOfLines: 3 }}
       />
@@ -383,11 +381,7 @@ const KeluargaFormStepParents = ({
         />
       )}
       
-      <View style={styles.helperTextContainer}>
-        <Text style={styles.helperText}>
-          * Either father or mother information is required.
-        </Text>
-      </View>
+      
     </View>
   );
 };
@@ -447,19 +441,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ddd',
     marginVertical: 20,
   },
-  helperTextContainer: {
-    marginVertical: 16,
-    padding: 12,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 4,
-    borderLeftWidth: 4,
-    borderLeftColor: '#e74c3c',
-  },
-  helperText: {
-    fontSize: 14,
-    color: '#666',
-    fontStyle: 'italic',
-  },
+
 });
 
 export default KeluargaFormStepParents;
