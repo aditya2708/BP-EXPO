@@ -88,7 +88,7 @@ const HomeStackNavigator = () => {
       <HomeStack.Screen 
         name="Dashboard" 
         component={AdminShelterDashboardScreen} 
-        options={{ headerTitle: 'Admin Shelter Dashboard' }}
+        options={{ headerTitle: 'Dashboard Admin Shelter' }}
       />
       <HomeStack.Screen
         name="AttendanceStack"
@@ -111,14 +111,14 @@ const AttendanceStackNavigator = () => {
         name="ActivityForm"
         component={ActivityFormScreen}
         options={({ route }) => ({ 
-          headerTitle: route.params?.activity ? 'Edit Activity' : 'Create Activity'
+          headerTitle: route.params?.activity ? 'Edit Aktivitas' : 'Buat Aktivitas'
         })}
       />
       <AttendanceStack.Screen
         name="ActivityDetail"
         component={ActivityDetailScreen}
         options={({ route }) => ({ 
-          headerTitle: route.params?.activityName || 'Activity Details'
+          headerTitle: route.params?.activityName || 'Detail Aktivitas'
         })}
       />
       <AttendanceStack.Screen
@@ -432,7 +432,7 @@ const ManagementStackNavigator = () => {
         name="ActivityDetail"
         component={ActivityDetailScreen}
         options={({ route }) => ({ 
-          headerTitle: route.params?.activityName || 'Activity Details'
+          headerTitle: route.params?.activityName || 'Detail Aktivitas'
         })}
       />
       <ManagementStack.Screen

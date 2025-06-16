@@ -188,17 +188,17 @@ const DonaturNavigator = () => {
       <Tab.Screen 
         name="Children" 
         component={ChildrenStackNavigator} 
-        options={{ tabBarLabel: 'My Children' }}
+        options={{ tabBarLabel: 'Anak Asuh Saya' }}
       />
       <Tab.Screen 
         name="Marketplace" 
         component={MarketplaceStackNavigator} 
-        options={{ tabBarLabel: 'Cari Anak' }}
+        options={{ tabBarLabel: 'Cari Anak Asuh' }}
       />
       <Tab.Screen 
         name="ProfileTab" 
         component={ProfileStackNavigator} 
-        options={{ tabBarLabel: 'Profile' }}
+        options={{ tabBarLabel: 'Profil Saya' }}
       />
     </Tab.Navigator>
   );
