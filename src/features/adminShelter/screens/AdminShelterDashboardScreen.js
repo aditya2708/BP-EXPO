@@ -147,15 +147,7 @@ const AdminShelterDashboardScreen = () => {
   <Text style={styles.menuText}>Semester</Text>
 </TouchableOpacity>
         
-        <TouchableOpacity 
-          style={styles.menuItem}
-          onPress={navigateToProfile}
-        >
-          <View style={[styles.menuIcon, { backgroundColor: '#f39c12' }]}>
-            <Ionicons name="person" size={32} color="#ffffff" />
-          </View>
-          <Text style={styles.menuText}>Profil User</Text>
-        </TouchableOpacity>
+        
       </View>
     </ScrollView>
   );

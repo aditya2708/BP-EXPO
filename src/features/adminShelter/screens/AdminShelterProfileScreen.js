@@ -134,15 +134,15 @@ const AdminShelterProfileScreen = () => {
   // Handle logout
   const handleLogout = () => {
     Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
+      'Keluar',
+      'Apakah Anda Yakin Ingin Keluar?',
       [
         {
-          text: 'Cancel',
+          text: 'Batal',
           style: 'cancel',
         },
         {
-          text: 'Logout',
+          text: 'Keluar',
           style: 'destructive',
           onPress: () => {
             logout();
@@ -355,7 +355,7 @@ const AdminShelterProfileScreen = () => {
             onPress={handleLogout}
           >
             <Ionicons name="log-out-outline" size={24} color="#e74c3c" />
-            <Text style={[styles.settingsText, { color: '#e74c3c' }]}>Logout</Text>
+            <Text style={[styles.settingsText, { color: '#e74c3c' }]}>Keluar</Text>
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </TouchableOpacity>
         </View>
