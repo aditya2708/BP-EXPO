@@ -13,72 +13,54 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-
-// Import components
 import TextInput from '../../../common/components/TextInput';
 import Button from '../../../common/components/Button';
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
-
-// Import API
 import { donaturSuratApi } from '../api/donaturSuratApi';
 
 const SuratFormScreen = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
-  const { childId, childName, replyTo, onSuccess } = route.params;
+  const nav = useNavigation();
+  const { params } = useRoute();
+  const { childId, childName, replyTo, onSuccess } = params;
 
-  const [message, setMessage] = useState('');
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [msg, setMsg] = useState('');
+  const [img, setImg] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Set navigation title
   useEffect(() => {
-    navigation.setOptions({
-      title: replyTo ? `Reply - ${childName}` : `New Message - ${childName}`,
+    nav.setOptions({
+      title: replyTo ? `Balas - ${childName}` : `Pesan Baru - ${childName}`,
     });
-  }, [navigation, childName, replyTo]);
+  }, [nav, childName, replyTo]);
 
- // Initialize reply message   
-useEffect(() => {     
-  if (replyTo) {       
-    const replyPrefix = `Replying to: "${replyTo.pesan.substring(0, 50)}${replyTo.pesan.length > 50 ? '...' : ''}"\n\n`;       
-    setMessage(replyPrefix);     
-  }   
-}, [replyTo]);
+  useEffect(() => {
+    if (replyTo) {
+      const prefix = `Membalas: "${replyTo.pesan.substring(0, 50)}${replyTo.pesan.length > 50 ? '...' : ''}"\n\n`;
+      setMsg(prefix);
+    }
+  }, [replyTo]);
 
-  // Handle image selection
-  const handleSelectImage = async () => {
+  const selectImg = async () => {
     try {
-      // Request permission
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (status !== 'granted') {
-        Alert.alert(
-          'Permission Required',
-          'Camera roll permission is required to attach photos',
-          [{ text: 'OK' }]
-        );
+        Alert.alert('Izin Diperlukan', 'Izin galeri diperlukan untuk melampirkan foto', [{ text: 'OK' }]);
         return;
       }
 
-      // Show image picker options
-      Alert.alert(
-        'Select Photo',
-        'Choose a photo to attach to your message',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Camera Roll', onPress: () => openImagePicker() },
-          { text: 'Camera', onPress: () => openCamera() },
-        ]
-      );
+      Alert.alert('Pilih Foto', 'Pilih foto untuk dilampirkan ke pesan Anda', [
+        { text: 'Batal', style: 'cancel' },
+        { text: 'Galeri', onPress: () => openPicker() },
+        { text: 'Kamera', onPress: () => openCam() },
+      ]);
     } catch (error) {
-      console.error('Error requesting permission:', error);
-      Alert.alert('Error', 'Failed to request permission');
+      console.error('Error:', error);
+      Alert.alert('Gagal', 'Gagal meminta izin');
     }
   };
 
-  // Open image picker
-  const openImagePicker = async () => {
+  const openPicker = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -87,22 +69,21 @@ useEffect(() => {
         quality: 0.8,
       });
 
-      if (!result.canceled && result.assets && result.assets[0]) {
-        setSelectedImage(result.assets[0]);
+      if (!result.canceled && result.assets?.[0]) {
+        setImg(result.assets[0]);
       }
     } catch (error) {
-      console.error('Error selecting image:', error);
-      Alert.alert('Error', 'Failed to select image');
+      console.error('Error:', error);
+      Alert.alert('Gagal', 'Gagal memilih gambar');
     }
   };
 
-  // Open camera
-  const openCamera = async () => {
+  const openCam = async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       
       if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Camera permission is required');
+        Alert.alert('Izin Diperlukan', 'Izin kamera diperlukan');
         return;
       }
 
@@ -112,36 +93,30 @@ useEffect(() => {
         quality: 0.8,
       });
 
-      if (!result.canceled && result.assets && result.assets[0]) {
-        setSelectedImage(result.assets[0]);
+      if (!result.canceled && result.assets?.[0]) {
+        setImg(result.assets[0]);
       }
     } catch (error) {
-      console.error('Error taking photo:', error);
-      Alert.alert('Error', 'Failed to take photo');
+      console.error('Error:', error);
+      Alert.alert('Gagal', 'Gagal mengambil foto');
     }
   };
 
-  // Remove selected image
-  const handleRemoveImage = () => {
-    Alert.alert(
-      'Remove Photo',
-      'Are you sure you want to remove the attached photo?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Remove', style: 'destructive', onPress: () => setSelectedImage(null) },
-      ]
-    );
+  const removeImg = () => {
+    Alert.alert('Hapus Foto', 'Yakin ingin menghapus foto yang dilampirkan?', [
+      { text: 'Batal', style: 'cancel' },
+      { text: 'Hapus', style: 'destructive', onPress: () => setImg(null) },
+    ]);
   };
 
-  // Handle send message
-  const handleSendMessage = async () => {
-    if (!message.trim()) {
-      Alert.alert('Message Required', 'Please enter a message');
+  const send = async () => {
+    if (!msg.trim()) {
+      Alert.alert('Pesan Diperlukan', 'Silakan masukkan pesan');
       return;
     }
 
-    if (message.trim().length < 10) {
-      Alert.alert('Message Too Short', 'Please enter at least 10 characters');
+    if (msg.trim().length < 10) {
+      Alert.alert('Pesan Terlalu Pendek', 'Masukkan minimal 10 karakter');
       return;
     }
 
@@ -149,16 +124,15 @@ useEffect(() => {
 
     try {
       const formData = new FormData();
-      formData.append('pesan', message.trim());
+      formData.append('pesan', msg.trim());
 
-      // Add image if selected
-      if (selectedImage) {
-        const filename = selectedImage.uri.split('/').pop();
+      if (img) {
+        const filename = img.uri.split('/').pop();
         const match = /\.(\w+)$/.exec(filename);
         const type = match ? `image/${match[1]}` : 'image/jpeg';
 
         formData.append('foto', {
-          uri: selectedImage.uri,
+          uri: img.uri,
           name: filename,
           type,
         });
@@ -166,207 +140,148 @@ useEffect(() => {
 
       await donaturSuratApi.createSurat(childId, formData);
 
-      Alert.alert(
-        'Success',
-        'Your message has been sent successfully',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              if (onSuccess) onSuccess();
-              navigation.goBack();
-            }
-          }
-        ]
-      );
+      Alert.alert('Berhasil', 'Pesan Anda telah terkirim', [{
+        text: 'OK',
+        onPress: () => {
+          if (onSuccess) onSuccess();
+          nav.goBack();
+        }
+      }]);
     } catch (error) {
-      console.error('Error sending message:', error);
-      Alert.alert(
-        'Error',
-        'Failed to send message. Please try again.',
-        [{ text: 'OK' }]
-      );
+      console.error('Error:', error);
+      Alert.alert('Gagal', 'Gagal mengirim pesan. Silakan coba lagi.', [{ text: 'OK' }]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle cancel
-  const handleCancel = () => {
-    if (message.trim() || selectedImage) {
-      Alert.alert(
-        'Discard Message',
-        'Are you sure you want to discard this message?',
-        [
-          { text: 'Keep Editing', style: 'cancel' },
-          { text: 'Discard', style: 'destructive', onPress: () => navigation.goBack() },
-        ]
-      );
+  const cancel = () => {
+    if (msg.trim() || img) {
+      Alert.alert('Buang Pesan', 'Yakin ingin membuang pesan ini?', [
+        { text: 'Lanjut Edit', style: 'cancel' },
+        { text: 'Buang', style: 'destructive', onPress: () => nav.goBack() },
+      ]);
     } else {
-      navigation.goBack();
+      nav.goBack();
     }
   };
 
   return (
     <KeyboardAvoidingView 
-      style={styles.container}
+      style={s.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView 
-        style={styles.scrollContainer}
-        contentContainerStyle={styles.contentContainer}
+        style={s.scroll}
+        contentContainerStyle={s.content}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header Info */}
-        <View style={styles.headerInfo}>
-          <Text style={styles.recipientLabel}>To:</Text>
-          <Text style={styles.recipientText}>Shelter Admin</Text>
-          <Text style={styles.subjectLabel}>About:</Text>
-          <Text style={styles.subjectText}>{childName}</Text>
+        <View style={s.headerInfo}>
+          <Text style={s.label}>Kepada:</Text>
+          <Text style={s.value}>Admin Panti</Text>
+          <Text style={s.label}>Tentang:</Text>
+          <Text style={s.value}>{childName}</Text>
         </View>
 
-        {/* Reply Context */}
         {replyTo && (
-          <View style={styles.replyContext}>
-            <Text style={styles.replyLabel}>Replying to:</Text>
-            <Text style={styles.replyText} numberOfLines={3}>
+          <View style={s.reply}>
+            <Text style={s.replyLabel}>Membalas:</Text>
+            <Text style={s.replyText} numberOfLines={3}>
               {replyTo.pesan}
             </Text>
           </View>
         )}
 
-        {/* Message Input */}
-        <View style={styles.messageContainer}>
-          <Text style={styles.inputLabel}>Message *</Text>
+        <View style={s.msgContainer}>
+          <Text style={s.inputLabel}>Pesan *</Text>
           <TextInput
-            value={message}
-            onChangeText={setMessage}
-            placeholder="Type your message here..."
+            value={msg}
+            onChangeText={setMsg}
+            placeholder="Tulis pesan Anda di sini..."
             multiline
             inputProps={{
               numberOfLines: 8,
               textAlignVertical: 'top',
-              style: styles.messageInput,
+              style: s.msgInput,
             }}
-            style={styles.messageInputContainer}
+            style={s.msgInputContainer}
           />
-          <Text style={styles.characterCount}>
-            {message.length}/1000 characters
-          </Text>
+          <Text style={s.charCount}>{msg.length}/1000 karakter</Text>
         </View>
 
-        {/* Photo Attachment */}
-        <View style={styles.attachmentContainer}>
-          <Text style={styles.attachmentLabel}>Photo Attachment (Optional)</Text>
+        <View style={s.attachContainer}>
+          <Text style={s.attachLabel}>Lampiran Foto (Opsional)</Text>
           
-          {selectedImage ? (
-            <View style={styles.selectedImageContainer}>
-              <Image
-                source={{ uri: selectedImage.uri }}
-                style={styles.selectedImage}
-                resizeMode="cover"
-              />
-              <TouchableOpacity 
-                style={styles.removeImageButton}
-                onPress={handleRemoveImage}
-              >
+          {img ? (
+            <View style={s.selectedContainer}>
+              <Image source={{ uri: img.uri }} style={s.selectedImg} resizeMode="cover" />
+              <TouchableOpacity style={s.removeBtn} onPress={removeImg}>
                 <Ionicons name="close-circle" size={24} color="#e74c3c" />
               </TouchableOpacity>
             </View>
           ) : (
-            <TouchableOpacity 
-              style={styles.selectImageButton}
-              onPress={handleSelectImage}
-            >
+            <TouchableOpacity style={s.selectBtn} onPress={selectImg}>
               <Ionicons name="camera" size={24} color="#9b59b6" />
-              <Text style={styles.selectImageText}>Add Photo</Text>
+              <Text style={s.selectText}>Tambah Foto</Text>
             </TouchableOpacity>
           )}
         </View>
 
-        {/* Guidelines */}
-        <View style={styles.guidelines}>
-          <Text style={styles.guidelinesTitle}>Message Guidelines:</Text>
-          <Text style={styles.guidelineItem}>• Be respectful and polite</Text>
-          <Text style={styles.guidelineItem}>• Keep messages relevant to your sponsored child</Text>
-          <Text style={styles.guidelineItem}>• Avoid sharing personal contact information</Text>
-          <Text style={styles.guidelineItem}>• Response time may vary (1-3 business days)</Text>
+        <View style={s.guidelines}>
+          <Text style={s.guideTitle}>Panduan Pesan:</Text>
+          <Text style={s.guideItem}>• Bersikap sopan dan santun</Text>
+          <Text style={s.guideItem}>• Jaga relevansi pesan dengan anak asuh Anda</Text>
+          <Text style={s.guideItem}>• Hindari berbagi informasi kontak pribadi</Text>
+          <Text style={s.guideItem}>• Waktu respon bervariasi (1-3 hari kerja)</Text>
         </View>
       </ScrollView>
 
-      {/* Action Buttons */}
-      <View style={styles.actionContainer}>
+      <View style={s.actions}>
         <Button
-          title="Cancel"
-          onPress={handleCancel}
+          title="Batal"
+          onPress={cancel}
           type="outline"
-          style={styles.cancelButton}
+          style={s.cancelBtn}
           disabled={loading}
         />
         <Button
-          title="Send Message"
-          onPress={handleSendMessage}
+          title="Kirim Pesan"
+          onPress={send}
           type="primary"
-          style={styles.sendButton}
+          style={s.sendBtn}
           loading={loading}
-          disabled={loading || !message.trim()}
+          disabled={loading || !msg.trim()}
           leftIcon={<Ionicons name="send" size={20} color="white" />}
         />
       </View>
 
-      {/* Loading Overlay */}
       {loading && (
-        <View style={styles.loadingOverlay}>
-          <LoadingSpinner message="Sending message..." />
+        <View style={s.loadingOverlay}>
+          <LoadingSpinner message="Mengirim pesan..." />
         </View>
       )}
     </KeyboardAvoidingView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 16,
-    paddingBottom: 100,
-  },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  scroll: { flex: 1 },
+  content: { padding: 16, paddingBottom: 100 },
   headerInfo: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
     elevation: 2,
-    shadowColor: '#000000',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  recipientLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666666',
-  },
-  recipientText: {
-    fontSize: 16,
-    color: '#333333',
-    marginBottom: 8,
-  },
-  subjectLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666666',
-  },
-  subjectText: {
-    fontSize: 16,
-    color: '#333333',
-  },
-  replyContext: {
+  label: { fontSize: 14, fontWeight: '600', color: '#666' },
+  value: { fontSize: 16, color: '#333', marginBottom: 8 },
+  reply: {
     backgroundColor: '#f0e6f5',
     padding: 16,
     borderRadius: 12,
@@ -374,63 +289,36 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#9b59b6',
   },
-  replyLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#9b59b6',
-    marginBottom: 8,
-  },
-  replyText: {
-    fontSize: 14,
-    color: '#333333',
-    fontStyle: 'italic',
-  },
-  messageContainer: {
-    backgroundColor: '#ffffff',
+  replyLabel: { fontSize: 14, fontWeight: '600', color: '#9b59b6', marginBottom: 8 },
+  replyText: { fontSize: 14, color: '#333', fontStyle: 'italic' },
+  msgContainer: {
+    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
     elevation: 2,
-    shadowColor: '#000000',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333333',
-    marginBottom: 8,
-  },
-  messageInputContainer: {
-    marginBottom: 8,
-  },
-  messageInput: {
-    minHeight: 120,
-  },
-  characterCount: {
-    fontSize: 12,
-    color: '#666666',
-    textAlign: 'right',
-  },
-  attachmentContainer: {
-    backgroundColor: '#ffffff',
+  inputLabel: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 8 },
+  msgInputContainer: { marginBottom: 8 },
+  msgInput: { minHeight: 120 },
+  charCount: { fontSize: 12, color: '#666', textAlign: 'right' },
+  attachContainer: {
+    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
     elevation: 2,
-    shadowColor: '#000000',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  attachmentLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333333',
-    marginBottom: 12,
-  },
-  selectImageButton: {
+  attachLabel: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 12 },
+  selectBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -440,23 +328,10 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderRadius: 12,
   },
-  selectImageText: {
-    fontSize: 16,
-    color: '#9b59b6',
-    marginLeft: 8,
-    fontWeight: '500',
-  },
-  selectedImageContainer: {
-    position: 'relative',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  selectedImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
-  },
-  removeImageButton: {
+  selectText: { fontSize: 16, color: '#9b59b6', marginLeft: 8, fontWeight: '500' },
+  selectedContainer: { position: 'relative', borderRadius: 12, overflow: 'hidden' },
+  selectedImg: { width: '100%', height: 200, borderRadius: 12 },
+  removeBtn: {
     position: 'absolute',
     top: 8,
     right: 8,
@@ -470,32 +345,17 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#f39c12',
   },
-  guidelinesTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#f39c12',
-    marginBottom: 8,
-  },
-  guidelineItem: {
-    fontSize: 14,
-    color: '#333333',
-    marginBottom: 4,
-  },
-  actionContainer: {
+  guideTitle: { fontSize: 16, fontWeight: '600', color: '#f39c12', marginBottom: 8 },
+  guideItem: { fontSize: 14, color: '#333', marginBottom: 4 },
+  actions: {
     flexDirection: 'row',
     padding: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: '#eeeeee',
+    borderTopColor: '#eee',
   },
-  cancelButton: {
-    flex: 1,
-    marginRight: 8,
-  },
-  sendButton: {
-    flex: 2,
-    marginLeft: 8,
-  },
+  cancelBtn: { flex: 1, marginRight: 8 },
+  sendBtn: { flex: 2, marginLeft: 8 },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255, 255, 255, 0.8)',

@@ -65,11 +65,11 @@ const LoginScreen = () => {
           
           {/* Welcome message and login form */}
           <View style={styles.formContainer}>
-            <AuthHeader 
+            {/* <AuthHeader 
               title="Welcome Back!"
               subtitle="Please sign in to continue"
               showLogo={false}
-            />
+            /> */}
             
             <LoginForm onLoginSuccess={handleLoginSuccess} />
             
@@ -79,7 +79,7 @@ const LoginScreen = () => {
               onPress={handleForgotPassword}
               disabled={loading}
             >
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              <Text style={styles.forgotPasswordText}>Lupa Password?</Text>
             </TouchableOpacity>
           </View>
           

@@ -103,7 +103,7 @@ const LoginForm = ({ onLoginSuccess }) => {
           label="Email"
           value={email}
           onChangeText={handleEmailChange}
-          placeholder="Enter your email"
+          placeholder="Massukan Email"
           leftIcon={<Ionicons name="mail-outline" size={20} color="#757575" />}
           error={validationErrors.email}
           inputProps={{
@@ -118,7 +118,7 @@ const LoginForm = ({ onLoginSuccess }) => {
           label="Password"
           value={password}
           onChangeText={handlePasswordChange}
-          placeholder="Enter your password"
+          placeholder="Masukkan Password"
           secureTextEntry
           leftIcon={<Ionicons name="lock-closed-outline" size={20} color="#757575" />}
           error={validationErrors.password}

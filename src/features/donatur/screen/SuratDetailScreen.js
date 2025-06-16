@@ -11,55 +11,43 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-
-// Import components
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../common/components/ErrorMessage';
 import Button from '../../../common/components/Button';
-
-// Import API
 import { donaturSuratApi } from '../api/donaturSuratApi';
 
 const { width } = Dimensions.get('window');
 
 const SuratDetailScreen = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
-  const { childId, suratId, childName, onGoBack } = route.params;
+  const nav = useNavigation();
+  const { params } = useRoute();
+  const { childId, suratId, childName, onGoBack } = params;
 
   const [surat, setSurat] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Set navigation title
   useEffect(() => {
-    navigation.setOptions({
-      title: `Message - ${childName}`,
-    });
-  }, [navigation, childName]);
+    nav.setOptions({ title: `Pesan - ${childName}` });
+  }, [nav, childName]);
 
-  // Fetch surat detail
-  const fetchSuratDetail = async () => {
+  const fetchDetail = async () => {
     try {
       setError(null);
-      const response = await donaturSuratApi.getSuratDetail(childId, suratId);
-      setSurat(response.data.data);
+      const res = await donaturSuratApi.getSuratDetail(childId, suratId);
+      setSurat(res.data.data);
     } catch (err) {
-      console.error('Error fetching surat detail:', err);
-      setError('Failed to load message. Please try again.');
+      console.error('Error:', err);
+      setError('Gagal memuat pesan. Silakan coba lagi.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchSuratDetail();
-  }, [childId, suratId]);
+  useEffect(() => { fetchDetail(); }, [childId, suratId]);
 
-  // Format date
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('id-ID', {
+    return new Date(dateString).toLocaleDateString('id-ID', {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
@@ -69,219 +57,155 @@ const SuratDetailScreen = () => {
     });
   };
 
-  // Handle reply
   const handleReply = () => {
-    navigation.navigate('SuratForm', {
+    nav.navigate('SuratForm', {
       childId,
       childName,
       replyTo: surat,
       onSuccess: () => {
         if (onGoBack) onGoBack();
-        navigation.goBack();
+        nav.goBack();
       }
     });
   };
 
-  // Handle image view
-  const handleViewImage = () => {
+  const viewImg = () => {
     if (surat.foto_url) {
-      Alert.alert(
-        'View Photo',
-        'Photo will be displayed in full screen',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'View', 
-            onPress: () => {
-              // Navigate to image viewer or show modal
-              // For now, we'll just show an alert
-              Alert.alert('Image Viewer', 'Image viewer not implemented yet');
-            }
+      Alert.alert('Lihat Foto', 'Foto akan ditampilkan dalam layar penuh', [
+        { text: 'Batal', style: 'cancel' },
+        { 
+          text: 'Lihat', 
+          onPress: () => {
+            Alert.alert('Penampil Gambar', 'Penampil gambar belum tersedia');
           }
-        ]
-      );
+        }
+      ]);
     }
   };
 
   if (loading) {
-    return <LoadingSpinner fullScreen message="Loading message..." />;
+    return <LoadingSpinner fullScreen message="Memuat pesan..." />;
   }
 
   if (error || !surat) {
     return (
-      <View style={styles.container}>
+      <View style={s.container}>
         <ErrorMessage
-          message={error || "Message not found"}
-          onRetry={fetchSuratDetail}
+          message={error || "Pesan tidak ditemukan"}
+          onRetry={fetchDetail}
         />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={s.container}>
       <ScrollView 
-        style={styles.scrollContainer}
-        contentContainerStyle={styles.contentContainer}
+        style={s.scroll}
+        contentContainerStyle={s.content}
       >
-        {/* Message Header */}
-        <View style={styles.messageHeader}>
-          <View style={styles.headerInfo}>
-            <Text style={styles.senderName}>
-              Message from Shelter Admin
-            </Text>
-            <Text style={styles.messageDate}>
-              {formatDate(surat.tanggal)}
-            </Text>
+        <View style={s.header}>
+          <View style={s.headerInfo}>
+            <Text style={s.sender}>Pesan dari Admin Panti</Text>
+            <Text style={s.date}>{formatDate(surat.tanggal)}</Text>
           </View>
           
           {surat.foto_url && (
-            <TouchableOpacity 
-              style={styles.attachmentButton}
-              onPress={handleViewImage}
-            >
+            <TouchableOpacity style={s.attachBtn} onPress={viewImg}>
               <Ionicons name="image" size={24} color="#f39c12" />
             </TouchableOpacity>
           )}
         </View>
 
-        {/* Message Content */}
-        <View style={styles.messageContent}>
-          <Text style={styles.messageText}>
-            {surat.pesan}
-          </Text>
+        <View style={s.msgContent}>
+          <Text style={s.msgText}>{surat.pesan}</Text>
         </View>
 
-        {/* Attached Photo */}
         {surat.foto_url && (
-          <View style={styles.photoContainer}>
-            <Text style={styles.photoLabel}>Attached Photo:</Text>
-            <TouchableOpacity 
-              style={styles.photoWrapper}
-              onPress={handleViewImage}
-            >
+          <View style={s.photoContainer}>
+            <Text style={s.photoLabel}>Foto Terlampir:</Text>
+            <TouchableOpacity style={s.photoWrapper} onPress={viewImg}>
               <Image
                 source={{ uri: surat.foto_url }}
-                style={styles.attachedPhoto}
+                style={s.photo}
                 resizeMode="cover"
               />
-              <View style={styles.photoOverlay}>
-                <Ionicons name="expand" size={24} color="#ffffff" />
+              <View style={s.photoOverlay}>
+                <Ionicons name="expand" size={24} color="#fff" />
               </View>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Child Info */}
-        <View style={styles.childInfo}>
-          <Text style={styles.childInfoLabel}>About:</Text>
-          <Text style={styles.childInfoText}>
-            This message is about {surat.anak?.full_name || childName}
+        <View style={s.childInfo}>
+          <Text style={s.childLabel}>Tentang:</Text>
+          <Text style={s.childText}>
+            Pesan ini tentang {surat.anak?.full_name || childName}
           </Text>
         </View>
       </ScrollView>
 
-      {/* Reply Button */}
-      <View style={styles.replyContainer}>
+      <View style={s.replyContainer}>
         <Button
-          title="Reply"
+          title="Balas"
           onPress={handleReply}
           leftIcon={<Ionicons name="arrow-undo" size={20} color="white" />}
           type="primary"
-          style={styles.replyButton}
+          style={s.replyBtn}
         />
       </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 16,
-    paddingBottom: 100,
-  },
-  messageHeader: {
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  scroll: { flex: 1 },
+  content: { padding: 16, paddingBottom: 100 },
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
     elevation: 2,
-    shadowColor: '#000000',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  headerInfo: {
-    flex: 1,
-  },
-  senderName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 4,
-  },
-  messageDate: {
-    fontSize: 14,
-    color: '#666666',
-  },
-  attachmentButton: {
-    padding: 8,
-    backgroundColor: '#fff3e0',
-    borderRadius: 20,
-  },
-  messageContent: {
-    backgroundColor: '#ffffff',
+  headerInfo: { flex: 1 },
+  sender: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 4 },
+  date: { fontSize: 14, color: '#666' },
+  attachBtn: { padding: 8, backgroundColor: '#fff3e0', borderRadius: 20 },
+  msgContent: {
+    backgroundColor: '#fff',
     padding: 20,
     borderRadius: 12,
     marginBottom: 16,
     elevation: 2,
-    shadowColor: '#000000',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  messageText: {
-    fontSize: 16,
-    color: '#333333',
-    lineHeight: 24,
-  },
+  msgText: { fontSize: 16, color: '#333', lineHeight: 24 },
   photoContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
     elevation: 2,
-    shadowColor: '#000000',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  photoLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333333',
-    marginBottom: 12,
-  },
-  photoWrapper: {
-    position: 'relative',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  attachedPhoto: {
-    width: '100%',
-    height: 200,
-    borderRadius: 8,
-  },
+  photoLabel: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 12 },
+  photoWrapper: { position: 'relative', borderRadius: 8, overflow: 'hidden' },
+  photo: { width: '100%', height: 200, borderRadius: 8 },
   photoOverlay: {
     position: 'absolute',
     bottom: 8,
@@ -297,29 +221,19 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#9b59b6',
   },
-  childInfoLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#9b59b6',
-    marginBottom: 4,
-  },
-  childInfoText: {
-    fontSize: 14,
-    color: '#333333',
-  },
+  childLabel: { fontSize: 14, fontWeight: '600', color: '#9b59b6', marginBottom: 4 },
+  childText: { fontSize: 14, color: '#333' },
   replyContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fff',
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#eeeeee',
+    borderTopColor: '#eee',
   },
-  replyButton: {
-    borderRadius: 25,
-  },
+  replyBtn: { borderRadius: 25 },
 });
 
 export default SuratDetailScreen;

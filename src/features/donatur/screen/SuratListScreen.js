@@ -6,101 +6,81 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-
-// Import components
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../common/components/ErrorMessage';
 import Button from '../../../common/components/Button';
-
-// Import API
 import { donaturSuratApi } from '../api/donaturSuratApi';
 
 const SuratListScreen = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
-  const { childId, childName } = route.params;
-
-  const [suratList, setSuratList] = useState([]);
+  const nav = useNavigation();
+  const { params } = useRoute();
+  const { childId, childName } = params;
+  
+  const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  // Set navigation title
   useEffect(() => {
-    navigation.setOptions({
-      title: `Messages - ${childName}`,
-    });
-  }, [navigation, childName]);
+    nav.setOptions({ title: `Pesan - ${childName}` });
+  }, [nav, childName]);
 
-  // Fetch surat list
-  const fetchSuratList = async () => {
+  const fetchData = async () => {
     try {
       setError(null);
-      const response = await donaturSuratApi.getSuratList(childId);
-      setSuratList(response.data.data);
+      const res = await donaturSuratApi.getSuratList(childId);
+      setList(res.data.data);
     } catch (err) {
-      console.error('Error fetching surat list:', err);
-      setError('Failed to load messages. Please try again.');
+      console.error('Error:', err);
+      setError('Gagal memuat pesan. Silakan coba lagi.');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    fetchSuratList();
-  }, [childId]);
+  useEffect(() => { fetchData(); }, [childId]);
 
-  // Handle refresh
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchSuratList();
+    fetchData();
   };
 
-  // Navigate to surat detail
-  const handleViewSurat = (suratId) => {
-    navigation.navigate('SuratDetail', { 
+  const handleView = (id) => {
+    nav.navigate('SuratDetail', { 
       childId, 
-      suratId, 
+      suratId: id, 
       childName,
-      onGoBack: fetchSuratList 
+      onGoBack: fetchData 
     });
   };
 
-  // Navigate to compose new surat
-  const handleComposeSurat = () => {
-    navigation.navigate('SuratForm', { 
+  const handleCompose = () => {
+    nav.navigate('SuratForm', { 
       childId, 
       childName,
-      onSuccess: fetchSuratList 
+      onSuccess: fetchData 
     });
   };
 
-  // Mark surat as read
-  const handleMarkAsRead = async (suratId) => {
+  const markRead = async (id) => {
     try {
-      await donaturSuratApi.markAsRead(childId, suratId);
-      // Update local state
-      setSuratList(prev => 
-        prev.map(surat => 
-          surat.id_surat === suratId 
-            ? { ...surat, is_read: true }
-            : surat
+      await donaturSuratApi.markAsRead(childId, id);
+      setList(prev => 
+        prev.map(item => 
+          item.id_surat === id ? { ...item, is_read: true } : item
         )
       );
     } catch (err) {
-      console.error('Error marking surat as read:', err);
+      console.error('Error:', err);
     }
   };
 
-  // Format date
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('id-ID', {
+    return new Date(dateString).toLocaleDateString('id-ID', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -109,31 +89,22 @@ const SuratListScreen = () => {
     });
   };
 
-  // Render surat item
-  const renderSuratItem = ({ item }) => (
+  const renderItem = ({ item }) => (
     <TouchableOpacity 
-      style={[
-        styles.suratCard,
-        !item.is_read && styles.unreadCard
-      ]}
+      style={[s.card, !item.is_read && s.unread]}
       onPress={() => {
-        handleViewSurat(item.id_surat);
-        if (!item.is_read) {
-          handleMarkAsRead(item.id_surat);
-        }
+        handleView(item.id_surat);
+        if (!item.is_read) markRead(item.id_surat);
       }}
     >
-      <View style={styles.suratHeader}>
-        <View style={styles.suratInfo}>
-          <Text style={[
-            styles.suratDate,
-            !item.is_read && styles.unreadText
-          ]}>
+      <View style={s.header}>
+        <View style={s.info}>
+          <Text style={[s.date, !item.is_read && s.bold]}>
             {formatDate(item.tanggal)}
           </Text>
           {!item.is_read && (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadBadgeText}>NEW</Text>
+            <View style={s.badge}>
+              <Text style={s.badgeText}>BARU</Text>
             </View>
           )}
         </View>
@@ -144,76 +115,62 @@ const SuratListScreen = () => {
         />
       </View>
       
-      <Text 
-        style={[
-          styles.suratMessage,
-          !item.is_read && styles.unreadText
-        ]}
-        numberOfLines={3}
-      >
+      <Text style={[s.msg, !item.is_read && s.bold]} numberOfLines={3}>
         {item.pesan}
       </Text>
       
-      <View style={styles.suratFooter}>
+      <View style={s.footer}>
         {item.foto && (
-          <View style={styles.attachmentIndicator}>
+          <View style={s.attach}>
             <Ionicons name="attach" size={16} color="#666" />
-            <Text style={styles.attachmentText}>Photo attached</Text>
+            <Text style={s.attachText}>Foto terlampir</Text>
           </View>
         )}
-        <Ionicons name="chevron-forward" size={20} color="#cccccc" />
+        <Ionicons name="chevron-forward" size={20} color="#ccc" />
       </View>
     </TouchableOpacity>
   );
 
   if (loading && !refreshing) {
-    return <LoadingSpinner fullScreen message="Loading messages..." />;
+    return <LoadingSpinner fullScreen message="Memuat pesan..." />;
   }
 
   return (
-    <View style={styles.container}>
-      {/* Error Message */}
-      {error && (
-        <ErrorMessage
-          message={error}
-          onRetry={fetchSuratList}
-        />
-      )}
+    <View style={s.container}>
+      {error && <ErrorMessage message={error} onRetry={fetchData} />}
 
-      {/* Compose Button */}
-      <View style={styles.composeContainer}>
+      <View style={s.compose}>
         <Button
-          title="Compose Message"
-          onPress={handleComposeSurat}
+          title="Tulis Pesan"
+          onPress={handleCompose}
           leftIcon={<Ionicons name="create" size={20} color="white" />}
           type="primary"
         />
       </View>
 
-      {/* Messages List */}
-      {suratList.length > 0 ? (
+      {list.length > 0 ? (
         <FlatList
-          data={suratList}
-          renderItem={renderSuratItem}
+          data={list}
+          renderItem={renderItem}
           keyExtractor={(item) => item.id_surat.toString()}
-          contentContainerStyle={styles.listContainer}
+          contentContainerStyle={s.listContainer}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
           showsVerticalScrollIndicator={false}
         />
       ) : (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="mail-outline" size={60} color="#cccccc" />
-          <Text style={styles.emptyText}>No messages yet</Text>
-          <Text style={styles.emptySubText}>
-            Start a conversation with the shelter admin about {childName}
+        <View style={s.empty}>
+          <Ionicons name="mail-outline" size={60} color="#ccc" />
+          <Text style={s.emptyText}>Belum ada pesan</Text>
+          <Text style={s.emptySub}>
+            Mulai percakapan dengan admin panti tentang {childName}
           </Text>
           <Button
-            title="Send First Message"
-            onPress={handleComposeSurat}
+            title="Kirim Pesan Pertama"
+            onPress={handleCompose}
             type="primary"
-            style={styles.firstMessageButton}
+            style={s.firstBtn}
           />
         </View>
       )}
@@ -221,109 +178,36 @@ const SuratListScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  composeContainer: {
-    padding: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eeeeee',
-  },
-  listContainer: {
-    padding: 16,
-  },
-  suratCard: {
-    backgroundColor: '#ffffff',
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  compose: { padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#eee' },
+  listContainer: { padding: 16 },
+  card: {
+    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     elevation: 2,
-    shadowColor: '#000000',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  unreadCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#9b59b6',
-  },
-  suratHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  suratInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  suratDate: {
-    fontSize: 14,
-    color: '#666666',
-    marginRight: 8,
-  },
-  unreadText: {
-    fontWeight: '600',
-    color: '#333333',
-  },
-  unreadBadge: {
-    backgroundColor: '#9b59b6',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  unreadBadgeText: {
-    fontSize: 10,
-    color: '#ffffff',
-    fontWeight: 'bold',
-  },
-  suratMessage: {
-    fontSize: 16,
-    color: '#333333',
-    lineHeight: 22,
-    marginBottom: 12,
-  },
-  suratFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  attachmentIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  attachmentText: {
-    fontSize: 12,
-    color: '#666666',
-    marginLeft: 4,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#999999',
-    textAlign: 'center',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubText: {
-    fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 20,
-  },
-  firstMessageButton: {
-    marginTop: 8,
-  },
+  unread: { borderLeftWidth: 4, borderLeftColor: '#9b59b6' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  info: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  date: { fontSize: 14, color: '#666', marginRight: 8 },
+  bold: { fontWeight: '600', color: '#333' },
+  badge: { backgroundColor: '#9b59b6', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+  badgeText: { fontSize: 10, color: '#fff', fontWeight: 'bold' },
+  msg: { fontSize: 16, color: '#333', lineHeight: 22, marginBottom: 12 },
+  footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  attach: { flexDirection: 'row', alignItems: 'center' },
+  attachText: { fontSize: 12, color: '#666', marginLeft: 4 },
+  empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  emptyText: { fontSize: 18, color: '#999', textAlign: 'center', marginTop: 16, marginBottom: 8 },
+  emptySub: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 24, lineHeight: 20 },
+  firstBtn: { marginTop: 8 },
 });
 
 export default SuratListScreen;
