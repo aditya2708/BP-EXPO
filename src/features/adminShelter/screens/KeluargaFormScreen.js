@@ -555,7 +555,7 @@ const KeluargaFormScreen = () => {
           ]
         );
       } else {
-        setError(response.data.message || 'Failed to save family information');
+        setError(response.data.message || 'Gagal Menyimpan Informasi Keluarga');
       }
     } catch (err) {
       console.error('Error submitting form:', err);
@@ -570,7 +570,7 @@ const KeluargaFormScreen = () => {
         
         setError(`Validation error:\n${errorMessages || err.response?.data?.message}`);
       } else {
-        setError(err.response?.data?.message || 'Failed to save family information');
+        setError(err.response?.data?.message || 'Gagal Menyimpan Informasi Keluarga');
       }
     } finally {
       setSubmitting(false);
@@ -751,7 +751,7 @@ const KeluargaFormScreen = () => {
         <View style={styles.buttonsContainer}>
           {currentStep > 0 && (
             <Button
-              title="Previous"
+              title="Kembali"
               onPress={goToPreviousStep}
               type="outline"
               style={styles.navigationButton}
@@ -761,7 +761,7 @@ const KeluargaFormScreen = () => {
           
           {currentStep < STEPS.REVIEW ? (
             <Button
-              title="Next"
+              title="Selanjutnya"
               onPress={goToNextStep}
               type="primary"
               style={[styles.navigationButton, currentStep === 0 && styles.fullWidthButton]}
@@ -769,7 +769,7 @@ const KeluargaFormScreen = () => {
             />
           ) : (
             <Button
-              title={isEditMode ? "Update Family" : "Save Family"}
+              title={isEditMode ? "Edit" : "Simpan"}
               onPress={handleSubmit}
               type="primary"
               style={styles.navigationButton}

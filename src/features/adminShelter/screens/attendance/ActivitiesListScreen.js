@@ -207,7 +207,7 @@ const ActivitiesListScreen = ({ navigation }) => {
   const renderEmptyList = () => (
     <View style={styles.emptyContainer}>
       <Ionicons name="calendar-outline" size={64} color="#bdc3c7" />
-      <Text style={styles.emptyText}>No activities found</Text>
+      <Text style={styles.emptyText}>Tidak Ada Aktivitas Yang Ditemukan</Text>
       <Text style={styles.emptySubText}>
         {searchQuery || filterType !== 'all' || isDateFilterActive
           ? 'Try changing your search or filters' 

@@ -117,10 +117,10 @@ const AdminShelterProfileScreen = () => {
       
       // Exit edit mode
       setIsEditing(false);
-      Alert.alert('Success', 'Profile updated successfully');
+      Alert.alert('Success', 'Sukses');
     } catch (err) {
       console.error('Error updating profile:', err);
-      setError('Failed to update profile. Please try again.');
+      setError('Gagal. Coba Lagi!');
     } finally {
       setLoading(false);
     }
@@ -202,7 +202,7 @@ const AdminShelterProfileScreen = () => {
         <View style={styles.editButtonContainer}>
           {!isEditing ? (
             <Button
-              title="Edit Profile"
+              title="Edit Profil"
               onPress={() => setIsEditing(true)}
               leftIcon={<Ionicons name="create-outline" size={20} color="white" />}
               type="primary"
@@ -216,7 +216,7 @@ const AdminShelterProfileScreen = () => {
                 style={styles.cancelButton}
               />
               <Button
-                title="Save"
+                title="Simpan"
                 onPress={handleUpdateProfile}
                 loading={loading}
                 disabled={loading}
@@ -231,12 +231,12 @@ const AdminShelterProfileScreen = () => {
         <View style={styles.profileFields}>
           {/* Name */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Full Name</Text>
+            <Text style={styles.fieldLabel}>Nama Lengkap</Text>
             {isEditing ? (
               <TextInput
                 value={profileData.nama_lengkap}
                 onChangeText={(value) => handleChange('nama_lengkap', value)}
-                placeholder="Enter your full name"
+                placeholder="Masukkan Nama Lengkap"
               />
             ) : (
               <Text style={styles.fieldValue}>
@@ -255,12 +255,12 @@ const AdminShelterProfileScreen = () => {
 
           {/* Phone */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Phone Number</Text>
+            <Text style={styles.fieldLabel}>Nomor Telepon</Text>
             {isEditing ? (
               <TextInput
                 value={profileData.no_hp}
                 onChangeText={(value) => handleChange('no_hp', value)}
-                placeholder="Enter your phone number"
+                placeholder="Masukkan Nomor Telepon"
                 inputProps={{
                   keyboardType: 'phone-pad',
                 }}
@@ -274,12 +274,12 @@ const AdminShelterProfileScreen = () => {
 
           {/* Address */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Address</Text>
+            <Text style={styles.fieldLabel}>Alamat</Text>
             {isEditing ? (
               <TextInput
                 value={profileData.alamat_adm}
                 onChangeText={(value) => handleChange('alamat_adm', value)}
-                placeholder="Enter your address"
+                placeholder="Masukkan Alamat"
                 multiline
                 inputProps={{
                   numberOfLines: 3,
@@ -346,7 +346,7 @@ const AdminShelterProfileScreen = () => {
             onPress={() => navigation.navigate('Settings')}
           >
             <Ionicons name="settings-outline" size={24} color="#e74c3c" />
-            <Text style={styles.settingsText}>Settings</Text>
+            <Text style={styles.settingsText}>Setting</Text>
             <Ionicons name="chevron-forward" size={20} color="#999" />
           </TouchableOpacity>
 
