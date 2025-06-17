@@ -22,6 +22,11 @@ const ProcessedSurveyListScreen = () => {
     { key: 'rejected', label: 'Ditolak', icon: 'close-circle-outline' }
   ];
 
+  const statusConfig = {
+    'layak': { label: 'DISETUJUI', color: '#27ae60', bgColor: '#d5f4e6', icon: 'checkmark-circle' },
+    'tidak layak': { label: 'DITOLAK', color: '#e74c3c', bgColor: '#fdeaea', icon: 'close-circle' }
+  };
+
   const fetchProcessedSurveys = async (params = {}) => {
     try {
       setError(null);
@@ -51,13 +56,15 @@ const ProcessedSurveyListScreen = () => {
   const handleSearch = () => { setLoading(true); fetchProcessedSurveys(); };
   const navigateToDetail = (survey) => navigation.navigate('SurveyApprovalDetail', { surveyId: survey.id_survey });
 
-  const getStatusConfig = (status) => ({
-    'layak': { label: 'DISETUJUI', color: '#27ae60', bgColor: '#d5f4e6', icon: 'checkmark-circle' },
-    'tidak layak': { label: 'DITOLAK', color: '#e74c3c', bgColor: '#fdeaea', icon: 'close-circle' }
-  })[status] || { label: 'DISETUJUI', color: '#27ae60', bgColor: '#d5f4e6', icon: 'checkmark-circle' };
+  const InfoRow = ({ icon, text }) => (
+    <View style={styles.infoRow}>
+      <Ionicons name={icon} size={16} color="#666" />
+      <Text style={styles.infoText}>{text}</Text>
+    </View>
+  );
 
   const renderSurveyItem = ({ item }) => {
-    const statusConfig = getStatusConfig(item.hasil_survey);
+    const config = statusConfig[item.hasil_survey] || statusConfig['layak'];
     
     return (
       <TouchableOpacity style={styles.surveyCard} onPress={() => navigateToDetail(item)}>
@@ -66,25 +73,16 @@ const ProcessedSurveyListScreen = () => {
             <Text style={styles.familyName}>{item.keluarga?.kepala_keluarga}</Text>
             <Text style={styles.shelterName}>{item.keluarga?.shelter?.nama_shelter}</Text>
           </View>
-          <View style={[styles.statusContainer, { backgroundColor: statusConfig.bgColor }]}>
-            <Ionicons name={statusConfig.icon} size={20} color={statusConfig.color} />
-            <Text style={[styles.statusText, { color: statusConfig.color }]}>{statusConfig.label}</Text>
+          <View style={[styles.statusContainer, { backgroundColor: config.bgColor }]}>
+            <Ionicons name={config.icon} size={20} color={config.color} />
+            <Text style={[styles.statusText, { color: config.color }]}>{config.label}</Text>
           </View>
         </View>
 
         <View style={styles.processedInfo}>
-          <View style={styles.infoRow}>
-            <Ionicons name="calendar-outline" size={16} color="#666" />
-            <Text style={styles.infoText}>Diproses: {new Date(item.approved_at).toLocaleDateString()}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="person-outline" size={16} color="#666" />
-            <Text style={styles.infoText}>Oleh: {item.approvedBy?.nama_lengkap || 'Admin'}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="people-outline" size={16} color="#666" />
-            <Text style={styles.infoText}>{item.keluarga?.anak?.length || 0} Anak</Text>
-          </View>
+          <InfoRow icon="calendar-outline" text={`Diproses: ${new Date(item.approved_at).toLocaleDateString()}`} />
+          <InfoRow icon="person-outline" text={`Oleh: ${item.approvedBy?.nama_lengkap || 'Admin'}`} />
+          <InfoRow icon="people-outline" text={`${item.keluarga?.anak?.length || 0} Anak`} />
         </View>
 
         {item.approval_notes && (
@@ -127,9 +125,15 @@ const ProcessedSurveyListScreen = () => {
     <View style={styles.container}>
       <View style={styles.filterContainer}>
         {filterOptions.map((option) => (
-          <TouchableOpacity key={option.key} style={[styles.filterButton, filter === option.key && styles.activeFilter]} onPress={() => setFilter(option.key)}>
+          <TouchableOpacity 
+            key={option.key} 
+            style={[styles.filterButton, filter === option.key && styles.activeFilter]} 
+            onPress={() => setFilter(option.key)}
+          >
             <Ionicons name={option.icon} size={18} color={filter === option.key ? '#fff' : '#666'} />
-            <Text style={[styles.filterText, filter === option.key && styles.activeFilterText]}>{option.label}</Text>
+            <Text style={[styles.filterText, filter === option.key && styles.activeFilterText]}>
+              {option.label}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -137,7 +141,13 @@ const ProcessedSurveyListScreen = () => {
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
           <Ionicons name="search" size={20} color="#999" />
-          <TextInput style={styles.searchInput} placeholder="Cari keluarga, nama anak, atau nomor KK..." value={searchText} onChangeText={setSearchText} onSubmitEditing={handleSearch} />
+          <TextInput 
+            style={styles.searchInput} 
+            placeholder="Cari keluarga, nama anak, atau nomor KK..." 
+            value={searchText} 
+            onChangeText={setSearchText} 
+            onSubmitEditing={handleSearch} 
+          />
         </View>
         <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
           <Ionicons name="search" size={20} color="#fff" />

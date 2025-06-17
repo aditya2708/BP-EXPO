@@ -23,13 +23,17 @@ const SurveyStatusFilterScreen = () => {
     { key: 'rejected', label: 'Ditolak', icon: 'close-circle-outline', color: '#e74c3c' }
   ];
 
+  const statusConfig = {
+    pending: { label: 'MENUNGGU', color: '#f39c12' },
+    layak: { label: 'DISETUJUI', color: '#27ae60' },
+    'tidak layak': { label: 'DITOLAK', color: '#e74c3c' }
+  };
+
   const fetchSurveys = async (params = {}) => {
     try {
       setError(null);
       const response = await adminCabangSurveyApi.getAllSurveys({
-        status: activeTab,
-        search: searchText,
-        ...params
+        status: activeTab, search: searchText, ...params
       });
       setSurveys(response.data.data.data);
       setPagination({
@@ -64,22 +68,30 @@ const SurveyStatusFilterScreen = () => {
   };
 
   const handleSearch = () => { setLoading(true); fetchSurveys(); };
-  const handleTabChange = (tabKey) => { setActiveTab(tabKey); setSearchText(''); };
-  const navigateToDetail = (survey) => navigation.navigate('SurveyApprovalDetail', { surveyId: survey.id_survey });
+  
+  const handleTabChange = (tabKey) => {
+    setActiveTab(tabKey);
+    setSearchText('');
+  };
+
+  const navigateToDetail = (survey) => 
+    navigation.navigate('SurveyApprovalDetail', { surveyId: survey.id_survey });
 
   const getStatusBadge = (status) => {
-    const config = {
-      pending: { label: 'MENUNGGU', color: '#f39c12' },
-      layak: { label: 'DISETUJUI', color: '#27ae60' },
-      'tidak layak': { label: 'DITOLAK', color: '#e74c3c' }
-    };
-    const { label, color } = config[status] || config.pending;
+    const config = statusConfig[status] || statusConfig.pending;
     return (
-      <View style={[styles.statusBadge, { backgroundColor: color }]}>
-        <Text style={styles.statusText}>{label}</Text>
+      <View style={[styles.statusBadge, { backgroundColor: config.color }]}>
+        <Text style={styles.statusText}>{config.label}</Text>
       </View>
     );
   };
+
+  const InfoRow = ({ icon, text }) => (
+    <View style={styles.infoRow}>
+      <Ionicons name={icon} size={16} color="#666" />
+      <Text style={styles.infoText}>{text}</Text>
+    </View>
+  );
 
   const renderSurveyItem = ({ item }) => (
     <TouchableOpacity style={styles.surveyCard} onPress={() => navigateToDetail(item)}>
@@ -89,23 +101,11 @@ const SurveyStatusFilterScreen = () => {
       </View>
       
       <View style={styles.surveyInfo}>
-        <View style={styles.infoRow}>
-          <Ionicons name="home-outline" size={16} color="#666" />
-          <Text style={styles.infoText}>{item.keluarga?.shelter?.nama_shelter}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Ionicons name="people-outline" size={16} color="#666" />
-          <Text style={styles.infoText}>{item.keluarga?.anak?.length || 0} Anak</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Ionicons name="calendar-outline" size={16} color="#666" />
-          <Text style={styles.infoText}>{new Date(item.created_at).toLocaleDateString()}</Text>
-        </View>
+        <InfoRow icon="home-outline" text={item.keluarga?.shelter?.nama_shelter} />
+        <InfoRow icon="people-outline" text={`${item.keluarga?.anak?.length || 0} Anak`} />
+        <InfoRow icon="calendar-outline" text={new Date(item.created_at).toLocaleDateString()} />
         {item.approved_at && (
-          <View style={styles.infoRow}>
-            <Ionicons name="checkmark-outline" size={16} color="#666" />
-            <Text style={styles.infoText}>Diproses: {new Date(item.approved_at).toLocaleDateString()}</Text>
-          </View>
+          <InfoRow icon="checkmark-outline" text={`Diproses: ${new Date(item.approved_at).toLocaleDateString()}`} />
         )}
       </View>
 
