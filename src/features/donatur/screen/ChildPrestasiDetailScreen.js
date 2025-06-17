@@ -28,7 +28,7 @@ const ChildPrestasiDetailScreen = () => {
 
   useEffect(() => {
     navigation.setOptions({
-      title: `Achievement - ${childName}`,
+      title: `Prestasi - ${childName}`,
     });
   }, [navigation, childName]);
 
@@ -39,7 +39,7 @@ const ChildPrestasiDetailScreen = () => {
       setPrestasi(response.data.data);
     } catch (err) {
       console.error('Error fetching prestasi detail:', err);
-      setError('Failed to load achievement details. Please try again.');
+      setError('Gagal memuat detail prestasi. Silakan coba lagi.');
     } finally {
       setLoading(false);
     }
@@ -59,61 +59,49 @@ const ChildPrestasiDetailScreen = () => {
     });
   };
 
-  const getPrestasiIcon = (jenisPrestasi) => {
-    switch (jenisPrestasi?.toLowerCase()) {
-      case 'akademik':
-        return 'school';
-      case 'olahraga':
-        return 'fitness';
-      case 'seni':
-        return 'color-palette';
-      case 'karakter':
-        return 'heart';
-      default:
-        return 'trophy';
-    }
+  const getPrestasiIcon = (jenis) => {
+    const icons = {
+      akademik: 'school',
+      olahraga: 'fitness',
+      seni: 'color-palette',
+      karakter: 'heart'
+    };
+    return icons[jenis?.toLowerCase()] || 'trophy';
   };
 
-  const getPrestasiColor = (levelPrestasi) => {
-    switch (levelPrestasi?.toLowerCase()) {
-      case 'internasional':
-        return '#e74c3c';
-      case 'nasional':
-        return '#f39c12';
-      case 'provinsi':
-        return '#3498db';
-      case 'kota':
-        return '#2ecc71';
-      case 'sekolah':
-        return '#9b59b6';
-      default:
-        return '#95a5a6';
-    }
+  const getPrestasiColor = (level) => {
+    const colors = {
+      internasional: '#e74c3c',
+      nasional: '#f39c12',
+      provinsi: '#3498db',
+      kota: '#2ecc71',
+      sekolah: '#9b59b6'
+    };
+    return colors[level?.toLowerCase()] || '#95a5a6';
   };
 
   if (loading) {
-    return <LoadingSpinner fullScreen message="Loading achievement..." />;
+    return <LoadingSpinner fullScreen message="Memuat prestasi..." />;
   }
 
   if (error || !prestasi) {
     return (
       <View style={styles.container}>
         <ErrorMessage
-          message={error || "Achievement not found"}
+          message={error || "Prestasi tidak ditemukan"}
           onRetry={fetchPrestasiDetail}
         />
       </View>
     );
   }
 
+  const levelColor = getPrestasiColor(prestasi.level_prestasi);
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 20 }}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={[
-          styles.iconContainer, 
-          { backgroundColor: getPrestasiColor(prestasi.level_prestasi) }
-        ]}>
+        <View style={[styles.iconContainer, { backgroundColor: levelColor }]}>
           <Ionicons 
             name={getPrestasiIcon(prestasi.jenis_prestasi)} 
             size={40} 
@@ -124,10 +112,7 @@ const ChildPrestasiDetailScreen = () => {
         <Text style={styles.prestasiTitle}>{prestasi.nama_prestasi}</Text>
         
         <View style={styles.badgeContainer}>
-          <View style={[
-            styles.typeBadge,
-            { backgroundColor: getPrestasiColor(prestasi.level_prestasi) }
-          ]}>
+          <View style={[styles.typeBadge, { backgroundColor: levelColor }]}>
             <Text style={styles.badgeText}>{prestasi.jenis_prestasi}</Text>
           </View>
           <View style={styles.levelBadge}>
@@ -136,14 +121,14 @@ const ChildPrestasiDetailScreen = () => {
         </View>
         
         <Text style={styles.dateText}>
-          Achieved on {formatDate(prestasi.tgl_upload)}
+          Diraih pada {formatDate(prestasi.tgl_upload)}
         </Text>
       </View>
 
       {/* Photo */}
       {prestasi.foto_url && (
-        <View style={styles.photoContainer}>
-          <Text style={styles.sectionTitle}>Achievement Photo</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Foto Prestasi</Text>
           <TouchableOpacity style={styles.photoWrapper}>
             <Image
               source={{ uri: prestasi.foto_url }}
@@ -158,46 +143,35 @@ const ChildPrestasiDetailScreen = () => {
       )}
 
       {/* Achievement Details */}
-      <View style={styles.detailsContainer}>
-        <Text style={styles.sectionTitle}>Achievement Details</Text>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Detail Prestasi</Text>
         
-        <View style={styles.detailGrid}>
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Type</Text>
-            <Text style={styles.detailValue}>{prestasi.jenis_prestasi}</Text>
-          </View>
-          
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Level</Text>
-            <Text style={[
-              styles.detailValue, 
-              { color: getPrestasiColor(prestasi.level_prestasi) }
-            ]}>
-              {prestasi.level_prestasi}
-            </Text>
-          </View>
-          
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Achievement Name</Text>
-            <Text style={styles.detailValue}>{prestasi.nama_prestasi}</Text>
-          </View>
-          
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Date Recorded</Text>
-            <Text style={styles.detailValue}>{formatDate(prestasi.tgl_upload)}</Text>
-          </View>
+        <View style={{ gap: 12 }}>
+          {[
+            { label: 'Jenis', value: prestasi.jenis_prestasi },
+            { label: 'Tingkat', value: prestasi.level_prestasi, color: levelColor },
+            { label: 'Nama Prestasi', value: prestasi.nama_prestasi },
+            { label: 'Tanggal Dicatat', value: formatDate(prestasi.tgl_upload) }
+          ].map((item, idx) => (
+            <View key={idx} style={styles.detailItem}>
+              <Text style={styles.detailLabel}>{item.label}</Text>
+              <Text style={[styles.detailValue, item.color && { color: item.color }]}>
+                {item.value}
+              </Text>
+            </View>
+          ))}
         </View>
       </View>
 
       {/* Child Info */}
-      <View style={styles.childInfoContainer}>
-        <Text style={styles.sectionTitle}>Achieved By</Text>
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Diraih Oleh</Text>
         <View style={styles.childInfo}>
           <Text style={styles.childName}>
             {prestasi.anak?.full_name || childName}
           </Text>
           <Text style={styles.childNote}>
-            We are proud of this achievement! 🎉
+            Kami bangga dengan prestasi ini! 🎉
           </Text>
         </View>
       </View>
@@ -206,7 +180,7 @@ const ChildPrestasiDetailScreen = () => {
       <View style={styles.congratsContainer}>
         <Ionicons name="star" size={24} color="#f39c12" />
         <Text style={styles.congratsText}>
-          Congratulations to {prestasi.anak?.full_name || childName} for this wonderful achievement!
+          Selamat kepada {prestasi.anak?.full_name || childName} atas prestasi yang luar biasa ini!
         </Text>
         <Ionicons name="star" size={24} color="#f39c12" />
       </View>
@@ -218,9 +192,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-  },
-  contentContainer: {
-    paddingBottom: 20,
   },
   header: {
     backgroundColor: '#ffffff',
@@ -282,7 +253,7 @@ const styles = StyleSheet.create({
     color: '#666666',
     fontStyle: 'italic',
   },
-  photoContainer: {
+  section: {
     backgroundColor: '#ffffff',
     margin: 16,
     borderRadius: 12,
@@ -317,20 +288,6 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 20,
   },
-  detailsContainer: {
-    backgroundColor: '#ffffff',
-    margin: 16,
-    borderRadius: 12,
-    padding: 16,
-    elevation: 2,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  detailGrid: {
-    gap: 12,
-  },
   detailItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -350,17 +307,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 1,
     textAlign: 'right',
-  },
-  childInfoContainer: {
-    backgroundColor: '#ffffff',
-    margin: 16,
-    borderRadius: 12,
-    padding: 16,
-    elevation: 2,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
   },
   childInfo: {
     backgroundColor: '#f9f9f9',

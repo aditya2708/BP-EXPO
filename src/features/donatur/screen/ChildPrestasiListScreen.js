@@ -27,7 +27,7 @@ const ChildPrestasiListScreen = () => {
 
   useEffect(() => {
     navigation.setOptions({
-      title: `Achievements - ${childName}`,
+      title: `Prestasi - ${childName}`,
     });
   }, [navigation, childName]);
 
@@ -38,7 +38,7 @@ const ChildPrestasiListScreen = () => {
       setPrestasiList(response.data.data);
     } catch (err) {
       console.error('Error fetching prestasi:', err);
-      setError('Failed to load achievements. Please try again.');
+      setError('Gagal memuat prestasi. Silakan coba lagi.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -74,48 +74,42 @@ const ChildPrestasiListScreen = () => {
 
   const renderPrestasiItem = ({ item }) => (
     <TouchableOpacity 
-      style={[
-        styles.prestasiCard,
-        !item.is_read && styles.unreadCard
-      ]}
+      style={[styles.prestasiCard, !item.is_read && styles.unreadCard]}
       onPress={() => handleViewPrestasi(item.id_prestasi)}
     >
       <View style={styles.cardContent}>
-        <View style={styles.prestasiImageContainer}>
+        <View style={styles.imageContainer}>
           {item.foto_url ? (
             <Image
               source={{ uri: item.foto_url }}
-              style={styles.prestasiImage}
+              style={styles.image}
               resizeMode="cover"
             />
           ) : (
-            <View style={styles.prestasiImagePlaceholder}>
+            <View style={styles.imagePlaceholder}>
               <Ionicons name="trophy" size={32} color="#f39c12" />
             </View>
           )}
           {!item.is_read && (
             <View style={styles.newBadge}>
-              <Text style={styles.newBadgeText}>NEW</Text>
+              <Text style={styles.newBadgeText}>BARU</Text>
             </View>
           )}
         </View>
 
-        <View style={styles.prestasiInfo}>
-          <Text style={[
-            styles.prestasiName,
-            !item.is_read && styles.unreadText
-          ]}>
+        <View style={styles.info}>
+          <Text style={[styles.name, !item.is_read && styles.unreadText]}>
             {item.nama_prestasi}
           </Text>
           
-          <View style={styles.prestasiMeta}>
-            <View style={styles.prestasiTag}>
-              <Text style={styles.prestasiType}>{item.jenis_prestasi}</Text>
+          <View style={styles.meta}>
+            <View style={styles.tag}>
+              <Text style={styles.tagText}>{item.jenis_prestasi}</Text>
             </View>
-            <Text style={styles.prestasiLevel}>{item.level_prestasi}</Text>
+            <Text style={styles.level}>{item.level_prestasi}</Text>
           </View>
           
-          <Text style={styles.prestasiDate}>
+          <Text style={styles.date}>
             {formatDate(item.tgl_upload)}
           </Text>
         </View>
@@ -126,7 +120,7 @@ const ChildPrestasiListScreen = () => {
   );
 
   if (loading && !refreshing) {
-    return <LoadingSpinner fullScreen message="Loading achievements..." />;
+    return <LoadingSpinner fullScreen message="Memuat prestasi..." />;
   }
 
   return (
@@ -143,7 +137,7 @@ const ChildPrestasiListScreen = () => {
           data={prestasiList}
           renderItem={renderPrestasiItem}
           keyExtractor={(item) => item.id_prestasi.toString()}
-          contentContainerStyle={styles.listContainer}
+          contentContainerStyle={{ padding: 16 }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
@@ -152,9 +146,9 @@ const ChildPrestasiListScreen = () => {
       ) : (
         <View style={styles.emptyContainer}>
           <Ionicons name="trophy-outline" size={60} color="#cccccc" />
-          <Text style={styles.emptyText}>No achievements yet</Text>
+          <Text style={styles.emptyText}>Belum ada prestasi</Text>
           <Text style={styles.emptySubText}>
-            {childName}'s achievements will appear here when available
+            Prestasi {childName} akan muncul di sini ketika tersedia
           </Text>
         </View>
       )}
@@ -166,9 +160,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-  },
-  listContainer: {
-    padding: 16,
   },
   prestasiCard: {
     backgroundColor: '#ffffff',
@@ -189,16 +180,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
   },
-  prestasiImageContainer: {
+  imageContainer: {
     position: 'relative',
     marginRight: 16,
   },
-  prestasiImage: {
+  image: {
     width: 80,
     height: 80,
     borderRadius: 8,
   },
-  prestasiImagePlaceholder: {
+  imagePlaceholder: {
     width: 80,
     height: 80,
     borderRadius: 8,
@@ -220,10 +211,10 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontWeight: 'bold',
   },
-  prestasiInfo: {
+  info: {
     flex: 1,
   },
-  prestasiName: {
+  name: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333333',
@@ -232,29 +223,29 @@ const styles = StyleSheet.create({
   unreadText: {
     fontWeight: 'bold',
   },
-  prestasiMeta: {
+  meta: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
   },
-  prestasiTag: {
+  tag: {
     backgroundColor: '#f39c12',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 12,
     marginRight: 8,
   },
-  prestasiType: {
+  tagText: {
     fontSize: 12,
     color: '#ffffff',
     fontWeight: '500',
   },
-  prestasiLevel: {
+  level: {
     fontSize: 12,
     color: '#666666',
     fontWeight: '500',
   },
-  prestasiDate: {
+  date: {
     fontSize: 12,
     color: '#999999',
   },

@@ -35,7 +35,7 @@ const SurveyApprovalListScreen = () => {
         total: response.data.data.total
       });
     } catch (err) {
-      setError('Failed to load surveys');
+      setError('Gagal memuat survei');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -60,32 +60,30 @@ const SurveyApprovalListScreen = () => {
     navigation.navigate('SurveyApprovalDetail', { surveyId: survey.id_survey });
   };
 
+  const InfoRow = ({ icon, text }) => (
+    <View style={styles.infoRow}>
+      <Ionicons name={icon} size={16} color="#666" />
+      <Text style={styles.infoText}>{text}</Text>
+    </View>
+  );
+
   const renderSurveyItem = ({ item }) => (
-    <TouchableOpacity style={styles.surveyCard} onPress={() => navigateToDetail(item)}>
-      <View style={styles.surveyHeader}>
+    <TouchableOpacity style={styles.card} onPress={() => navigateToDetail(item)}>
+      <View style={styles.header}>
         <Text style={styles.familyName}>{item.keluarga?.kepala_keluarga}</Text>
         <View style={styles.statusBadge}>
-          <Text style={styles.statusText}>PENDING</Text>
+          <Text style={styles.statusText}>MENUNGGU</Text>
         </View>
       </View>
       
-      <View style={styles.surveyInfo}>
-        <View style={styles.infoRow}>
-          <Ionicons name="home-outline" size={16} color="#666" />
-          <Text style={styles.infoText}>{item.keluarga?.shelter?.nama_shelter}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Ionicons name="people-outline" size={16} color="#666" />
-          <Text style={styles.infoText}>{item.keluarga?.anak?.length || 0} Anak</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Ionicons name="calendar-outline" size={16} color="#666" />
-          <Text style={styles.infoText}>{new Date(item.created_at).toLocaleDateString()}</Text>
-        </View>
+      <View style={styles.info}>
+        <InfoRow icon="home-outline" text={item.keluarga?.shelter?.nama_shelter} />
+        <InfoRow icon="people-outline" text={`${item.keluarga?.anak?.length || 0} Anak`} />
+        <InfoRow icon="calendar-outline" text={new Date(item.created_at).toLocaleDateString()} />
       </View>
 
       {item.keluarga?.anak?.length > 0 && (
-        <View style={styles.childrenInfo}>
+        <View style={styles.children}>
           <Text style={styles.childrenLabel}>Anak:</Text>
           {item.keluarga.anak.slice(0, 2).map((anak, index) => (
             <Text key={index} style={styles.childName}>
@@ -93,7 +91,7 @@ const SurveyApprovalListScreen = () => {
             </Text>
           ))}
           {item.keluarga.anak.length > 2 && (
-            <Text style={styles.moreChildren}>+{item.keluarga.anak.length - 2} more</Text>
+            <Text style={styles.moreChildren}>+{item.keluarga.anak.length - 2} lagi</Text>
           )}
         </View>
       )}
@@ -101,7 +99,7 @@ const SurveyApprovalListScreen = () => {
   );
 
   if (loading && !refreshing) {
-    return <LoadingSpinner fullScreen message="Loading surveys..." />;
+    return <LoadingSpinner fullScreen message="Memuat survei..." />;
   }
 
   return (
@@ -111,7 +109,7 @@ const SurveyApprovalListScreen = () => {
           <Ionicons name="search" size={20} color="#999" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search family, child name, or KK number..."
+            placeholder="Cari keluarga, nama anak, atau nomor KK..."
             value={searchText}
             onChangeText={setSearchText}
             onSubmitEditing={handleSearch}
@@ -124,9 +122,9 @@ const SurveyApprovalListScreen = () => {
 
       {error && <ErrorMessage message={error} onRetry={() => fetchSurveys()} />}
 
-      <View style={styles.statsContainer}>
+      <View style={styles.stats}>
         <Text style={styles.statsText}>
-          {pagination.total || 0} Pending Surveys
+          {pagination.total || 0} Survei Menunggu
         </Text>
       </View>
 
@@ -134,14 +132,14 @@ const SurveyApprovalListScreen = () => {
         data={surveys}
         renderItem={renderSurveyItem}
         keyExtractor={(item) => item.id_survey.toString()}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={styles.list}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
+          <View style={styles.empty}>
             <Ionicons name="document-text-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No pending surveys found</Text>
+            <Text style={styles.emptyText}>Tidak ada survei yang menunggu</Text>
           </View>
         }
       />
@@ -179,7 +177,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
   },
-  statsContainer: {
+  stats: {
     padding: 16,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
@@ -190,10 +188,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
-  listContainer: {
+  list: {
     padding: 16,
   },
-  surveyCard: {
+  card: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
@@ -204,7 +202,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
   },
-  surveyHeader: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -227,7 +225,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  surveyInfo: {
+  info: {
     marginBottom: 12,
   },
   infoRow: {
@@ -240,7 +238,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
-  childrenInfo: {
+  children: {
     borderTopWidth: 1,
     borderTopColor: '#eee',
     paddingTop: 8,
@@ -261,7 +259,7 @@ const styles = StyleSheet.create({
     color: '#999',
     fontStyle: 'italic',
   },
-  emptyContainer: {
+  empty: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',

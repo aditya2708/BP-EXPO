@@ -8,6 +8,7 @@ import {
   RefreshControl,
   Image,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -41,7 +42,7 @@ const AdminCabangDashboardScreen = () => {
       setSurveyStats(statsResponse.data.data);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
-      setError('Failed to load dashboard data. Please try again.');
+      setError('Gagal memuat data dashboard. Silakan coba lagi.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -62,8 +63,60 @@ const AdminCabangDashboardScreen = () => {
   const navigateToProfile = () => navigation.navigate('ProfileTab');
 
   if (loading && !refreshing) {
-    return <LoadingSpinner fullScreen message="Loading dashboard..." />;
+    return <LoadingSpinner fullScreen message="Memuat dashboard..." />;
   }
+
+  const quickActions = [
+    {
+      title: 'Manajemen Survey',
+      description: 'Kelola semua persetujuan survey',
+      icon: 'document-text',
+      color: '#f39c12',
+      onPress: navigateToSurveyManagement,
+      badge: surveyStats.pending
+    },
+    {
+      title: 'Survey Diproses',
+      description: 'Lihat persetujuan selesai',
+      icon: 'checkmark-done',
+      color: '#3498db',
+      onPress: navigateToProcessedSurveys
+    },
+    {
+      title: 'Laporan',
+      description: 'Lihat statistik persetujuan',
+      icon: 'stats-chart',
+      color: '#9b59b6'
+    },
+    {
+      title: 'Bantuan',
+      description: 'Dapatkan dukungan dan panduan',
+      icon: 'help-circle',
+      color: '#2ecc71'
+    }
+  ];
+
+  const statsData = [
+    { icon: 'map-outline', color: '#2ecc71', value: dashboardData?.wilbin_count || 0, label: 'Wilayah Binaan' },
+    { icon: 'home-outline', color: '#e74c3c', value: dashboardData?.shelter_count || 0, label: 'Shelter' },
+    { icon: 'document-text-outline', color: '#f39c12', value: surveyStats.pending || 0, label: 'Survey Tertunda' }
+  ];
+
+  const surveyStatsData = [
+    { icon: 'time-outline', color: '#f39c12', value: surveyStats.pending || 0, label: 'Tertunda' },
+    { icon: 'checkmark-circle-outline', color: '#27ae60', value: surveyStats.approved || 0, label: 'Disetujui' },
+    { icon: 'close-circle-outline', color: '#e74c3c', value: surveyStats.rejected || 0, label: 'Ditolak' }
+  ];
+
+  const StatCard = ({ icon, color, value, label, horizontal = false }) => (
+    <View style={[styles.statCard, horizontal && styles.statCardHorizontal]}>
+      <Ionicons name={icon} size={horizontal ? 28 : 24} color={color} />
+      <View style={horizontal ? styles.statTextContainer : styles.statTextCenterContainer}>
+        <Text style={[styles.statNumber, !horizontal && styles.statNumberCenter]}>{value}</Text>
+        <Text style={[styles.statLabel, !horizontal && styles.statLabelCenter]}>{label}</Text>
+      </View>
+    </View>
+  );
 
   return (
     <ScrollView
@@ -73,17 +126,12 @@ const AdminCabangDashboardScreen = () => {
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
       }
     >
-      {error && (
-        <ErrorMessage
-          message={error}
-          onRetry={fetchDashboardData}
-        />
-      )}
+      {error && <ErrorMessage message={error} onRetry={fetchDashboardData} />}
 
       <View style={styles.headerSection}>
         <View style={styles.headerContent}>
           <View>
-            <Text style={styles.welcomeText}>Welcome back,</Text>
+            <Text style={styles.welcomeText}>Selamat datang kembali,</Text>
             <Text style={styles.nameText}>
               {profile?.nama_lengkap || user?.email || 'Admin Cabang'}
             </Text>
@@ -93,10 +141,7 @@ const AdminCabangDashboardScreen = () => {
               </Text>
             )}
           </View>
-          <TouchableOpacity
-            style={styles.profileImageContainer}
-            onPress={navigateToProfile}
-          >
+          <TouchableOpacity style={styles.profileImageContainer} onPress={navigateToProfile}>
             {profile?.foto ? (
               <Image
                 source={{ uri: `https://berbagipendidikan.org/storage/AdminCabang/${profile.id_admin_cabang}/${profile.foto}` }}
@@ -112,134 +157,65 @@ const AdminCabangDashboardScreen = () => {
       </View>
 
       <View style={styles.statsOverview}>
-        <View style={styles.statCard}>
-          <Ionicons name="map-outline" size={28} color="#2ecc71" />
-          <View style={styles.statTextContainer}>
-            <Text style={styles.statNumber}>{dashboardData?.wilbin_count || 0}</Text>
-            <Text style={styles.statLabel}>Wilayah Binaan</Text>
-          </View>
-        </View>
-
-        <View style={styles.statCard}>
-          <Ionicons name="home-outline" size={28} color="#e74c3c" />
-          <View style={styles.statTextContainer}>
-            <Text style={styles.statNumber}>{dashboardData?.shelter_count || 0}</Text>
-            <Text style={styles.statLabel}>Shelter</Text>
-          </View>
-        </View>
-
-        <View style={styles.statCard}>
-          <Ionicons name="document-text-outline" size={28} color="#f39c12" />
-          <View style={styles.statTextContainer}>
-            <Text style={styles.statNumber}>{surveyStats.pending || 0}</Text>
-            <Text style={styles.statLabel}>Pending Surveys</Text>
-          </View>
-        </View>
+        {statsData.map((stat, index) => (
+          <StatCard key={index} {...stat} horizontal />
+        ))}
       </View>
 
-      <View style={styles.surveyStatsSection}>
-        <Text style={styles.sectionTitle}>Survey Statistics</Text>
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Statistik Survey</Text>
         <View style={styles.surveyStatsGrid}>
-          <View style={styles.surveyStatCard}>
-            <Ionicons name="time-outline" size={24} color="#f39c12" />
-            <Text style={styles.surveyStatNumber}>{surveyStats.pending || 0}</Text>
-            <Text style={styles.surveyStatLabel}>Pending</Text>
-          </View>
-          <View style={styles.surveyStatCard}>
-            <Ionicons name="checkmark-circle-outline" size={24} color="#27ae60" />
-            <Text style={styles.surveyStatNumber}>{surveyStats.approved || 0}</Text>
-            <Text style={styles.surveyStatLabel}>Approved</Text>
-          </View>
-          <View style={styles.surveyStatCard}>
-            <Ionicons name="close-circle-outline" size={24} color="#e74c3c" />
-            <Text style={styles.surveyStatNumber}>{surveyStats.rejected || 0}</Text>
-            <Text style={styles.surveyStatLabel}>Rejected</Text>
-          </View>
+          {surveyStatsData.map((stat, index) => (
+            <StatCard key={index} {...stat} />
+          ))}
         </View>
       </View>
 
       <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <Text style={styles.sectionTitle}>Aksi Cepat</Text>
         <View style={styles.quickActionsGrid}>
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={navigateToSurveyManagement}
-          >
-            <View style={[styles.actionIconContainer, { backgroundColor: '#f39c12' }]}>
-              <Ionicons name="document-text" size={26} color="#fff" />
-            </View>
-            <Text style={styles.actionTitle}>Survey Management</Text>
-            <Text style={styles.actionDescription}>
-              Manage all survey approvals
-            </Text>
-            {surveyStats.pending > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{surveyStats.pending}</Text>
+          {quickActions.map((action, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.actionCard}
+              onPress={action.onPress}
+            >
+              <View style={[styles.actionIconContainer, { backgroundColor: action.color }]}>
+                <Ionicons name={action.icon} size={26} color="#fff" />
               </View>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={navigateToProcessedSurveys}
-          >
-            <View style={[styles.actionIconContainer, { backgroundColor: '#3498db' }]}>
-              <Ionicons name="checkmark-done" size={26} color="#fff" />
-            </View>
-            <Text style={styles.actionTitle}>Processed Surveys</Text>
-            <Text style={styles.actionDescription}>
-              View completed approvals
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionCard}>
-            <View style={[styles.actionIconContainer, { backgroundColor: '#9b59b6' }]}>
-              <Ionicons name="stats-chart" size={26} color="#fff" />
-            </View>
-            <Text style={styles.actionTitle}>Reports</Text>
-            <Text style={styles.actionDescription}>
-              View approval statistics
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionCard}>
-            <View style={[styles.actionIconContainer, { backgroundColor: '#2ecc71' }]}>
-              <Ionicons name="help-circle" size={26} color="#fff" />
-            </View>
-            <Text style={styles.actionTitle}>Help</Text>
-            <Text style={styles.actionDescription}>
-              Get support and guidance
-            </Text>
-          </TouchableOpacity>
+              <Text style={styles.actionTitle}>{action.title}</Text>
+              <Text style={styles.actionDescription}>{action.description}</Text>
+              {action.badge > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{action.badge}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
 
       {dashboardData?.kacab && (
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Cabang Information</Text>
+          <Text style={styles.sectionTitle}>Informasi Cabang</Text>
           <View style={styles.cabangInfoCard}>
-            <View style={styles.cabangInfoRow}>
-              <Text style={styles.cabangInfoLabel}>Cabang Name:</Text>
-              <Text style={styles.cabangInfoValue}>{dashboardData.kacab.nama_cabang || '-'}</Text>
-            </View>
-            <View style={styles.cabangInfoRow}>
-              <Text style={styles.cabangInfoLabel}>Address:</Text>
-              <Text style={styles.cabangInfoValue}>{dashboardData.kacab.alamat || '-'}</Text>
-            </View>
-            <View style={styles.cabangInfoRow}>
-              <Text style={styles.cabangInfoLabel}>Phone:</Text>
-              <Text style={styles.cabangInfoValue}>{dashboardData.kacab.no_telp || '-'}</Text>
-            </View>
-            <View style={styles.cabangInfoRow}>
-              <Text style={styles.cabangInfoLabel}>Email:</Text>
-              <Text style={styles.cabangInfoValue}>{dashboardData.kacab.email || '-'}</Text>
-            </View>
+            {[
+              { label: 'Nama Cabang:', value: dashboardData.kacab.nama_cabang },
+              { label: 'Alamat:', value: dashboardData.kacab.alamat },
+              { label: 'Telepon:', value: dashboardData.kacab.no_telp },
+              { label: 'Email:', value: dashboardData.kacab.email }
+            ].map((info, index) => (
+              <View key={index} style={styles.cabangInfoRow}>
+                <Text style={styles.cabangInfoLabel}>{info.label}</Text>
+                <Text style={styles.cabangInfoValue}>{info.value || '-'}</Text>
+              </View>
+            ))}
           </View>
         </View>
       )}
 
       <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>Recent Activities</Text>
+        <Text style={styles.sectionTitle}>Aktivitas Terkini</Text>
         {dashboardData?.recent_activities?.length > 0 ? (
           dashboardData.recent_activities.map((activity, index) => (
             <View key={index} style={styles.activityItem}>
@@ -253,7 +229,7 @@ const AdminCabangDashboardScreen = () => {
             </View>
           ))
         ) : (
-          <Text style={styles.emptyText}>No recent activities found</Text>
+          <Text style={styles.emptyText}>Tidak ada aktivitas terkini ditemukan</Text>
         )}
       </View>
     </ScrollView>
@@ -273,11 +249,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
     marginBottom: 20,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   headerContent: {
     flexDirection: 'row',
@@ -325,63 +307,47 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   statCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#fff',
     padding: 15,
     borderRadius: 12,
     marginHorizontal: 4,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  statCardHorizontal: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   statTextContainer: {
     marginLeft: 10,
+  },
+  statTextCenterContainer: {
+    alignItems: 'center',
+    marginTop: 8,
   },
   statNumber: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
   },
+  statNumberCenter: {
+    fontSize: 20,
+  },
   statLabel: {
     fontSize: 12,
     color: '#666',
   },
-  surveyStatsSection: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  surveyStatsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  surveyStatCard: {
-    flex: 1,
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#f8f8f8',
-    borderRadius: 8,
-    marginHorizontal: 4,
-  },
-  surveyStatNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 8,
-  },
-  surveyStatLabel: {
-    fontSize: 12,
-    color: '#666',
+  statLabelCenter: {
     marginTop: 4,
   },
   sectionContainer: {
@@ -389,17 +355,27 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 16,
     color: '#333',
+  },
+  surveyStatsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   quickActionsGrid: {
     flexDirection: 'row',

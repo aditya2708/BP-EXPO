@@ -12,13 +12,11 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 
-// Import components
 import Button from '../../../common/components/Button';
 import TextInput from '../../../common/components/TextInput';
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../common/components/ErrorMessage';
 
-// Import hooks and API
 import { useAuth } from '../../../common/hooks/useAuth';
 import { adminCabangApi } from '../api/adminCabangApi';
 
@@ -26,7 +24,6 @@ const AdminCabangProfileScreen = () => {
   const navigation = useNavigation();
   const { user, profile, refreshUser, logout } = useAuth();
   
-  // Profile state
   const [profileData, setProfileData] = useState({
     nama_lengkap: '',
     alamat: '',
@@ -39,7 +36,6 @@ const AdminCabangProfileScreen = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Initialize profile data from Redux state
   useEffect(() => {
     if (profile) {
       setProfileData({
@@ -56,18 +52,15 @@ const AdminCabangProfileScreen = () => {
     }
   }, [profile, user]);
 
-  // Handle profile image selection
   const handleSelectImage = async () => {
     try {
-      // Request permission
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Permission to access camera roll is required');
+        Alert.alert('Izin Ditolak', 'Izin untuk mengakses galeri foto diperlukan');
         return;
       }
 
-      // Launch image picker
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -75,30 +68,25 @@ const AdminCabangProfileScreen = () => {
         quality: 0.7,
       });
 
-      if (!result.canceled && result.assets && result.assets[0]) {
+      if (!result.canceled && result.assets?.[0]) {
         setProfileImage(result.assets[0].uri);
       }
     } catch (error) {
-      console.error('Error selecting image:', error);
-      Alert.alert('Error', 'Failed to select image');
+      Alert.alert('Kesalahan', 'Gagal memilih gambar');
     }
   };
 
-  // Handle profile update
   const handleUpdateProfile = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Create form data
       const formData = new FormData();
       
-      // Add profile data
       formData.append('nama_lengkap', profileData.nama_lengkap);
       formData.append('alamat', profileData.alamat);
       formData.append('no_hp', profileData.no_hp);
 
-      // Add profile image if selected
       if (profileImage && !profileImage.startsWith('http')) {
         const filename = profileImage.split('/').pop();
         const match = /\.(\w+)$/.exec(filename);
@@ -111,53 +99,54 @@ const AdminCabangProfileScreen = () => {
         });
       }
 
-      // Update profile
       await adminCabangApi.updateProfile(formData);
-      
-      // Refresh user data
       await refreshUser();
       
-      // Exit edit mode
       setIsEditing(false);
-      Alert.alert('Success', 'Profile updated successfully');
+      Alert.alert('Berhasil', 'Profil berhasil diperbarui');
     } catch (err) {
-      console.error('Error updating profile:', err);
-      setError('Failed to update profile. Please try again.');
+      setError('Gagal memperbarui profil. Silakan coba lagi.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle text input changes
   const handleChange = (field, value) => {
     setProfileData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Handle logout
   const handleLogout = () => {
     Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
+      'Keluar',
+      'Apakah Anda yakin ingin keluar?',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: () => {
-            logout();
-          },
-        },
+        { text: 'Batal', style: 'cancel' },
+        { text: 'Keluar', style: 'destructive', onPress: logout },
       ],
       { cancelable: true }
     );
   };
 
+  const renderField = (label, field, placeholder, props = {}) => (
+    <View style={styles.fieldContainer}>
+      <Text style={styles.fieldLabel}>{label}</Text>
+      {isEditing ? (
+        <TextInput
+          value={profileData[field]}
+          onChangeText={(value) => handleChange(field, value)}
+          placeholder={placeholder}
+          {...props}
+        />
+      ) : (
+        <Text style={styles.fieldValue}>
+          {profileData[field] || '-'}
+        </Text>
+      )}
+    </View>
+  );
+
   return (
     <ScrollView style={styles.container}>
-      {/* Error Message */}
       {error && (
         <ErrorMessage
           message={error}
@@ -165,14 +154,10 @@ const AdminCabangProfileScreen = () => {
         />
       )}
 
-      {/* Profile Header */}
       <View style={styles.profileHeader}>
         <View style={styles.profileImageContainer}>
           {profileImage ? (
-            <Image
-              source={{ uri: profileImage }}
-              style={styles.profileImage}
-            />
+            <Image source={{ uri: profileImage }} style={styles.profileImage} />
           ) : (
             <View style={styles.profileImagePlaceholder}>
               <Ionicons name="person" size={50} color="#ffffff" />
@@ -180,10 +165,7 @@ const AdminCabangProfileScreen = () => {
           )}
           
           {isEditing && (
-            <TouchableOpacity 
-              style={styles.editImageButton}
-              onPress={handleSelectImage}
-            >
+            <TouchableOpacity style={styles.editImageButton} onPress={handleSelectImage}>
               <Ionicons name="camera" size={20} color="#ffffff" />
             </TouchableOpacity>
           )}
@@ -198,9 +180,7 @@ const AdminCabangProfileScreen = () => {
         )}
       </View>
 
-      {/* Profile Content */}
       <View style={styles.profileContent}>
-        {/* Edit/Save Button */}
         <View style={styles.editButtonContainer}>
           {!isEditing ? (
             <Button
@@ -212,13 +192,13 @@ const AdminCabangProfileScreen = () => {
           ) : (
             <View style={styles.editButtonsRow}>
               <Button
-                title="Cancel"
+                title="Batal"
                 onPress={() => setIsEditing(false)}
                 type="outline"
                 style={styles.cancelButton}
               />
               <Button
-                title="Save"
+                title="Simpan"
                 onPress={handleUpdateProfile}
                 loading={loading}
                 disabled={loading}
@@ -229,125 +209,70 @@ const AdminCabangProfileScreen = () => {
           )}
         </View>
 
-        {/* Profile Fields */}
         <View style={styles.profileFields}>
-          {/* Name */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Full Name</Text>
-            {isEditing ? (
-              <TextInput
-                value={profileData.nama_lengkap}
-                onChangeText={(value) => handleChange('nama_lengkap', value)}
-                placeholder="Enter your full name"
-              />
-            ) : (
-              <Text style={styles.fieldValue}>
-                {profileData.nama_lengkap || '-'}
-              </Text>
-            )}
-          </View>
-
-          {/* Email */}
+          {renderField('Nama Lengkap', 'nama_lengkap', 'Masukkan nama lengkap Anda')}
+          
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Email</Text>
-            <Text style={styles.fieldValue}>
-              {profileData.email || '-'}
-            </Text>
+            <Text style={styles.fieldValue}>{profileData.email || '-'}</Text>
           </View>
 
-          {/* Phone */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Phone Number</Text>
-            {isEditing ? (
-              <TextInput
-                value={profileData.no_hp}
-                onChangeText={(value) => handleChange('no_hp', value)}
-                placeholder="Enter your phone number"
-                inputProps={{
-                  keyboardType: 'phone-pad',
-                }}
-              />
-            ) : (
-              <Text style={styles.fieldValue}>
-                {profileData.no_hp || '-'}
-              </Text>
-            )}
-          </View>
+          {renderField('Nomor Telepon', 'no_hp', 'Masukkan nomor telepon Anda', {
+            inputProps: { keyboardType: 'phone-pad' }
+          })}
 
-          {/* Address */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Address</Text>
-            {isEditing ? (
-              <TextInput
-                value={profileData.alamat}
-                onChangeText={(value) => handleChange('alamat', value)}
-                placeholder="Enter your address"
-                multiline
-                inputProps={{
-                  numberOfLines: 3,
-                }}
-              />
-            ) : (
-              <Text style={styles.fieldValue}>
-                {profileData.alamat || '-'}
-              </Text>
-            )}
-          </View>
+          {renderField('Alamat', 'alamat', 'Masukkan alamat Anda', {
+            multiline: true,
+            inputProps: { numberOfLines: 3 }
+          })}
         </View>
 
-        {/* Cabang Information */}
         {profileData.kacab && (
           <View style={styles.cabangInfoContainer}>
-            <Text style={styles.sectionTitle}>Cabang Information</Text>
+            <Text style={styles.sectionTitle}>Informasi Cabang</Text>
             <View style={styles.cabangInfoCard}>
-              <View style={styles.cabangInfoRow}>
-                <Text style={styles.cabangInfoLabel}>Cabang Name:</Text>
-                <Text style={styles.cabangInfoValue}>{profileData.kacab.nama_cabang || '-'}</Text>
-              </View>
-              <View style={styles.cabangInfoRow}>
-                <Text style={styles.cabangInfoLabel}>Address:</Text>
-                <Text style={styles.cabangInfoValue}>{profileData.kacab.alamat || '-'}</Text>
-              </View>
-              <View style={styles.cabangInfoRow}>
-                <Text style={styles.cabangInfoLabel}>Phone:</Text>
-                <Text style={styles.cabangInfoValue}>{profileData.kacab.no_telp || '-'}</Text>
-              </View>
-              {profileData.kacab.email && (
-                <View style={styles.cabangInfoRow}>
-                  <Text style={styles.cabangInfoLabel}>Email:</Text>
-                  <Text style={styles.cabangInfoValue}>{profileData.kacab.email}</Text>
+              {[
+                ['Nama Cabang:', profileData.kacab.nama_cabang],
+                ['Alamat:', profileData.kacab.alamat],
+                ['Telepon:', profileData.kacab.no_telp],
+                ...(profileData.kacab.email ? [['Email:', profileData.kacab.email]] : [])
+              ].map(([label, value], index) => (
+                <View key={index} style={styles.cabangInfoRow}>
+                  <Text style={styles.cabangInfoLabel}>{label}</Text>
+                  <Text style={styles.cabangInfoValue}>{value || '-'}</Text>
                 </View>
-              )}
+              ))}
             </View>
           </View>
         )}
 
-        {/* Settings and Logout */}
         <View style={styles.settingsContainer}>
-          <TouchableOpacity
-            style={styles.settingsItem}
-            onPress={() => navigation.navigate('Settings')}
-          >
-            <Ionicons name="settings-outline" size={24} color="#2ecc71" />
-            <Text style={styles.settingsText}>Settings</Text>
-            <Ionicons name="chevron-forward" size={20} color="#999" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.settingsItem}
-            onPress={handleLogout}
-          >
-            <Ionicons name="log-out-outline" size={24} color="#e74c3c" />
-            <Text style={[styles.settingsText, { color: '#e74c3c' }]}>Logout</Text>
-            <Ionicons name="chevron-forward" size={20} color="#999" />
-          </TouchableOpacity>
+          {[
+            {
+              icon: 'settings-outline',
+              text: 'Pengaturan',
+              color: '#2ecc71',
+              onPress: () => navigation.navigate('Settings')
+            },
+            {
+              icon: 'log-out-outline',
+              text: 'Keluar',
+              color: '#e74c3c',
+              onPress: handleLogout
+            }
+          ].map((item, index) => (
+            <TouchableOpacity key={index} style={styles.settingsItem} onPress={item.onPress}>
+              <Ionicons name={item.icon} size={24} color={item.color} />
+              <Text style={[styles.settingsText, { color: item.color }]}>{item.text}</Text>
+              <Ionicons name="chevron-forward" size={20} color="#999" />
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
 
-      {/* Loading Overlay */}
       {loading && (
         <View style={styles.loadingOverlay}>
-          <LoadingSpinner message="Updating profile..." />
+          <LoadingSpinner message="Memperbarui profil..." />
         </View>
       )}
     </ScrollView>

@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  TextInput,
-  RefreshControl,
-} from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
@@ -25,79 +17,44 @@ const ProcessedSurveyListScreen = () => {
   const [pagination, setPagination] = useState({});
 
   const filterOptions = [
-    { key: 'all', label: 'All Processed', icon: 'list-outline' },
-    { key: 'approved', label: 'Approved', icon: 'checkmark-circle-outline' },
-    { key: 'rejected', label: 'Rejected', icon: 'close-circle-outline' }
+    { key: 'all', label: 'Semua Diproses', icon: 'list-outline' },
+    { key: 'approved', label: 'Disetujui', icon: 'checkmark-circle-outline' },
+    { key: 'rejected', label: 'Ditolak', icon: 'close-circle-outline' }
   ];
 
   const fetchProcessedSurveys = async (params = {}) => {
     try {
       setError(null);
-      const responses = await Promise.all([
+      const [approved, rejected] = await Promise.all([
         adminCabangSurveyApi.getAllSurveys({ status: 'approved', search: searchText, ...params }),
         adminCabangSurveyApi.getAllSurveys({ status: 'rejected', search: searchText, ...params })
       ]);
 
-      let allSurveys = [
-        ...responses[0].data.data.data,
-        ...responses[1].data.data.data
-      ];
-
-      if (filter === 'approved') {
-        allSurveys = responses[0].data.data.data;
-      } else if (filter === 'rejected') {
-        allSurveys = responses[1].data.data.data;
-      }
+      let allSurveys = [...approved.data.data.data, ...rejected.data.data.data];
+      if (filter === 'approved') allSurveys = approved.data.data.data;
+      else if (filter === 'rejected') allSurveys = rejected.data.data.data;
 
       allSurveys.sort((a, b) => new Date(b.approved_at) - new Date(a.approved_at));
-
       setSurveys(allSurveys);
-      setPagination({
-        total: allSurveys.length
-      });
+      setPagination({ total: allSurveys.length });
     } catch (err) {
-      setError('Failed to load processed surveys');
+      setError('Gagal memuat survey diproses');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    fetchProcessedSurveys();
-  }, [filter]);
+  useEffect(() => { fetchProcessedSurveys(); }, [filter]);
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchProcessedSurveys();
-  };
+  const handleRefresh = () => { setRefreshing(true); fetchProcessedSurveys(); };
+  const handleSearch = () => { setLoading(true); fetchProcessedSurveys(); };
+  const navigateToDetail = (survey) => navigation.navigate('SurveyApprovalDetail', { surveyId: survey.id_survey });
 
-  const handleSearch = () => {
-    setLoading(true);
-    fetchProcessedSurveys();
-  };
-
-  const navigateToDetail = (survey) => {
-    navigation.navigate('SurveyApprovalDetail', { surveyId: survey.id_survey });
-  };
-
-  const getStatusConfig = (status) => {
-    const configs = {
-      'layak': { 
-        label: 'APPROVED', 
-        color: '#27ae60', 
-        bgColor: '#d5f4e6',
-        icon: 'checkmark-circle'
-      },
-      'tidak layak': { 
-        label: 'REJECTED', 
-        color: '#e74c3c', 
-        bgColor: '#fdeaea',
-        icon: 'close-circle'
-      }
-    };
-    return configs[status] || configs['layak'];
-  };
+  const getStatusConfig = (status) => ({
+    'layak': { label: 'DISETUJUI', color: '#27ae60', bgColor: '#d5f4e6', icon: 'checkmark-circle' },
+    'tidak layak': { label: 'DITOLAK', color: '#e74c3c', bgColor: '#fdeaea', icon: 'close-circle' }
+  })[status] || { label: 'DISETUJUI', color: '#27ae60', bgColor: '#d5f4e6', icon: 'checkmark-circle' };
 
   const renderSurveyItem = ({ item }) => {
     const statusConfig = getStatusConfig(item.hasil_survey);
@@ -111,24 +68,18 @@ const ProcessedSurveyListScreen = () => {
           </View>
           <View style={[styles.statusContainer, { backgroundColor: statusConfig.bgColor }]}>
             <Ionicons name={statusConfig.icon} size={20} color={statusConfig.color} />
-            <Text style={[styles.statusText, { color: statusConfig.color }]}>
-              {statusConfig.label}
-            </Text>
+            <Text style={[styles.statusText, { color: statusConfig.color }]}>{statusConfig.label}</Text>
           </View>
         </View>
 
         <View style={styles.processedInfo}>
           <View style={styles.infoRow}>
             <Ionicons name="calendar-outline" size={16} color="#666" />
-            <Text style={styles.infoText}>
-              Processed: {new Date(item.approved_at).toLocaleDateString()}
-            </Text>
+            <Text style={styles.infoText}>Diproses: {new Date(item.approved_at).toLocaleDateString()}</Text>
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="person-outline" size={16} color="#666" />
-            <Text style={styles.infoText}>
-              By: {item.approvedBy?.nama_lengkap || 'Admin'}
-            </Text>
+            <Text style={styles.infoText}>Oleh: {item.approvedBy?.nama_lengkap || 'Admin'}</Text>
           </View>
           <View style={styles.infoRow}>
             <Ionicons name="people-outline" size={16} color="#666" />
@@ -138,21 +89,21 @@ const ProcessedSurveyListScreen = () => {
 
         {item.approval_notes && (
           <View style={styles.notesContainer}>
-            <Text style={styles.notesLabel}>Notes:</Text>
+            <Text style={styles.notesLabel}>Catatan:</Text>
             <Text style={styles.notesText}>{item.approval_notes}</Text>
           </View>
         )}
 
         {item.rejection_reason && (
           <View style={styles.rejectionContainer}>
-            <Text style={styles.rejectionLabel}>Rejection Reason:</Text>
+            <Text style={styles.rejectionLabel}>Alasan Penolakan:</Text>
             <Text style={styles.rejectionText}>{item.rejection_reason}</Text>
           </View>
         )}
 
         {item.keluarga?.anak?.length > 0 && (
           <View style={styles.childrenContainer}>
-            <Text style={styles.childrenLabel}>Children:</Text>
+            <Text style={styles.childrenLabel}>Anak:</Text>
             <View style={styles.childrenList}>
               {item.keluarga.anak.slice(0, 3).map((anak, index) => (
                 <View key={index} style={styles.childItem}>
@@ -161,9 +112,7 @@ const ProcessedSurveyListScreen = () => {
                 </View>
               ))}
               {item.keluarga.anak.length > 3 && (
-                <Text style={styles.moreChildren}>
-                  +{item.keluarga.anak.length - 3} more
-                </Text>
+                <Text style={styles.moreChildren}>+{item.keluarga.anak.length - 3} lagi</Text>
               )}
             </View>
           </View>
@@ -172,35 +121,15 @@ const ProcessedSurveyListScreen = () => {
     );
   };
 
-  if (loading && !refreshing) {
-    return <LoadingSpinner fullScreen message="Loading processed surveys..." />;
-  }
+  if (loading && !refreshing) return <LoadingSpinner fullScreen message="Memuat survey diproses..." />;
 
   return (
     <View style={styles.container}>
       <View style={styles.filterContainer}>
         {filterOptions.map((option) => (
-          <TouchableOpacity
-            key={option.key}
-            style={[
-              styles.filterButton,
-              filter === option.key && styles.activeFilter
-            ]}
-            onPress={() => setFilter(option.key)}
-          >
-            <Ionicons 
-              name={option.icon} 
-              size={18} 
-              color={filter === option.key ? '#fff' : '#666'} 
-            />
-            <Text 
-              style={[
-                styles.filterText,
-                filter === option.key && styles.activeFilterText
-              ]}
-            >
-              {option.label}
-            </Text>
+          <TouchableOpacity key={option.key} style={[styles.filterButton, filter === option.key && styles.activeFilter]} onPress={() => setFilter(option.key)}>
+            <Ionicons name={option.icon} size={18} color={filter === option.key ? '#fff' : '#666'} />
+            <Text style={[styles.filterText, filter === option.key && styles.activeFilterText]}>{option.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -208,13 +137,7 @@ const ProcessedSurveyListScreen = () => {
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
           <Ionicons name="search" size={20} color="#999" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search family, child name, or KK number..."
-            value={searchText}
-            onChangeText={setSearchText}
-            onSubmitEditing={handleSearch}
-          />
+          <TextInput style={styles.searchInput} placeholder="Cari keluarga, nama anak, atau nomor KK..." value={searchText} onChangeText={setSearchText} onSubmitEditing={handleSearch} />
         </View>
         <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
           <Ionicons name="search" size={20} color="#fff" />
@@ -224,9 +147,7 @@ const ProcessedSurveyListScreen = () => {
       {error && <ErrorMessage message={error} onRetry={fetchProcessedSurveys} />}
 
       <View style={styles.statsContainer}>
-        <Text style={styles.statsText}>
-          {pagination.total || 0} Processed Surveys
-        </Text>
+        <Text style={styles.statsText}>{pagination.total || 0} Survey Diproses</Text>
       </View>
 
       <FlatList
@@ -234,13 +155,11 @@ const ProcessedSurveyListScreen = () => {
         renderItem={renderSurveyItem}
         keyExtractor={(item) => item.id_survey.toString()}
         contentContainerStyle={styles.listContainer}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="document-text-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No processed surveys found</Text>
+            <Text style={styles.emptyText}>Tidak ada survey diproses</Text>
           </View>
         }
       />
@@ -249,217 +168,44 @@ const ProcessedSurveyListScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
-    borderRadius: 20,
-    backgroundColor: '#f8f8f8',
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  activeFilter: {
-    backgroundColor: '#2ecc71',
-    borderColor: '#2ecc71',
-  },
-  filterText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#666',
-  },
-  activeFilterText: {
-    color: '#fff',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-  },
-  searchBox: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    padding: 12,
-    fontSize: 16,
-  },
-  searchButton: {
-    backgroundColor: '#2ecc71',
-    padding: 12,
-    borderRadius: 8,
-  },
-  statsContainer: {
-    padding: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  statsText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  listContainer: {
-    padding: 16,
-  },
-  surveyCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  surveyHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  headerLeft: {
-    flex: 1,
-    marginRight: 12,
-  },
-  familyName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
-  },
-  shelterName: {
-    fontSize: 14,
-    color: '#666',
-  },
-  statusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  statusText: {
-    marginLeft: 6,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  processedInfo: {
-    marginBottom: 12,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  infoText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#666',
-  },
-  notesContainer: {
-    backgroundColor: '#f8f8f8',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  notesLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  notesText: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-  },
-  rejectionContainer: {
-    backgroundColor: '#fdeaea',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#e74c3c',
-  },
-  rejectionLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#e74c3c',
-    marginBottom: 4,
-  },
-  rejectionText: {
-    fontSize: 14,
-    color: '#c0392b',
-    lineHeight: 20,
-  },
-  childrenContainer: {
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 12,
-  },
-  childrenLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  childrenList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  childItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 12,
-    marginBottom: 4,
-  },
-  childName: {
-    fontSize: 14,
-    color: '#333',
-    marginRight: 4,
-  },
-  childStatus: {
-    fontSize: 12,
-    color: '#666',
-  },
-  moreChildren: {
-    fontSize: 12,
-    color: '#999',
-    fontStyle: 'italic',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 64,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#999',
-    marginTop: 16,
-  },
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  filterContainer: { flexDirection: 'row', padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#eee' },
+  filterButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, marginRight: 8, borderRadius: 20, backgroundColor: '#f8f8f8', borderWidth: 1, borderColor: '#ddd' },
+  activeFilter: { backgroundColor: '#2ecc71', borderColor: '#2ecc71' },
+  filterText: { marginLeft: 8, fontSize: 14, color: '#666' },
+  activeFilterText: { color: '#fff' },
+  searchContainer: { flexDirection: 'row', padding: 16, backgroundColor: '#fff', alignItems: 'center' },
+  searchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8f8f8', borderRadius: 8, paddingHorizontal: 12, marginRight: 8 },
+  searchInput: { flex: 1, padding: 12, fontSize: 16 },
+  searchButton: { backgroundColor: '#2ecc71', padding: 12, borderRadius: 8 },
+  statsContainer: { padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#eee' },
+  statsText: { fontSize: 16, fontWeight: '600', color: '#333' },
+  listContainer: { padding: 16 },
+  surveyCard: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 12, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2 },
+  surveyHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  headerLeft: { flex: 1, marginRight: 12 },
+  familyName: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 4 },
+  shelterName: { fontSize: 14, color: '#666' },
+  statusContainer: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  statusText: { marginLeft: 6, fontSize: 12, fontWeight: '600' },
+  processedInfo: { marginBottom: 12 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  infoText: { marginLeft: 8, fontSize: 14, color: '#666' },
+  notesContainer: { backgroundColor: '#f8f8f8', padding: 12, borderRadius: 8, marginBottom: 12 },
+  notesLabel: { fontSize: 12, fontWeight: '600', color: '#333', marginBottom: 4 },
+  notesText: { fontSize: 14, color: '#666', lineHeight: 20 },
+  rejectionContainer: { backgroundColor: '#fdeaea', padding: 12, borderRadius: 8, marginBottom: 12, borderLeftWidth: 4, borderLeftColor: '#e74c3c' },
+  rejectionLabel: { fontSize: 12, fontWeight: '600', color: '#e74c3c', marginBottom: 4 },
+  rejectionText: { fontSize: 14, color: '#c0392b', lineHeight: 20 },
+  childrenContainer: { borderTopWidth: 1, borderTopColor: '#eee', paddingTop: 12 },
+  childrenLabel: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 8 },
+  childrenList: { flexDirection: 'row', flexWrap: 'wrap' },
+  childItem: { flexDirection: 'row', alignItems: 'center', marginRight: 12, marginBottom: 4 },
+  childName: { fontSize: 14, color: '#333', marginRight: 4 },
+  childStatus: { fontSize: 12, color: '#666' },
+  moreChildren: { fontSize: 12, color: '#999', fontStyle: 'italic' },
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 64 },
+  emptyText: { fontSize: 16, color: '#999', marginTop: 16 }
 });
 
 export default ProcessedSurveyListScreen;

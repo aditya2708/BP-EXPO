@@ -26,7 +26,7 @@ const ChildAktivitasListScreen = () => {
 
   useEffect(() => {
     navigation.setOptions({
-      title: `Activities - ${childName}`,
+      title: `Aktivitas - ${childName}`,
     });
   }, [navigation, childName]);
 
@@ -37,7 +37,7 @@ const ChildAktivitasListScreen = () => {
       setAktivitasList(response.data.data);
     } catch (err) {
       console.error('Error fetching aktivitas:', err);
-      setError('Failed to load activities. Please try again.');
+      setError('Gagal memuat aktivitas. Silakan coba lagi.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -72,27 +72,19 @@ const ChildAktivitasListScreen = () => {
 
   const getAttendanceColor = (status) => {
     switch (status) {
-      case 'Ya':
-        return '#2ecc71';
-      case 'Terlambat':
-        return '#f39c12';
-      case 'Tidak Hadir':
-        return '#e74c3c';
-      default:
-        return '#95a5a6';
+      case 'Ya': return '#2ecc71';
+      case 'Terlambat': return '#f39c12';
+      case 'Tidak Hadir': return '#e74c3c';
+      default: return '#95a5a6';
     }
   };
 
   const getAttendanceIcon = (status) => {
     switch (status) {
-      case 'Ya':
-        return 'checkmark-circle';
-      case 'Terlambat':
-        return 'time';
-      case 'Tidak Hadir':
-        return 'close-circle';
-      default:
-        return 'help-circle';
+      case 'Ya': return 'checkmark-circle';
+      case 'Terlambat': return 'time';
+      case 'Tidak Hadir': return 'close-circle';
+      default: return 'help-circle';
     }
   };
 
@@ -107,15 +99,8 @@ const ChildAktivitasListScreen = () => {
           <Text style={styles.activityDate}>{formatDate(item.tanggal)}</Text>
         </View>
         
-        <View style={[
-          styles.attendanceStatus,
-          { backgroundColor: getAttendanceColor(item.attendance_status) }
-        ]}>
-          <Ionicons 
-            name={getAttendanceIcon(item.attendance_status)} 
-            size={16} 
-            color="#ffffff" 
-          />
+        <View style={[styles.attendanceStatus, { backgroundColor: getAttendanceColor(item.attendance_status) }]}>
+          <Ionicons name={getAttendanceIcon(item.attendance_status)} size={16} color="#ffffff" />
         </View>
       </View>
 
@@ -123,16 +108,12 @@ const ChildAktivitasListScreen = () => {
         <Text style={styles.activityTitle}>{item.materi}</Text>
         
         {item.level && item.nama_kelompok && (
-          <Text style={styles.levelGroup}>
-            {item.level} - {item.nama_kelompok}
-          </Text>
+          <Text style={styles.levelGroup}>{item.level} - {item.nama_kelompok}</Text>
         )}
         
         <View style={styles.timeInfo}>
           <Ionicons name="time-outline" size={14} color="#666" />
-          <Text style={styles.timeText}>
-            {item.start_time} - {item.end_time}
-          </Text>
+          <Text style={styles.timeText}>{item.start_time} - {item.end_time}</Text>
         </View>
 
         {item.materi_data && (
@@ -147,11 +128,8 @@ const ChildAktivitasListScreen = () => {
 
       <View style={styles.cardFooter}>
         <View style={styles.attendanceInfo}>
-          <Text style={styles.attendanceLabel}>Attendance:</Text>
-          <Text style={[
-            styles.attendanceText,
-            { color: getAttendanceColor(item.attendance_status) }
-          ]}>
+          <Text style={styles.attendanceLabel}>Kehadiran:</Text>
+          <Text style={[styles.attendanceText, { color: getAttendanceColor(item.attendance_status) }]}>
             {item.attendance_status}
           </Text>
           {item.attendance_verified && (
@@ -165,7 +143,7 @@ const ChildAktivitasListScreen = () => {
   );
 
   if (loading && !refreshing) {
-    return <LoadingSpinner fullScreen message="Loading activities..." />;
+    return <LoadingSpinner fullScreen message="Memuat aktivitas..." />;
   }
 
   return (
@@ -193,7 +171,7 @@ const ChildAktivitasListScreen = () => {
           <Ionicons name="calendar-outline" size={60} color="#cccccc" />
           <Text style={styles.emptyText}>Belum Ada Aktivitas</Text>
           <Text style={styles.emptySubText}>
-            {childName}'s learning activities will appear here when available
+            Aktivitas pembelajaran {childName} akan tampil di sini jika tersedia
           </Text>
         </View>
       )}
@@ -202,13 +180,8 @@ const ChildAktivitasListScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  listContainer: {
-    padding: 16,
-  },
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  listContainer: { padding: 16 },
   aktivitasCard: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
@@ -227,61 +200,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
-  activityInfo: {
-    flex: 1,
-  },
-  activityType: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginBottom: 2,
-  },
-  activityDate: {
-    fontSize: 14,
-    color: '#666666',
-  },
-  attendanceStatus: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cardContent: {
-    padding: 16,
-  },
-  activityTitle: {
-    fontSize: 16,
-    color: '#333333',
-    marginBottom: 8,
-    lineHeight: 22,
-  },
-  levelGroup: {
-    fontSize: 12,
-    color: '#9b59b6',
-    fontWeight: '500',
-    marginBottom: 8,
-  },
-  timeInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  timeText: {
-    fontSize: 12,
-    color: '#666666',
-    marginLeft: 4,
-  },
-  materialInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  materialText: {
-    fontSize: 12,
-    color: '#9b59b6',
-    marginLeft: 4,
-  },
+  activityInfo: { flex: 1 },
+  activityType: { fontSize: 16, fontWeight: 'bold', color: '#333333', marginBottom: 2 },
+  activityDate: { fontSize: 14, color: '#666666' },
+  attendanceStatus: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  cardContent: { padding: 16 },
+  activityTitle: { fontSize: 16, color: '#333333', marginBottom: 8, lineHeight: 22 },
+  levelGroup: { fontSize: 12, color: '#9b59b6', fontWeight: '500', marginBottom: 8 },
+  timeInfo: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  timeText: { fontSize: 12, color: '#666666', marginLeft: 4 },
+  materialInfo: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  materialText: { fontSize: 12, color: '#9b59b6', marginLeft: 4 },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -290,39 +219,12 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
   },
-  attendanceInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  attendanceLabel: {
-    fontSize: 12,
-    color: '#666666',
-    marginRight: 8,
-  },
-  attendanceText: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginRight: 4,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#999999',
-    textAlign: 'center',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubText: {
-    fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
+  attendanceInfo: { flexDirection: 'row', alignItems: 'center' },
+  attendanceLabel: { fontSize: 12, color: '#666666', marginRight: 8 },
+  attendanceText: { fontSize: 12, fontWeight: '600', marginRight: 4 },
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  emptyText: { fontSize: 18, color: '#999999', textAlign: 'center', marginTop: 16, marginBottom: 8 },
+  emptySubText: { fontSize: 14, color: '#666666', textAlign: 'center', lineHeight: 20 },
 });
 
 export default ChildAktivitasListScreen;
