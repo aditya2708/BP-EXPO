@@ -54,9 +54,9 @@ const KeluargaFormStepChild = ({
   
   const livingWithOptions = [
     { label: '-- Pilih Tinggal Bersama --', value: '' },
-    { label: 'Father', value: 'Ayah' },
-    { label: 'Mother', value: 'Ibu' },
-    { label: 'Guardian', value: 'Wali' },
+    { label: 'Ayah', value: 'Ayah' },
+    { label: 'Ibu', value: 'Ibu' },
+    { label: 'Wali', value: 'Wali' },
   ];
   
   const hafalanOptions = [
