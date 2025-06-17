@@ -545,8 +545,8 @@ const KeluargaFormScreen = () => {
         Alert.alert(
           'Success',
           isEditMode
-            ? 'Family information updated successfully'
-            : 'Family added successfully',
+            ? 'Informasi Keluarga Berhasil Diupdate'
+            : 'Keluarga Berhasil Ditambahkan',
           [
             {
               text: 'OK',

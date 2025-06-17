@@ -435,7 +435,7 @@ const KeluargaDetailScreen = () => {
                     <View style={styles.childInfo}>
                       <Text style={styles.childName}>{child.full_name}</Text>
                       <Text style={styles.childDetail}>
-                        {child.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'} • 
+                        {child.jenis_kelamin === 'Laki-laki' ? 'Laki-laki' : 'Perempuan'} • 
                         {child.tanggal_lahir ? ` ${formatDateToIndonesian(child.tanggal_lahir)}` : ''}
                       </Text>
                       <View style={[
