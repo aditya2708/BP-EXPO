@@ -19,7 +19,9 @@ const DonaturSelectionScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
   const [pagination, setPagination] = useState({ current_page: 1, last_page: 1 });
   const [loadingMore, setLoadingMore] = useState(false);
   const [selectedDonatur, setSelectedDonatur] = useState(null);
@@ -50,6 +52,7 @@ const DonaturSelectionScreen = () => {
       setLoading(false);
       setRefreshing(false);
       setLoadingMore(false);
+      setSearchLoading(false);
     }
   };
 
@@ -59,7 +62,9 @@ const DonaturSelectionScreen = () => {
 
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchDonatur(1, searchQuery);
+    setSearchInput('');
+    setSearchQuery('');
+    fetchDonatur(1, '');
   };
 
   const handleLoadMore = () => {
@@ -69,10 +74,29 @@ const DonaturSelectionScreen = () => {
     }
   };
 
-  const handleSearch = (query) => {
-    setSearchQuery(query);
+  const handleInputChange = (text) => {
+    setSearchInput(text);
+  };
+
+  const handleSearch = () => {
+    const trimmedInput = searchInput.trim();
+    
+    if (trimmedInput.length > 0 && trimmedInput.length < 3) {
+      Alert.alert('Peringatan', 'Masukkan minimal 3 karakter untuk pencarian');
+      return;
+    }
+
+    setSearchQuery(trimmedInput);
+    setSearchLoading(true);
+    setDonatur([]); // Clear existing data
+    fetchDonatur(1, trimmedInput);
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput('');
+    setSearchQuery('');
     setLoading(true);
-    fetchDonatur(1, query);
+    fetchDonatur(1, '');
   };
 
   const handleSelectDonatur = (donaturItem) => {
@@ -137,7 +161,7 @@ const DonaturSelectionScreen = () => {
         <View style={styles.childrenCountBadge}>
           <Ionicons name="people" size={16} color="#2ecc71" />
           <Text style={styles.childrenCountText}>
-            {item.anak_count || 0}/3 anak binaan
+            {item.anak_count || 0} Anak Asuh
           </Text>
         </View>
         <Text style={styles.statusText}>
@@ -175,7 +199,7 @@ const DonaturSelectionScreen = () => {
     </View>
   );
 
-  if (loading && !refreshing) {
+  if (loading && !refreshing && !searchLoading) {
     return <LoadingSpinner fullScreen message="Memuat data donatur..." />;
   }
 
@@ -202,10 +226,26 @@ const DonaturSelectionScreen = () => {
 
       <View style={styles.searchContainer}>
         <SearchBar
-          value={searchQuery}
-          onChangeText={handleSearch}
+          value={searchInput}
+          onChangeText={handleInputChange}
           placeholder="Cari nama donatur..."
+          showSearchButton={true}
+          onSearch={handleSearch}
+          loading={searchLoading}
+          disabled={loading}
         />
+        
+        {searchQuery && (
+          <View style={styles.searchInfo}>
+            <Text style={styles.searchInfoText}>
+              Hasil pencarian: "{searchQuery}"
+            </Text>
+            <TouchableOpacity onPress={handleClearSearch} style={styles.clearButton}>
+              <Ionicons name="close-circle" size={20} color="#e74c3c" />
+              <Text style={styles.clearButtonText}>Hapus</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {error && (
@@ -257,6 +297,21 @@ const styles = StyleSheet.create({
   childSummaryDetail: { fontSize: 14, color: '#666', marginTop: 2 },
   headerSubtitle: { fontSize: 14, color: '#666' },
   searchContainer: { padding: 16, backgroundColor: '#fff' },
+  searchInfo: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginTop: 12, 
+    paddingHorizontal: 8 
+  },
+  searchInfoText: { fontSize: 14, color: '#666', flex: 1 },
+  clearButton: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingHorizontal: 8, 
+    paddingVertical: 4 
+  },
+  clearButtonText: { fontSize: 14, color: '#e74c3c', marginLeft: 4 },
   listContainer: { padding: 16 },
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
   cardHeader: { flexDirection: 'row', marginBottom: 12 },

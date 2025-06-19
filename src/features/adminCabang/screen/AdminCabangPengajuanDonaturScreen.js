@@ -15,7 +15,9 @@ const AdminCabangPengajuanDonaturScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
   const [pagination, setPagination] = useState({ current_page: 1, last_page: 1 });
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -47,6 +49,7 @@ const AdminCabangPengajuanDonaturScreen = () => {
       setLoading(false);
       setRefreshing(false);
       setLoadingMore(false);
+      setSearchLoading(false);
     }
   };
 
@@ -64,7 +67,9 @@ const AdminCabangPengajuanDonaturScreen = () => {
 
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchChildren(1, searchQuery);
+    setSearchInput('');
+    setSearchQuery('');
+    fetchChildren(1, '');
   };
 
   const handleLoadMore = () => {
@@ -74,10 +79,29 @@ const AdminCabangPengajuanDonaturScreen = () => {
     }
   };
 
-  const handleSearch = (query) => {
-    setSearchQuery(query);
+  const handleInputChange = (text) => {
+    setSearchInput(text);
+  };
+
+  const handleSearch = () => {
+    const trimmedInput = searchInput.trim();
+    
+    if (trimmedInput.length > 0 && trimmedInput.length < 3) {
+      Alert.alert('Peringatan', 'Masukkan minimal 3 karakter untuk pencarian');
+      return;
+    }
+
+    setSearchQuery(trimmedInput);
+    setSearchLoading(true);
+    setChildren([]); // Clear existing data
+    fetchChildren(1, trimmedInput);
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput('');
+    setSearchQuery('');
     setLoading(true);
-    fetchChildren(1, query);
+    fetchChildren(1, '');
   };
 
   const handleSelectDonatur = (child) => {
@@ -108,9 +132,6 @@ const AdminCabangPengajuanDonaturScreen = () => {
             <Text style={styles.detailText}>
               <Ionicons name="calendar-outline" size={14} color="#666" /> {item.umur} tahun
             </Text>
-            {/* <Text style={styles.detailText}>
-              <Ionicons name="school-outline" size={14} color="#666" /> {item.anakPendidikan?.tingkat || 'N/A'}
-            </Text> */}
           </View>
           <Text style={styles.shelterText}>
             <Ionicons name="home-outline" size={14} color="#666" /> {item.shelter?.nama_shelter}
@@ -164,7 +185,7 @@ const AdminCabangPengajuanDonaturScreen = () => {
     </View>
   );
 
-  if (loading && !refreshing) {
+  if (loading && !refreshing && !searchLoading) {
     return <LoadingSpinner fullScreen message="Memuat data anak CPB..." />;
   }
 
@@ -179,10 +200,26 @@ const AdminCabangPengajuanDonaturScreen = () => {
 
       <View style={styles.searchContainer}>
         <SearchBar
-          value={searchQuery}
-          onChangeText={handleSearch}
+          value={searchInput}
+          onChangeText={handleInputChange}
           placeholder="Cari nama anak..."
+          showSearchButton={true}
+          onSearch={handleSearch}
+          loading={searchLoading}
+          disabled={loading}
         />
+        
+        {searchQuery && (
+          <View style={styles.searchInfo}>
+            <Text style={styles.searchInfoText}>
+              Hasil pencarian: "{searchQuery}"
+            </Text>
+            <TouchableOpacity onPress={handleClearSearch} style={styles.clearButton}>
+              <Ionicons name="close-circle" size={20} color="#e74c3c" />
+              <Text style={styles.clearButtonText}>Hapus</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {error && (
@@ -216,6 +253,21 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#333' },
   headerSubtitle: { fontSize: 14, color: '#666', marginTop: 4 },
   searchContainer: { padding: 16, backgroundColor: '#fff' },
+  searchInfo: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginTop: 12, 
+    paddingHorizontal: 8 
+  },
+  searchInfoText: { fontSize: 14, color: '#666', flex: 1 },
+  clearButton: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    paddingHorizontal: 8, 
+    paddingVertical: 4 
+  },
+  clearButtonText: { fontSize: 14, color: '#e74c3c', marginLeft: 4 },
   listContainer: { padding: 16 },
   card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
   cardHeader: { flexDirection: 'row', marginBottom: 12 },
