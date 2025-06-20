@@ -37,7 +37,7 @@ const DonaturProfileScreen = () => {
       });
 
       if (profile.foto) {
-        setProfileImage(`https://berbagipendidikan.org/storage/Donatur/${profile.id_donatur}/${profile.foto}`);
+        setProfileImage(`http://192.168.8.105:8000/storage/Donatur/${profile.id_donatur}/${profile.foto}`);
       }
     }
   }, [profile, user]);
@@ -201,7 +201,7 @@ const DonaturProfileScreen = () => {
                 <View key={index} style={styles.childItem}>
                   {child.foto ? (
                     <Image
-                      source={{ uri: `https://berbagipendidikan.org/storage/Children/${child.id_anak}/${child.foto}` }}
+                      source={{ uri: `http://192.168.8.105:8000/storage/Children/${child.id_anak}/${child.foto}` }}
                       style={styles.childImage}
                     />
                   ) : (

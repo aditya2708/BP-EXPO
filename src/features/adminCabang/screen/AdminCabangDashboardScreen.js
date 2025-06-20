@@ -6,6 +6,7 @@ import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../common/components/ErrorMessage';
 import { adminCabangApi } from '../api/adminCabangApi';
 import { adminCabangSurveyApi } from '../api/adminCabangSurveyApi';
+import { adminCabangDonaturApi } from '../api/adminCabangDonaturApi';
 import { useAuth } from '../../../common/hooks/useAuth';
 
 const { width } = Dimensions.get('window');
@@ -15,6 +16,7 @@ const AdminCabangDashboardScreen = () => {
   const { user, profile } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [surveyStats, setSurveyStats] = useState({});
+  const [donaturStats, setDonaturStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -22,12 +24,14 @@ const AdminCabangDashboardScreen = () => {
   const fetchDashboardData = async () => {
     try {
       setError(null);
-      const [dashboardResponse, statsResponse] = await Promise.all([
+      const [dashboardResponse, statsResponse, donaturStatsResponse] = await Promise.all([
         adminCabangApi.getDashboard(),
-        adminCabangSurveyApi.getStats()
+        adminCabangSurveyApi.getStats(),
+        adminCabangDonaturApi.getStats()
       ]);
       setDashboardData(dashboardResponse.data.data);
       setSurveyStats(statsResponse.data.data);
+      setDonaturStats(donaturStatsResponse.data.data);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
       setError('Gagal memuat data dashboard. Silakan coba lagi.');
@@ -41,12 +45,14 @@ const AdminCabangDashboardScreen = () => {
 
   const handleRefresh = () => { setRefreshing(true); fetchDashboardData(); };
   const navigateToSurveyManagement = () => navigation.navigate('Management');
+  const navigateToDonaturManagement = () => navigation.navigate('DonaturManagement');
   const navigateToProfile = () => navigation.navigate('ProfileTab');
 
   if (loading && !refreshing) return <LoadingSpinner fullScreen message="Memuat dashboard..." />;
 
   const quickActions = [
     { title: 'Manajemen Survey', description: 'Kelola semua persetujuan survey', icon: 'document-text', color: '#f39c12', onPress: navigateToSurveyManagement, badge: surveyStats.pending },
+    { title: 'Manajemen Donatur', description: 'Kelola data donatur cabang', icon: 'people', color: '#3498db', onPress: navigateToDonaturManagement, badge: donaturStats.total_donatur },
     { title: 'Laporan', description: 'Lihat statistik persetujuan', icon: 'stats-chart', color: '#9b59b6' },
     { title: 'Bantuan', description: 'Dapatkan dukungan dan panduan', icon: 'help-circle', color: '#2ecc71' }
   ];
@@ -54,6 +60,7 @@ const AdminCabangDashboardScreen = () => {
   const statsData = [
     { icon: 'map-outline', color: '#2ecc71', value: dashboardData?.wilbin_count || 0, label: 'Wilayah Binaan' },
     { icon: 'home-outline', color: '#e74c3c', value: dashboardData?.shelter_count || 0, label: 'Shelter' },
+    { icon: 'people-outline', color: '#3498db', value: donaturStats.total_donatur || 0, label: 'Donatur' },
     { icon: 'document-text-outline', color: '#f39c12', value: surveyStats.pending || 0, label: 'Survey Tertunda' }
   ];
 
@@ -61,6 +68,12 @@ const AdminCabangDashboardScreen = () => {
     { icon: 'time-outline', color: '#f39c12', value: surveyStats.pending || 0, label: 'Tertunda' },
     { icon: 'checkmark-circle-outline', color: '#27ae60', value: surveyStats.approved || 0, label: 'Disetujui' },
     { icon: 'close-circle-outline', color: '#e74c3c', value: surveyStats.rejected || 0, label: 'Ditolak' }
+  ];
+
+  const donaturStatsData = [
+    { icon: 'people-outline', color: '#3498db', value: donaturStats.total_donatur || 0, label: 'Total Donatur' },
+    { icon: 'person-add-outline', color: '#27ae60', value: donaturStats.donatur_with_children || 0, label: 'Dengan Anak' },
+    { icon: 'person-outline', color: '#95a5a6', value: donaturStats.donatur_without_children || 0, label: 'Belum Memiliki' }
   ];
 
   const StatCard = ({ icon, color, value, label, horizontal = false }) => (
@@ -93,7 +106,7 @@ const AdminCabangDashboardScreen = () => {
           </View>
           <TouchableOpacity style={styles.profileImageContainer} onPress={navigateToProfile}>
             {profile?.foto ? (
-              <Image source={{ uri: `https://berbagipendidikan.org/storage/AdminCabang/${profile.id_admin_cabang}/${profile.foto}` }} style={styles.profileImage} />
+              <Image source={{ uri: `http://192.168.8.105:8000/storage/AdminCabang/${profile.id_admin_cabang}/${profile.foto}` }} style={styles.profileImage} />
             ) : (
               <View style={styles.profileImagePlaceholder}>
                 <Ionicons name="person" size={24} color="#ffffff" />
@@ -111,6 +124,13 @@ const AdminCabangDashboardScreen = () => {
         <Text style={styles.sectionTitle}>Statistik Survey</Text>
         <View style={styles.surveyStatsGrid}>
           {surveyStatsData.map((stat, index) => <StatCard key={index} {...stat} />)}
+        </View>
+      </View>
+
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Statistik Donatur</Text>
+        <View style={styles.surveyStatsGrid}>
+          {donaturStatsData.map((stat, index) => <StatCard key={index} {...stat} />)}
         </View>
       </View>
 

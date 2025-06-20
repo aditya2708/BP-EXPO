@@ -35,7 +35,7 @@ const AdminCabangProfileScreen = () => {
       });
 
       if (profile.foto) {
-        setProfileImage(`https://berbagipendidikan.org/storage/AdminCabang/${profile.id_admin_cabang}/${profile.foto}`);
+        setProfileImage(`http://192.168.8.105:8000/storage/AdminCabang/${profile.id_admin_cabang}/${profile.foto}`);
       }
     }
   }, [profile, user]);

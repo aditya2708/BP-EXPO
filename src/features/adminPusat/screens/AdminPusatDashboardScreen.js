@@ -100,7 +100,7 @@ const AdminPusatDashboardScreen = () => {
         >
           {profile?.foto ? (
             <Image
-              source={{ uri: `https://berbagipendidikan.org/storage/AdminPusat/${profile.id_admin_pusat}/${profile.foto}` }}
+              source={{ uri: `http://192.168.8.105:8000/storage/AdminPusat/${profile.id_admin_pusat}/${profile.foto}` }}
               style={styles.profileImage}
             />
           ) : (
