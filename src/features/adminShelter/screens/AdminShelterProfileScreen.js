@@ -35,7 +35,7 @@ const AdminShelterProfileScreen = () => {
       });
 
       if (profile.foto) {
-        setProfileImage(`https://berbagipendidikan.org/storage/AdminShelter/${profile.id_admin_shelter}/${profile.foto}`);
+        setProfileImage(`http://192.168.8.105:8000/storage/AdminShelter/${profile.id_admin_shelter}/${profile.foto}`);
       }
     }
   }, [profile, user]);
@@ -185,7 +185,7 @@ const AdminShelterProfileScreen = () => {
             <View style={styles.shelterInfoCard}>
               {profile.shelter.foto && (
                 <Image 
-                  source={{ uri: `https://berbagipendidikan.org/storage/AdminShelter/Shelter/${profile.shelter.foto}` }}
+                  source={{ uri: `http://192.168.8.105:8000/storage/AdminShelter/Shelter/${profile.shelter.foto}` }}
                   style={styles.shelterImage}
                 />
               )}
