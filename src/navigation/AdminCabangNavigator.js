@@ -10,11 +10,16 @@ import SurveyApprovalDetailScreen from '../features/adminCabang/screen/SurveyApp
 import AdminCabangPengajuanDonaturScreen from '../features/adminCabang/screen/AdminCabangPengajuanDonaturScreen';
 import DonaturSelectionScreen from '../features/adminCabang/screen/DonaturSelectionScreen';
 import ChildDetailScreen from '../features/adminCabang/screen/ChildDetailScreen';
+import AdminCabangDonaturListScreen from '../features/adminCabang/screen/AdminCabangDonaturListScreen';
+import AdminCabangDonaturFormScreen from '../features/adminCabang/screen/AdminCabangDonaturFormScreen';
+import AdminCabangDonaturDetailScreen from '../features/adminCabang/screen/AdminCabangDonaturDetailScreen';
+import DonaturFilterScreen from '../features/adminCabang/screen/DonaturFilterScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
 const ManagementStack = createStackNavigator();
 const PengajuanDonaturStack = createStackNavigator();
+const DonaturStack = createStackNavigator();
 const ProfileStack = createStackNavigator();
 
 const HomeStackNavigator = () => {
@@ -73,6 +78,35 @@ const PengajuanDonaturStackNavigator = () => {
   );
 };
 
+const DonaturStackNavigator = () => {
+  return (
+    <DonaturStack.Navigator>
+      <DonaturStack.Screen 
+        name="DonaturList" 
+        component={AdminCabangDonaturListScreen} 
+        options={{ headerTitle: 'Manajemen Donatur' }}
+      />
+      <DonaturStack.Screen 
+        name="DonaturForm" 
+        component={AdminCabangDonaturFormScreen} 
+        options={({ route }) => ({
+          headerTitle: route.params?.donaturId ? 'Edit Donatur' : 'Tambah Donatur'
+        })}
+      />
+      <DonaturStack.Screen 
+        name="DonaturDetail" 
+        component={AdminCabangDonaturDetailScreen} 
+        options={{ headerTitle: 'Detail Donatur' }}
+      />
+      <DonaturStack.Screen 
+        name="DonaturFilter" 
+        component={DonaturFilterScreen} 
+        options={{ headerTitle: 'Filter Donatur' }}
+      />
+    </DonaturStack.Navigator>
+  );
+};
+
 const ProfileStackNavigator = () => {
   return (
     <ProfileStack.Navigator>
@@ -98,6 +132,8 @@ const AdminCabangNavigator = () => {
             iconName = focused ? 'document-text' : 'document-text-outline';
           } else if (route.name === 'PengajuanDonatur') {
             iconName = focused ? 'person-add' : 'person-add-outline';
+          } else if (route.name === 'DonaturManagement') {
+            iconName = focused ? 'people' : 'people-outline';
           } else if (route.name === 'ProfileTab') {
             iconName = focused ? 'person' : 'person-outline';
           }
@@ -107,6 +143,9 @@ const AdminCabangNavigator = () => {
         tabBarActiveTintColor: '#2ecc71',
         tabBarInactiveTintColor: 'gray',
         headerShown: false,
+        tabBarLabelStyle: {
+          fontSize: 11,
+        },
       })}
     >
       <Tab.Screen 
@@ -117,12 +156,17 @@ const AdminCabangNavigator = () => {
       <Tab.Screen 
         name="Management" 
         component={ManagementStackNavigator} 
-        options={{ tabBarLabel: 'Manajemen Survei' }}
+        options={{ tabBarLabel: 'Survei' }}
       />
       <Tab.Screen 
         name="PengajuanDonatur" 
         component={PengajuanDonaturStackNavigator} 
-        options={{ tabBarLabel: 'Pengajuan Donatur' }}
+        options={{ tabBarLabel: 'Pengajuan' }}
+      />
+      <Tab.Screen 
+        name="DonaturManagement" 
+        component={DonaturStackNavigator} 
+        options={{ tabBarLabel: 'Donatur' }}
       />
       <Tab.Screen 
         name="ProfileTab" 

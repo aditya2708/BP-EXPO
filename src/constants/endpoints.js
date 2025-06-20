@@ -45,11 +45,21 @@ export const ADMIN_CABANG_ENDPOINTS = {
     REJECT: (id) => `/admin-cabang/survey-approval/${id}/reject`
   },
   PENGAJUAN_DONATUR: {
-  CPB_CHILDREN: '/admin-cabang/pengajuan-donatur/cpb-children',
-  AVAILABLE_DONATUR: '/admin-cabang/pengajuan-donatur/available-donatur',
-  ASSIGN_DONATUR: '/admin-cabang/pengajuan-donatur/assign-donatur',
-  CHILD_DETAIL: (id) => `/admin-cabang/pengajuan-donatur/child-detail/${id}`
-}
+    CPB_CHILDREN: '/admin-cabang/pengajuan-donatur/cpb-children',
+    AVAILABLE_DONATUR: '/admin-cabang/pengajuan-donatur/available-donatur',
+    ASSIGN_DONATUR: '/admin-cabang/pengajuan-donatur/assign-donatur',
+    CHILD_DETAIL: (id) => `/admin-cabang/pengajuan-donatur/child-detail/${id}`
+  },
+  DONATUR: {
+    LIST: '/admin-cabang/donatur',
+    CREATE: '/admin-cabang/donatur',
+    DETAIL: (id) => `/admin-cabang/donatur/${id}`,
+    UPDATE: (id) => `/admin-cabang/donatur/${id}`,
+    DELETE: (id) => `/admin-cabang/donatur/${id}`,
+    FILTER_OPTIONS: '/admin-cabang/donatur-filter-options',
+    SHELTERS_BY_WILBIN: (wilbinId) => `/admin-cabang/donatur-shelters/${wilbinId}`,
+    STATS: '/admin-cabang/donatur-stats'
+  }
 };
 
 export const ADMIN_SHELTER_ENDPOINTS = {
