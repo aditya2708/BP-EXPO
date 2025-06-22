@@ -74,6 +74,12 @@ import KeuanganListScreen from '../features/adminShelter/screens/KeuanganListScr
 import KeuanganFormScreen from '../features/adminShelter/screens/KeuanganFormScreen';
 import KeuanganDetailScreen from '../features/adminShelter/screens/KeuanganDetailScreen';
 
+import LaporanKegiatanMainScreen from '../features/adminShelter/screens/reports/LaporanKegiatanMainScreen';
+import LaporanAnakBinaanScreen from '../features/adminShelter/screens/reports/LaporanAnakBinaanScreen';
+import LaporanTutorScreen from '../features/adminShelter/screens/reports/LaporanTutorScreen';
+import ShelterReportScreen from '../features/adminShelter/screens/reports/ShelterReportScreen';
+import CPBReportScreen from '../features/adminShelter/screens/reports/CPBReportScreen';
+
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
 const ManagementStack = createStackNavigator();
@@ -103,6 +109,11 @@ const AttendanceStackNavigator = () => (
 
 const ManagementStackNavigator = () => (
   <ManagementStack.Navigator>
+    <ManagementStack.Screen name="LaporanKegiatanMain" component={LaporanKegiatanMainScreen} options={{ headerTitle: 'Laporan Kegiatan' }} />
+    <ManagementStack.Screen name="LaporanAnakBinaan" component={LaporanAnakBinaanScreen} options={{ headerTitle: 'Laporan Anak Binaan' }} />
+    <ManagementStack.Screen name="LaporanTutor" component={LaporanTutorScreen} options={{ headerTitle: 'Laporan Tutor' }} />
+    <ManagementStack.Screen name="ShelterReport" component={ShelterReportScreen} options={{ headerTitle: 'Shelter Report' }} />
+    <ManagementStack.Screen name="CPBReport" component={CPBReportScreen} options={{ headerTitle: 'CPB Report' }} />
     <ManagementStack.Screen name="TutorActivityHistory" component={TutorActivityHistoryScreen} options={{ headerTitle: 'Riwayat Aktivitas Tutor' }} />
     <ManagementStack.Screen name="TutorHonorHistory" component={TutorHonorHistoryScreen} options={{ headerTitle: 'Riwayat Honor Tutor' }} />
     <ManagementStack.Screen name="Surat" component={SuratScreen} options={{ headerTitle: 'Surat Anak' }} />
@@ -185,13 +196,7 @@ const AdminShelterNavigator = () => {
   };
 
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => getTabBarIcon(route, focused, color, size),
-        tabBarActiveTintColor: '#e74c3c',
-        tabBarInactiveTintColor: 'gray',
-        headerShown: false,
-      })}>
+    <Tab.Navigator screenOptions={({ route }) => ({ tabBarIcon: ({ focused, color, size }) => getTabBarIcon(route, focused, color, size), tabBarActiveTintColor: '#e74c3c', tabBarInactiveTintColor: 'gray', headerShown: false })}>
       <Tab.Screen name="Home" component={HomeStackNavigator} options={{ tabBarLabel: 'Home' }} />
       <Tab.Screen name="Management" component={ManagementStackNavigator} options={{ tabBarLabel: 'Manajemen' }} />
       <Tab.Screen name="Attendance" component={AttendanceStackNavigator} options={{ tabBarLabel: 'Aktivitas' }} />
