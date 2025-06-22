@@ -61,8 +61,7 @@ const AdminShelterDashboardScreen = () => {
   const navigateToProfile = () => navigation.navigate('ProfileTab');
   const navigateToTutorManagement = () => navigation.navigate('Management', { screen: 'TutorManagement' });
   const navigateToKeluargaManagement = () => navigation.navigate('Management', { screen: 'KeluargaManagement' });
-  
-  
+  const navigateToKeuanganManagement = () => navigation.navigate('Management', { screen: 'KeuanganList' });
 
   // Show loading indicator
   if (loading && !refreshing) {
@@ -125,6 +124,16 @@ const AdminShelterDashboardScreen = () => {
             <Ionicons name="school" size={32} color="#ffffff" />
           </View>
           <Text style={styles.menuText}>Tutor</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={navigateToKeuanganManagement}
+        >
+          <View style={[styles.menuIcon, { backgroundColor: '#f39c12' }]}>
+            <Ionicons name="wallet" size={32} color="#ffffff" />
+          </View>
+          <Text style={styles.menuText}>Keuangan</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
