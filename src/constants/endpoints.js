@@ -70,6 +70,15 @@ export const ADMIN_SHELTER_ENDPOINTS = {
     DETAIL: (id) => `/admin-shelter/anak/${id}`,
     TOGGLE_STATUS: (id) => `/admin-shelter/anak/${id}/toggle-status`
   },
+  KEUANGAN: {
+    LIST: '/admin-shelter/keuangan',
+    DETAIL: (id) => `/admin-shelter/keuangan/${id}`,
+    CREATE: '/admin-shelter/keuangan',
+    UPDATE: (id) => `/admin-shelter/keuangan/${id}`,
+    DELETE: (id) => `/admin-shelter/keuangan/${id}`,
+    BY_CHILD: (childId) => `/admin-shelter/keuangan/child/${childId}`,
+    STATISTICS: '/admin-shelter/keuangan-statistics'
+  },
   RAPORT: {
     LIST: (childId) => `/admin-shelter/anak/${childId}/raport`,
     CREATE: (childId) => `/admin-shelter/anak/${childId}/raport/create`,
@@ -171,6 +180,14 @@ export const DONATUR_ENDPOINTS = {
     LIST: (childId) => `/donatur/children/${childId}/aktivitas`,
     DETAIL: (childId, aktivitasId) => `/donatur/children/${childId}/aktivitas/${aktivitasId}`,
     ATTENDANCE_SUMMARY: (childId) => `/donatur/children/${childId}/attendance-summary`
+  },
+
+  BILLING: {
+    LIST: '/donatur/billing',
+    DETAIL: (id) => `/donatur/billing/${id}`,
+    BY_CHILD: (childId) => `/donatur/billing/child/${childId}`,
+    SUMMARY: '/donatur/billing-summary',
+    SEMESTERS: '/donatur/billing-semesters'
   },
 
   MARKETPLACE: {

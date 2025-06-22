@@ -76,6 +76,10 @@ import RaportFormalFormScreen from '../features/adminShelter/screens/anakDetail/
 import TutorHonorHistoryScreen from '../features/adminShelter/screens/TutorHonorHistoryScreen';
 import HonorCalculationScreen from '../features/adminShelter/screens/HonorCalculationScreen';
 
+import KeuanganListScreen from '../features/adminShelter/screens/KeuanganListScreen';
+import KeuanganFormScreen from '../features/adminShelter/screens/KeuanganFormScreen';
+import KeuanganDetailScreen from '../features/adminShelter/screens/KeuanganDetailScreen';
+
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
 const ManagementStack = createStackNavigator();
@@ -479,6 +483,24 @@ const ManagementStackNavigator = () => {
         options={({ route }) => ({ 
           headerTitle: route.params?.isEdit ? 'Edit Raport Formal' : 'Tambah Raport Formal'
         })}
+      />
+      
+      <ManagementStack.Screen 
+        name="KeuanganList" 
+        component={KeuanganListScreen} 
+        options={{ headerTitle: 'Laporan Keuangan' }}
+      />
+      <ManagementStack.Screen 
+        name="KeuanganForm" 
+        component={KeuanganFormScreen} 
+        options={({ route }) => ({ 
+          headerTitle: route.params?.isEdit ? 'Edit Keuangan' : 'Tambah Keuangan'
+        })}
+      />
+      <ManagementStack.Screen 
+        name="KeuanganDetail" 
+        component={KeuanganDetailScreen} 
+        options={{ headerTitle: 'Detail Keuangan' }}
       />
     </ManagementStack.Navigator>
   );
