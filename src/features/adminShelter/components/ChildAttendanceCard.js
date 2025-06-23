@@ -52,7 +52,7 @@ const ChildAttendanceCard = ({
             <Image 
               source={{ uri: child.foto_url }}
               style={styles.photo}
-              defaultSource={require('../../../../assets/images/default-avatar.png')}
+              defaultSource={require('../../../../src/assets/images/logo.png')}
             />
           </TouchableOpacity>
           
