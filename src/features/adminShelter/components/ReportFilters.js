@@ -14,11 +14,14 @@ const ReportFilters = ({
   filterOptions,
   onYearChange,
   onActivityTypeChange,
-  onClearFilter
+  onMapelChange,
+  onClearFilter,
+  showMapelFilter = false
 }) => {
   
   const [showYearModal, setShowYearModal] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
+  const [showMapelModal, setShowMapelModal] = useState(false);
 
   const handleYearChange = (year) => {
     setShowYearModal(false);
@@ -28,6 +31,11 @@ const ReportFilters = ({
   const handleActivityTypeChange = (jenisKegiatan) => {
     setShowActivityModal(false);
     onActivityTypeChange(jenisKegiatan);
+  };
+
+  const handleMapelChange = (maple) => {
+    setShowMapelModal(false);
+    onMapelChange(maple);
   };
 
   const renderYearModal = () => (
@@ -136,14 +144,77 @@ const ReportFilters = ({
     </Modal>
   );
 
+  const renderMapelModal = () => (
+    <Modal
+      visible={showMapelModal}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setShowMapelModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Pilih Mata Pelajaran</Text>
+            <TouchableOpacity onPress={() => setShowMapelModal(false)}>
+              <Ionicons name="close" size={24} color="#666" />
+            </TouchableOpacity>
+          </View>
+          
+          <TouchableOpacity
+            style={[
+              styles.modalItem,
+              !filters.maple && styles.modalItemSelected
+            ]}
+            onPress={() => handleMapelChange(null)}
+          >
+            <Text style={[
+              styles.modalItemText,
+              !filters.maple && styles.modalItemTextSelected
+            ]}>
+              Semua Mapel
+            </Text>
+            {!filters.maple && (
+              <Ionicons name="checkmark" size={20} color="#9b59b6" />
+            )}
+          </TouchableOpacity>
+          
+          <FlatList
+            data={filterOptions.availableMapel || []}
+            keyExtractor={(item) => item}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[
+                  styles.modalItem,
+                  filters.maple === item && styles.modalItemSelected
+                ]}
+                onPress={() => handleMapelChange(item)}
+              >
+                <Text style={[
+                  styles.modalItemText,
+                  filters.maple === item && styles.modalItemTextSelected
+                ]}>
+                  {item}
+                </Text>
+                {filters.maple === item && (
+                  <Ionicons name="checkmark" size={20} color="#9b59b6" />
+                )}
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+
+  const hasActiveFilters = filters.jenisKegiatan || filters.maple;
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Filter Laporan</Text>
       
       <View style={styles.filterRow}>
-        {/* Year Filter */}
         <TouchableOpacity 
-          style={styles.filterButton}
+          style={[styles.filterButton, showMapelFilter && styles.filterButtonSmall]}
           onPress={() => setShowYearModal(true)}
         >
           <Text style={styles.filterButtonText}>
@@ -152,9 +223,8 @@ const ReportFilters = ({
           <Ionicons name="chevron-down" size={16} color="#666" />
         </TouchableOpacity>
 
-        {/* Activity Type Filter */}
         <TouchableOpacity 
-          style={styles.filterButton}
+          style={[styles.filterButton, showMapelFilter && styles.filterButtonSmall]}
           onPress={() => setShowActivityModal(true)}
         >
           <Text style={styles.filterButtonText}>
@@ -162,10 +232,21 @@ const ReportFilters = ({
           </Text>
           <Ionicons name="chevron-down" size={16} color="#666" />
         </TouchableOpacity>
+
+        {showMapelFilter && (
+          <TouchableOpacity 
+            style={[styles.filterButton, styles.filterButtonSmall]}
+            onPress={() => setShowMapelModal(true)}
+          >
+            <Text style={styles.filterButtonText}>
+              {filters.maple || 'Semua Mapel'}
+            </Text>
+            <Ionicons name="chevron-down" size={16} color="#666" />
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* Clear filters */}
-      {filters.jenisKegiatan && (
+      {hasActiveFilters && (
         <TouchableOpacity 
           style={styles.clearFilterButton}
           onPress={() => onClearFilter()}
@@ -177,6 +258,7 @@ const ReportFilters = ({
 
       {renderYearModal()}
       {renderActivityModal()}
+      {showMapelFilter && renderMapelModal()}
     </View>
   );
 };
@@ -212,9 +294,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginHorizontal: 4
   },
+  filterButtonSmall: {
+    flex: 0.32
+  },
   filterButtonText: {
     fontSize: 14,
-    color: '#333'
+    color: '#333',
+    flex: 1,
+    marginRight: 4
   },
   clearFilterButton: {
     flexDirection: 'row',
@@ -233,7 +320,6 @@ const styles = StyleSheet.create({
     marginLeft: 4
   },
 
-  // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
