@@ -12,6 +12,7 @@ import semesterReducer from '../features/adminShelter/redux/semesterSlice';
 import tutorAttendaceReducer from '../features/adminShelter/redux/tutorAttendanceSlice';
 import laporanReducer from '../features/adminShelter/redux/laporanSlice';
 import tutorLaporanReducer from '../features/adminShelter/redux/tutorLaporanSlice';
+import cpbLaporanReducer from '../features/adminShelter/redux/cpbLaporanSlice';
 
 const appReducer = combineReducers({
   auth: authReducer,
@@ -27,6 +28,7 @@ const appReducer = combineReducers({
   tutorAttendance: tutorAttendaceReducer,
   laporan: laporanReducer,
   tutorLaporan: tutorLaporanReducer,
+  cpbLaporan: cpbLaporanReducer,
 });
 
 const rootReducer = (state, action) => {
