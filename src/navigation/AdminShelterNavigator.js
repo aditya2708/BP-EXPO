@@ -79,6 +79,10 @@ import LaporanAnakBinaanScreen from '../features/adminShelter/screens/reports/La
 import LaporanTutorScreen from '../features/adminShelter/screens/reports/LaporanTutorScreen';
 import ShelterReportScreen from '../features/adminShelter/screens/reports/ShelterReportScreen';
 import CPBReportScreen from '../features/adminShelter/screens/reports/CPBReportScreen';
+import LaporanRaportAnakScreen from '../features/adminShelter/screens/reports/LaporanRaportAnakScreen';
+import LaporanHistoriAnakScreen from '../features/adminShelter/screens/reports/LaporanHistoriAnakScreen';
+import LaporanAktivitasScreen from '../features/adminShelter/screens/reports/LaporanAktivitasScreen';
+import LaporanSuratAnakScreen from '../features/adminShelter/screens/reports/LaporanSuratAnakScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
@@ -114,6 +118,10 @@ const ManagementStackNavigator = () => (
     <ManagementStack.Screen name="LaporanTutor" component={LaporanTutorScreen} options={{ headerTitle: 'Laporan Tutor' }} />
     <ManagementStack.Screen name="ShelterReport" component={ShelterReportScreen} options={{ headerTitle: 'Shelter Report' }} />
     <ManagementStack.Screen name="CPBReport" component={CPBReportScreen} options={{ headerTitle: 'CPB Report' }} />
+    <ManagementStack.Screen name="LaporanRaportAnak" component={LaporanRaportAnakScreen} options={{ headerTitle: 'Laporan Raport Anak' }} />
+    <ManagementStack.Screen name="LaporanHistoriAnak" component={LaporanHistoriAnakScreen} options={{ headerTitle: 'Laporan Histori Anak' }} />
+    <ManagementStack.Screen name="LaporanAktivitas" component={LaporanAktivitasScreen} options={{ headerTitle: 'Laporan Aktivitas' }} />
+    <ManagementStack.Screen name="LaporanSuratAnak" component={LaporanSuratAnakScreen} options={{ headerTitle: 'Laporan Surat Anak' }} />
     <ManagementStack.Screen name="TutorActivityHistory" component={TutorActivityHistoryScreen} options={{ headerTitle: 'Riwayat Aktivitas Tutor' }} />
     <ManagementStack.Screen name="TutorHonorHistory" component={TutorHonorHistoryScreen} options={{ headerTitle: 'Riwayat Honor Tutor' }} />
     <ManagementStack.Screen name="Surat" component={SuratScreen} options={{ headerTitle: 'Surat Anak' }} />
