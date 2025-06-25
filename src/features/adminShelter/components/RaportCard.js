@@ -1,266 +1,405 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const RaportCard = ({ 
-  raport, 
-  onPress, 
-  onPublish,
-  onArchive,
-  onDelete,
-  showActions = true 
+const RaportCard = ({
+  child,
+  expanded = false,
+  onToggle,
+  onViewDetail,
+  onRaportDetail
 }) => {
   const getStatusColor = (status) => {
     switch (status) {
-      case 'published': return '#2ecc71';
-      case 'draft': return '#f39c12';
-      case 'archived': return '#95a5a6';
-      default: return '#7f8c8d';
+      case 'published': return '#4caf50';
+      case 'draft': return '#ff9800';
+      case 'archived': return '#9e9e9e';
+      default: return '#9e9e9e';
     }
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusText = (status) => {
     switch (status) {
-      case 'published': return 'checkmark-circle';
-      case 'draft': return 'document-text';
-      case 'archived': return 'archive';
-      default: return 'help-circle';
+      case 'published': return 'Terbit';
+      case 'draft': return 'Draft';
+      case 'archived': return 'Arsip';
+      default: return status;
     }
   };
 
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
-
-  const getAttendanceColor = (percentage) => {
-    if (percentage >= 90) return '#2ecc71';
-    if (percentage >= 75) return '#3498db';
-    if (percentage >= 60) return '#f39c12';
-    return '#e74c3c';
+  const getGradeColor = (grade) => {
+    if (grade >= 85) return '#4caf50';
+    if (grade >= 75) return '#ff9800';
+    if (grade >= 65) return '#ff5722';
+    return '#f44336';
   };
 
   return (
-    <TouchableOpacity
-      style={styles.container}
-      onPress={onPress}
-      activeOpacity={0.8}
-    >
-      <View style={styles.statusBar}>
-        <View style={[styles.statusIndicator, { backgroundColor: getStatusColor(raport.status) }]}>
-          <Ionicons name={getStatusIcon(raport.status)} size={16} color="#ffffff" />
-          <Text style={styles.statusText}>{raport.status.toUpperCase()}</Text>
-        </View>
-        {raport.ranking && (
-          <View style={styles.rankingBadge}>
-            <Ionicons name="trophy" size={14} color="#f39c12" />
-            <Text style={styles.rankingText}>Ranking {raport.ranking}</Text>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.header}>
-        <Text style={styles.semesterName}>
-          {raport.semester?.nama_semester} - {raport.semester?.tahun_ajaran}
-        </Text>
-        <Text style={styles.publishDate}>
-          {raport.tanggal_terbit ? formatDate(raport.tanggal_terbit) : 'Belum diterbitkan'}
-        </Text>
-      </View>
-
-      <View style={styles.statsContainer}>
-        <View style={styles.statItem}>
-          <Ionicons name="calendar-outline" size={20} color="#3498db" />
-          <Text style={styles.statLabel}>Kehadiran</Text>
-          <Text style={[
-            styles.statValue, 
-            { color: getAttendanceColor(raport.persentase_kehadiran) }
-          ]}>
-            {raport.persentase_kehadiran}%
-          </Text>
-        </View>
-
-        <View style={styles.statDivider} />
-
-        <View style={styles.statItem}>
-          <Ionicons name="school-outline" size={20} color="#3498db" />
-          <Text style={styles.statLabel}>Nilai Rata-rata</Text>
-          <Text style={styles.statValue}>
-            {raport.nilai_rata_rata ? raport.nilai_rata_rata.toFixed(2) : '-'}
-          </Text>
-        </View>
-
-        <View style={styles.statDivider} />
-
-        <View style={styles.statItem}>
-          <Ionicons name="document-text-outline" size={20} color="#3498db" />
-          <Text style={styles.statLabel}>Mata Pelajaran</Text>
-          <Text style={styles.statValue}>
-            {raport.raportDetail?.length || 0}
-          </Text>
-        </View>
-      </View>
-
-      {showActions && raport.status === 'draft' && (
-        <View style={styles.actions}>
-          {onPublish && (
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.publishButton]}
-              onPress={onPublish}
-            >
-              <Ionicons name="send" size={16} color="#ffffff" />
-              <Text style={styles.publishText}>Publish</Text>
-            </TouchableOpacity>
-          )}
+    <View style={styles.card}>
+      {/* Header */}
+      <TouchableOpacity 
+        style={styles.header}
+        onPress={onToggle}
+        activeOpacity={0.7}
+      >
+        <View style={styles.childInfo}>
+          <Image
+            source={{ 
+              uri: child.foto_url || 'https://via.placeholder.com/50' 
+            }}
+            style={styles.childPhoto}
+          />
           
-          {onDelete && (
-            <TouchableOpacity 
-              style={[styles.actionButton, styles.deleteButton]}
-              onPress={onDelete}
-            >
-              <Ionicons name="trash" size={16} color="#ffffff" />
-            </TouchableOpacity>
+          <View style={styles.childDetails}>
+            <Text style={styles.childName}>
+              {child.full_name}
+            </Text>
+            {child.nick_name && (
+              <Text style={styles.childNickname}>
+                ({child.nick_name})
+              </Text>
+            )}
+            
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryText}>
+                {child.total_raport} Raport
+              </Text>
+              <Text style={styles.separator}>•</Text>
+              <Text style={[
+                styles.averageGrade,
+                { color: getGradeColor(child.average_grade) }
+              ]}>
+                Rata-rata: {child.average_grade}
+              </Text>
+            </View>
+            
+            <View style={styles.statusRow}>
+              <View style={styles.statusItem}>
+                <View style={[
+                  styles.statusDot, 
+                  { backgroundColor: getStatusColor('published') }
+                ]} />
+                <Text style={styles.statusText}>
+                  {child.published_count} Terbit
+                </Text>
+              </View>
+              
+              {child.draft_count > 0 && (
+                <View style={styles.statusItem}>
+                  <View style={[
+                    styles.statusDot, 
+                    { backgroundColor: getStatusColor('draft') }
+                  ]} />
+                  <Text style={styles.statusText}>
+                    {child.draft_count} Draft
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.detailButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              onViewDetail(child.id_anak);
+            }}
+          >
+            <Ionicons name="eye" size={16} color="#9b59b6" />
+          </TouchableOpacity>
+          
+          <Ionicons 
+            name={expanded ? "chevron-up" : "chevron-down"} 
+            size={20} 
+            color="#666" 
+          />
+        </View>
+      </TouchableOpacity>
+
+      {/* Expanded Content */}
+      {expanded && (
+        <View style={styles.expandedContent}>
+          <View style={styles.divider} />
+          
+          {child.latest_raport_date && (
+            <View style={styles.latestInfo}>
+              <Text style={styles.latestLabel}>Raport Terakhir:</Text>
+              <Text style={styles.latestValue}>
+                {child.latest_semester} - {child.latest_raport_date}
+              </Text>
+            </View>
+          )}
+
+          <Text style={styles.raportListTitle}>
+            Daftar Raport ({child.total_raport})
+          </Text>
+
+          {child.raport_data && child.raport_data.length > 0 ? (
+            child.raport_data.map((raport, index) => (
+              <TouchableOpacity
+                key={raport.id_raport}
+                style={styles.raportItem}
+                onPress={() => onRaportDetail(child.id_anak, raport.id_raport)}
+              >
+                <View style={styles.raportInfo}>
+                  <View style={styles.raportHeader}>
+                    <Text style={styles.raportSemester}>
+                      {raport.semester} {raport.tahun_ajaran}
+                    </Text>
+                    <View style={[
+                      styles.statusBadge,
+                      { backgroundColor: getStatusColor(raport.status) }
+                    ]}>
+                      <Text style={styles.statusBadgeText}>
+                        {getStatusText(raport.status)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.raportDetails}>
+                    <View style={styles.raportStat}>
+                      <Text style={styles.statLabel}>Mapel:</Text>
+                      <Text style={styles.statValue}>
+                        {raport.subjects_count}
+                      </Text>
+                    </View>
+                    
+                    <View style={styles.raportStat}>
+                      <Text style={styles.statLabel}>Rata-rata:</Text>
+                      <Text style={[
+                        styles.statValue,
+                        { color: getGradeColor(raport.average_grade) }
+                      ]}>
+                        {raport.average_grade?.toFixed(1) || '-'}
+                      </Text>
+                    </View>
+                    
+                    {raport.ranking && (
+                      <View style={styles.raportStat}>
+                        <Text style={styles.statLabel}>Ranking:</Text>
+                        <Text style={styles.statValue}>#{raport.ranking}</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {raport.tanggal_terbit && (
+                    <Text style={styles.publishDate}>
+                      Terbit: {raport.tanggal_terbit}
+                    </Text>
+                  )}
+                </View>
+
+                <Ionicons 
+                  name="chevron-forward" 
+                  size={16} 
+                  color="#666" 
+                />
+              </TouchableOpacity>
+            ))
+          ) : (
+            <Text style={styles.noRaportText}>
+              Belum ada data raport
+            </Text>
           )}
         </View>
       )}
-
-      {showActions && raport.status === 'published' && onArchive && (
-        <View style={styles.actions}>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.archiveButton]}
-            onPress={onArchive}
-          >
-            <Ionicons name="archive" size={16} color="#ffffff" />
-            <Text style={styles.archiveText}>Archive</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#ffffff',
+  card: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginVertical: 8,
     borderRadius: 12,
-    marginBottom: 16,
-    elevation: 3,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    overflow: 'hidden',
+    shadowRadius: 2
   },
-  statusBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#f8f9fa',
-  },
-  statusIndicator: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    padding: 16
+  },
+  childInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  childPhoto: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
+    backgroundColor: '#f0f0f0'
+  },
+  childDetails: {
+    flex: 1
+  },
+  childName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 2
+  },
+  childNickname: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4
+  },
+  summaryText: {
+    fontSize: 14,
+    color: '#666'
+  },
+  separator: {
+    fontSize: 14,
+    color: '#ccc',
+    marginHorizontal: 8
+  },
+  averageGrade: {
+    fontSize: 14,
+    fontWeight: '500'
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  statusItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 4
   },
   statusText: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    marginLeft: 6,
+    color: '#666'
   },
-  rankingBadge: {
+  headerActions: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'center'
   },
-  rankingText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#f39c12',
-    marginLeft: 4,
+  detailButton: {
+    padding: 8,
+    marginRight: 8,
+    backgroundColor: '#f8f4ff',
+    borderRadius: 6
   },
-  header: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ecf0f1',
+  expandedContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 16
   },
-  semesterName: {
+  divider: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
+    marginBottom: 12
+  },
+  latestInfo: {
+    flexDirection: 'row',
+    marginBottom: 12
+  },
+  latestLabel: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+    width: 100
+  },
+  latestValue: {
+    fontSize: 14,
+    color: '#333',
+    flex: 1
+  },
+  raportListTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 4,
+    color: '#333',
+    marginBottom: 8
   },
-  publishDate: {
-    fontSize: 12,
-    color: '#7f8c8d',
-  },
-  statsContainer: {
+  raportItem: {
     flexDirection: 'row',
-    padding: 16,
-  },
-  statItem: {
-    flex: 1,
     alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    marginBottom: 8
+  },
+  raportInfo: {
+    flex: 1
+  },
+  raportHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6
+  },
+  raportSemester: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    flex: 1
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    color: '#fff',
+    fontWeight: '500'
+  },
+  raportDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4
+  },
+  raportStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16
   },
   statLabel: {
     fontSize: 12,
-    color: '#7f8c8d',
-    marginTop: 4,
-    marginBottom: 4,
+    color: '#666',
+    marginRight: 4
   },
   statValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2c3e50',
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#333'
   },
-  statDivider: {
-    width: 1,
-    backgroundColor: '#ecf0f1',
-    marginHorizontal: 12,
+  publishDate: {
+    fontSize: 11,
+    color: '#999',
+    fontStyle: 'italic'
   },
-  actions: {
-    flexDirection: 'row',
-    padding: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#ecf0f1',
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  publishButton: {
-    backgroundColor: '#2ecc71',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  deleteButton: {
-    backgroundColor: '#e74c3c',
-  },
-  archiveButton: {
-    backgroundColor: '#95a5a6',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  publishText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    marginLeft: 6,
-  },
-  archiveText: {
-    color: '#ffffff',
-    fontWeight: '600',
-    marginLeft: 6,
-  },
+  noRaportText: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#999',
+    fontStyle: 'italic',
+    padding: 20
+  }
 });
 
 export default RaportCard;
