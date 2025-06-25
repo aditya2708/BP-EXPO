@@ -1,39 +1,418 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  RefreshControl,
+  TouchableOpacity,
+  TextInput
+} from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 
-const LaporanSuratAnakScreen = () => (
-  <View style={styles.container}>
-    <Ionicons name="mail-outline" size={80} color="#cccccc" />
-    <Text style={styles.title}>Fitur Dalam Pengembangan</Text>
-    <Text style={styles.message}>
-      Laporan Surat Anak sedang dalam tahap pengembangan.{'\n'}
-      Mohon tunggu update selanjutnya.
-    </Text>
-  </View>
-);
+import LoadingSpinner from '../../../../common/components/LoadingSpinner';
+import ErrorMessage from '../../../../common/components/ErrorMessage';
+import EmptyState from '../../../../common/components/EmptyState';
+import SuratItemCard from '../../components/SuratItemCard';
+import SuratFilterSection from '../../components/SuratFilterSection';
+
+import {
+  selectStatistics,
+  selectShelterDetail,
+  selectLoading,
+  selectShelterDetailLoading,
+  selectError,
+  selectInitializingPage,
+  selectFilters,
+  selectHasActiveFilters,
+  setSearch,
+  resetFilters,
+  clearAllErrors
+} from '../../redux/laporanSuratSlice';
+
+import {
+  fetchLaporanSurat,
+  fetchShelterDetail,
+  initializeLaporanSuratPage,
+  updateFiltersAndRefresh
+} from '../../redux/laporanSuratThunks';
+
+const LaporanSuratAnakScreen = () => {
+  const dispatch = useDispatch();
+  const [refreshing, setRefreshing] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [shelterId, setShelterId] = useState(null);
+
+  // Redux state
+  const statistics = useSelector(selectStatistics);
+  const shelterDetail = useSelector(selectShelterDetail);
+  const loading = useSelector(selectLoading);
+  const shelterDetailLoading = useSelector(selectShelterDetailLoading);
+  const error = useSelector(selectError);
+  const initializingPage = useSelector(selectInitializingPage);
+  const filters = useSelector(selectFilters);
+  const hasActiveFilters = useSelector(selectHasActiveFilters);
+
+  // Initialize page
+  useEffect(() => {
+    dispatch(clearAllErrors());
+    initializePage();
+  }, [dispatch]);
+
+  const initializePage = async () => {
+    try {
+      // First get the summary to get shelter ID
+      const summaryResult = await dispatch(initializeLaporanSuratPage()).unwrap();
+      
+      // Get shelter ID from statistics (assuming single shelter for admin)
+      const result = await dispatch(fetchLaporanSurat()).unwrap();
+      if (result.shelter_stats && result.shelter_stats.length > 0) {
+        const shelterIdFromStats = result.shelter_stats[0].id_shelter;
+        setShelterId(shelterIdFromStats);
+        
+        // Load surat list for this shelter
+        loadSuratList(shelterIdFromStats, 1);
+      }
+    } catch (error) {
+      console.error('Failed to initialize page:', error);
+    }
+  };
+
+  const loadSuratList = async (targetShelterId, page = 1) => {
+    if (!targetShelterId) return;
+
+    try {
+      await dispatch(fetchShelterDetail({
+        shelterId: targetShelterId,
+        page,
+        ...filters,
+        search: searchText
+      })).unwrap();
+      setCurrentPage(page);
+    } catch (error) {
+      console.error('Failed to load surat list:', error);
+    }
+  };
+
+  // Handle refresh
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await dispatch(fetchLaporanSurat(filters));
+      if (shelterId) {
+        await loadSuratList(shelterId, 1);
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Handle filter changes
+  const handleFilterChange = (newFilters) => {
+    dispatch(updateFiltersAndRefresh(newFilters));
+    if (shelterId) {
+      loadSuratList(shelterId, 1);
+    }
+    setShowFilters(false);
+  };
+
+  const handleClearFilters = () => {
+    dispatch(resetFilters());
+    dispatch(updateFiltersAndRefresh({}));
+    if (shelterId) {
+      loadSuratList(shelterId, 1);
+    }
+    setShowFilters(false);
+  };
+
+  // Handle search
+  const handleSearch = () => {
+    dispatch(setSearch(searchText));
+    if (shelterId) {
+      loadSuratList(shelterId, 1);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (shelterDetail.pagination && 
+        currentPage < shelterDetail.pagination.last_page && 
+        !shelterDetailLoading) {
+      loadSuratList(shelterId, currentPage + 1);
+    }
+  };
+
+  // Handle surat item press
+  const handleSuratPress = (surat) => {
+    // TODO: Navigate to surat detail or handle action
+    console.log('Surat pressed:', surat.id_surat);
+  };
+
+  // Render summary statistics
+  const renderSummary = () => {
+    if (!statistics) return null;
+
+    return (
+      <View style={styles.summaryContainer}>
+        <Text style={styles.summaryTitle}>Ringkasan</Text>
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{statistics.total_surat}</Text>
+            <Text style={styles.summaryLabel}>Total Surat</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={[styles.summaryValue, { color: '#4caf50' }]}>
+              {statistics.total_terbaca}
+            </Text>
+            <Text style={styles.summaryLabel}>Terbaca</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={[styles.summaryValue, { color: '#f44336' }]}>
+              {statistics.total_belum_terbaca}
+            </Text>
+            <Text style={styles.summaryLabel}>Belum Baca</Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  // Render header
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <View style={styles.headerTop}>
+        <Text style={styles.title}>Laporan Surat Anak</Text>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setShowFilters(true)}
+        >
+          <Ionicons 
+            name="filter" 
+            size={20} 
+            color={hasActiveFilters ? '#9b59b6' : '#666'} 
+          />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Cari nama anak atau pesan..."
+          value={searchText}
+          onChangeText={setSearchText}
+          onSubmitEditing={handleSearch}
+        />
+        <TouchableOpacity onPress={handleSearch}>
+          <Ionicons name="search" size={20} color="#9b59b6" />
+        </TouchableOpacity>
+      </View>
+
+      {hasActiveFilters && (
+        <TouchableOpacity 
+          style={styles.clearFiltersButton}
+          onPress={handleClearFilters}
+        >
+          <Ionicons name="close-circle" size={16} color="#9b59b6" />
+          <Text style={styles.clearFiltersText}>Hapus Filter</Text>
+        </TouchableOpacity>
+      )}
+
+      {shelterDetail.pagination && (
+        <Text style={styles.resultCount}>
+          {shelterDetail.pagination.total} surat ditemukan
+        </Text>
+      )}
+    </View>
+  );
+
+  const renderSuratItem = ({ item }) => (
+    <SuratItemCard
+      surat={item}
+      onPress={() => handleSuratPress(item)}
+    />
+  );
+
+  const renderFooter = () => {
+    if (!shelterDetailLoading || currentPage === 1) return null;
+    return <LoadingSpinner />;
+  };
+
+  // Loading state
+  if (initializingPage) {
+    return <LoadingSpinner fullScreen message="Memuat laporan surat..." />;
+  }
+
+  // Error state
+  if (error && !refreshing) {
+    return (
+      <View style={styles.container}>
+        <ErrorMessage 
+          message={error} 
+          onRetry={() => dispatch(fetchLaporanSurat(filters))}
+        />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={shelterDetail.surat_list}
+        renderItem={renderSuratItem}
+        keyExtractor={(item) => item.id_surat.toString()}
+        ListHeaderComponent={
+          <View>
+            {renderHeader()}
+            {renderSummary()}
+          </View>
+        }
+        contentContainerStyle={styles.listContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['#9b59b6']}
+            tintColor="#9b59b6"
+          />
+        }
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.1}
+        ListFooterComponent={renderFooter}
+        ListEmptyComponent={
+          !shelterDetailLoading ? (
+            <EmptyState
+              icon="mail-outline"
+              title="Tidak Ada Surat"
+              message="Tidak ada data surat untuk shelter ini"
+              actionButtonText="Refresh"
+              onActionPress={handleRefresh}
+            />
+          ) : null
+        }
+        showsVerticalScrollIndicator={false}
+      />
+
+      {/* Filter Modal */}
+      <SuratFilterSection
+        visible={showFilters}
+        filters={filters}
+        onClose={() => setShowFilters(false)}
+        onApply={handleFilterChange}
+        onClear={handleClearFilters}
+      />
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    padding: 32, 
-    backgroundColor: '#f5f5f5' 
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5'
   },
-  title: { 
-    fontSize: 20, 
-    fontWeight: '600', 
-    color: '#333', 
-    marginTop: 16, 
-    marginBottom: 8, 
-    textAlign: 'center' 
+  header: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2
   },
-  message: { 
-    fontSize: 16, 
-    color: '#666', 
-    textAlign: 'center', 
-    lineHeight: 22 
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333'
+  },
+  filterButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f8f9fa'
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 8
+  },
+  searchIcon: {
+    marginRight: 8
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#333'
+  },
+  clearFiltersButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    backgroundColor: '#f8f4ff',
+    marginBottom: 8
+  },
+  clearFiltersText: {
+    fontSize: 14,
+    color: '#9b59b6',
+    fontWeight: '500',
+    marginLeft: 4
+  },
+  resultCount: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4
+  },
+  summaryContainer: {
+    backgroundColor: '#fff',
+    padding: 16,
+    marginBottom: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2
+  },
+  summaryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around'
+  },
+  summaryItem: {
+    alignItems: 'center'
+  },
+  summaryValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#9b59b6'
+  },
+  summaryLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4
+  },
+  listContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 20
   }
 });
 
