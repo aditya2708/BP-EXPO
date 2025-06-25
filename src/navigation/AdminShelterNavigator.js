@@ -83,6 +83,7 @@ import LaporanRaportAnakScreen from '../features/adminShelter/screens/reports/La
 import LaporanHistoriAnakScreen from '../features/adminShelter/screens/reports/LaporanHistoriAnakScreen';
 import LaporanAktivitasScreen from '../features/adminShelter/screens/reports/LaporanAktivitasScreen';
 import LaporanSuratAnakScreen from '../features/adminShelter/screens/reports/LaporanSuratAnakScreen';
+import RaportChildDetailScreen from '../features/adminShelter/screens/reports/RaportChildDetailScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
@@ -182,6 +183,7 @@ const ManagementStackNavigator = () => (
     <ManagementStack.Screen name="KeuanganList" component={KeuanganListScreen} options={{ headerTitle: 'Laporan Keuangan' }} />
     <ManagementStack.Screen name="KeuanganForm" component={KeuanganFormScreen} options={({ route }) => ({ headerTitle: route.params?.isEdit ? 'Edit Keuangan' : 'Tambah Keuangan' })} />
     <ManagementStack.Screen name="KeuanganDetail" component={KeuanganDetailScreen} options={{ headerTitle: 'Detail Keuangan' }} />
+    <ManagementStack.Screen name="RaportChildDetail" component={RaportChildDetailScreen} options={{ headerTitle: 'Detail Raport Anak' }} />
   </ManagementStack.Navigator>
 );
 
