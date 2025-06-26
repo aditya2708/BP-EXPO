@@ -149,6 +149,12 @@ RAPORT_FORMAL: {
   UPDATE: (childId, raportId) => `/admin-shelter/anak/${childId}/raport-formal/${raportId}`,
   DELETE: (childId, raportId) => `/admin-shelter/anak/${childId}/raport-formal/${raportId}`
 },
+HISTORI: {
+  LIST: '/admin-shelter/laporan/histori',
+  DETAIL: (id) => `/admin-shelter/laporan/histori/detail/${id}`,
+  JENIS_HISTORI_OPTIONS: '/admin-shelter/laporan/histori/jenis-histori-options',
+  AVAILABLE_YEARS: '/admin-shelter/laporan/histori/available-years'
+}
 };
 
 export const DONATUR_ENDPOINTS = {

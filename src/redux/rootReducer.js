@@ -16,6 +16,7 @@ import cpbLaporanReducer from '../features/adminShelter/redux/cpbLaporanSlice';
 import raportLaporanReducer from '../features/adminShelter/redux/raportLaporanSlice';
 import laporanSuratReducer from '../features/adminShelter/redux/laporanSuratSlice';
 import laporanAktivitasReducer from '../features/adminShelter/redux/laporanAktivitasSlice';
+import historiLaporanReducer from '../features/adminShelter/redux/historiLaporanSlice';
 
 const appReducer = combineReducers({
   auth: authReducer,
@@ -35,6 +36,7 @@ const appReducer = combineReducers({
   raportLaporan: raportLaporanReducer,
   laporanSurat: laporanSuratReducer,
   laporanAktivitas: laporanAktivitasReducer,
+  historiLaporan: historiLaporanReducer,
 });
 
 const rootReducer = (state, action) => {
