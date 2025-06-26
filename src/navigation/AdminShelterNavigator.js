@@ -207,6 +207,7 @@ const ManagementStackNavigator = () => (
       component={LaporanSuratAnakScreen} 
       options={{ headerTitle: 'Laporan Surat Anak' }} 
     />
+    
     <ManagementStack.Screen 
       name="TutorActivityHistory" 
       component={TutorActivityHistoryScreen} 
@@ -471,13 +472,7 @@ const ManagementStackNavigator = () => (
         headerTitle: route.params?.activity ? 'Edit Aktivitas' : 'Buat Aktivitas' 
       })} 
     />
-    <ManagementStack.Screen 
-      name="ActivityDetail" 
-      component={ActivityDetailScreen} 
-      options={({ route }) => ({ 
-        headerTitle: route.params?.activityName || 'Detail Aktivitas' 
-      })} 
-    />
+ 
     <ManagementStack.Screen 
       name="AttendanceList" 
       component={AttendanceListScreen} 
