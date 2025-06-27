@@ -142,10 +142,11 @@ const LaporanSuratAnakScreen = () => {
 
   const handleClearFilters = async () => {
     dispatch(resetFilters());
+    setSearchText(''); // Clear search text as well
     try {
       if (shelterId) {
         await dispatch(updateFiltersAndRefreshAll({
-          newFilters: {},
+          newFilters: { search: '' }, // Explicitly clear search
           shelterId,
           page: 1
         })).unwrap();
@@ -159,11 +160,21 @@ const LaporanSuratAnakScreen = () => {
     setShowFilters(false);
   };
 
-  // Handle search
-  const handleSearch = () => {
-    dispatch(setSearch(searchText));
-    if (shelterId) {
-      loadSuratList(shelterId, 1);
+  // Handle search (UPDATED - using unified refresh logic)
+  const handleSearch = async () => {
+    if (!searchText.trim()) return;
+    
+    try {
+      if (shelterId) {
+        await dispatch(updateFiltersAndRefreshAll({
+          newFilters: { ...filters, search: searchText.trim() },
+          shelterId,
+          page: 1
+        })).unwrap();
+        setCurrentPage(1);
+      }
+    } catch (error) {
+      console.error('Failed to search:', error);
     }
   };
 
@@ -238,19 +249,35 @@ const LaporanSuratAnakScreen = () => {
           onSubmitEditing={handleSearch}
           editable={!refreshingAll}
         />
-        <TouchableOpacity onPress={handleSearch} disabled={refreshingAll}>
-          <Ionicons name="search" size={20} color="#9b59b6" />
+        <TouchableOpacity 
+          style={styles.searchButton}
+          onPress={handleSearch} 
+          disabled={refreshingAll || !searchText.trim()}
+        >
+          <Text style={[
+            styles.searchButtonText,
+            (!searchText.trim() || refreshingAll) && styles.searchButtonTextDisabled
+          ]}>
+            Cari
+          </Text>
         </TouchableOpacity>
       </View>
 
-      {hasActiveFilters && (
+      {(hasActiveFilters || searchText.trim()) && (
         <TouchableOpacity 
           style={styles.clearFiltersButton}
-          onPress={handleClearFilters}
+          onPress={() => {
+            if (searchText.trim()) {
+              setSearchText('');
+            }
+            handleClearFilters();
+          }}
           disabled={refreshingAll}
         >
           <Ionicons name="close-circle" size={16} color="#9b59b6" />
-          <Text style={styles.clearFiltersText}>Hapus Filter</Text>
+          <Text style={styles.clearFiltersText}>
+            {searchText.trim() ? 'Hapus Pencarian' : 'Hapus Filter'}
+          </Text>
         </TouchableOpacity>
       )}
 
@@ -396,6 +423,22 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     color: '#333'
+  },
+  searchButton: {
+    backgroundColor: '#9b59b6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginLeft: 8,
+    opacity: 1
+  },
+  searchButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600'
+  },
+  searchButtonTextDisabled: {
+    opacity: 0.5
   },
   clearFiltersButton: {
     flexDirection: 'row',
