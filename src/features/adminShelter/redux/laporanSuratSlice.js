@@ -5,7 +5,8 @@ import {
   fetchFilterOptions,
   fetchAvailableYears,
   initializeLaporanSuratPage,
-  updateFiltersAndRefresh
+  updateFiltersAndRefresh,
+  updateFiltersAndRefreshAll
 } from './laporanSuratThunks';
 
 const initialState = {
@@ -36,12 +37,14 @@ const initialState = {
   shelterDetailLoading: false,
   filterOptionsLoading: false,
   initializingPage: false,
+  refreshingAll: false, // NEW loading state for combined refresh
   
   // Error states
   error: null,
   shelterDetailError: null,
   filterOptionsError: null,
   initializeError: null,
+  refreshAllError: null, // NEW error state for combined refresh
   
   // UI state
   filters: {
@@ -102,11 +105,15 @@ const laporanSuratSlice = createSlice({
     clearInitializeError: (state) => {
       state.initializeError = null;
     },
+    clearRefreshAllError: (state) => {
+      state.refreshAllError = null;
+    },
     clearAllErrors: (state) => {
       state.error = null;
       state.shelterDetailError = null;
       state.filterOptionsError = null;
       state.initializeError = null;
+      state.refreshAllError = null;
     }
   },
   extraReducers: (builder) => {
@@ -125,7 +132,45 @@ const laporanSuratSlice = createSlice({
         state.initializeError = action.payload;
       })
       
-      // Update Filters and Refresh
+      // Combined Update Filters and Refresh All (NEW - MAIN HANDLER)
+      .addCase(updateFiltersAndRefreshAll.pending, (state) => {
+        state.refreshingAll = true;
+        state.refreshAllError = null;
+        state.error = null;
+        state.shelterDetailError = null;
+      })
+      .addCase(updateFiltersAndRefreshAll.fulfilled, (state, action) => {
+        state.refreshingAll = false;
+        state.refreshAllError = null;
+        state.error = null;
+        state.shelterDetailError = null;
+        
+        // Update statistics if provided
+        if (action.payload.statistics) {
+          state.statistics = action.payload.statistics.statistics;
+          state.shelterStats = action.payload.statistics.shelter_stats;
+        }
+        
+        // Update shelter detail if provided
+        if (action.payload.shelterDetail) {
+          state.shelterDetail = {
+            shelter_id: action.payload.shelterDetail.shelter_id,
+            surat_list: action.payload.shelterDetail.data.data,
+            pagination: {
+              current_page: action.payload.shelterDetail.data.current_page,
+              last_page: action.payload.shelterDetail.data.last_page,
+              per_page: action.payload.shelterDetail.data.per_page,
+              total: action.payload.shelterDetail.data.total
+            }
+          };
+        }
+      })
+      .addCase(updateFiltersAndRefreshAll.rejected, (state, action) => {
+        state.refreshingAll = false;
+        state.refreshAllError = action.payload;
+      })
+      
+      // Update Filters and Refresh (DEPRECATED - kept for backward compatibility)
       .addCase(updateFiltersAndRefresh.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -224,6 +269,7 @@ export const {
   clearShelterDetailError,
   clearFilterOptionsError,
   clearInitializeError,
+  clearRefreshAllError,
   clearAllErrors
 } = laporanSuratSlice.actions;
 
@@ -238,10 +284,12 @@ export const selectLoading = (state) => state.laporanSurat.loading;
 export const selectShelterDetailLoading = (state) => state.laporanSurat.shelterDetailLoading;
 export const selectFilterOptionsLoading = (state) => state.laporanSurat.filterOptionsLoading;
 export const selectInitializingPage = (state) => state.laporanSurat.initializingPage;
+export const selectRefreshingAll = (state) => state.laporanSurat.refreshingAll; // NEW selector
 export const selectError = (state) => state.laporanSurat.error;
 export const selectShelterDetailError = (state) => state.laporanSurat.shelterDetailError;
 export const selectFilterOptionsError = (state) => state.laporanSurat.filterOptionsError;
 export const selectInitializeError = (state) => state.laporanSurat.initializeError;
+export const selectRefreshAllError = (state) => state.laporanSurat.refreshAllError; // NEW selector
 
 // Derived selectors
 export const selectHasActiveFilters = (state) => {

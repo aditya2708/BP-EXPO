@@ -109,7 +109,44 @@ export const initializeLaporanSuratPage = createAsyncThunk(
   }
 );
 
-// Update filters and refresh data
+// Combined update filters and refresh all data (NEW - MAIN SOLUTION)
+export const updateFiltersAndRefreshAll = createAsyncThunk(
+  'laporanSurat/updateFiltersAndRefreshAll',
+  async ({ newFilters, shelterId, page = 1, per_page }, { dispatch, getState, rejectWithValue }) => {
+    try {
+      const { laporanSurat } = getState();
+      const updatedFilters = { ...laporanSurat.filters, ...newFilters };
+      
+      // Update filters in state first
+      dispatch({ type: 'laporanSurat/setFilters', payload: newFilters });
+      
+      // Fetch statistics with new filters
+      const statisticsResult = await dispatch(fetchLaporanSurat(updatedFilters)).unwrap();
+      
+      // Fetch surat list with new filters if shelterId is provided
+      let shelterDetailResult = null;
+      if (shelterId) {
+        shelterDetailResult = await dispatch(fetchShelterDetail({
+          shelterId,
+          page,
+          per_page,
+          ...updatedFilters
+        })).unwrap();
+      }
+      
+      return {
+        filters: updatedFilters,
+        statistics: statisticsResult,
+        shelterDetail: shelterDetailResult
+      };
+    } catch (error) {
+      const message = error.message || 'Failed to update filters and refresh data';
+      return rejectWithValue(message);
+    }
+  }
+);
+
+// Update filters and refresh (DEPRECATED - kept for backward compatibility)
 export const updateFiltersAndRefresh = createAsyncThunk(
   'laporanSurat/updateFiltersAndRefresh',
   async (newFilters, { dispatch, getState }) => {
