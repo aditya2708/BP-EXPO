@@ -24,6 +24,8 @@ import {
   selectShelterDetailLoading,
   selectError,
   selectInitializingPage,
+  selectRefreshingAll,
+  selectRefreshAllError,
   selectFilters,
   selectHasActiveFilters,
   setSearch,
@@ -35,7 +37,7 @@ import {
   fetchLaporanSurat,
   fetchShelterDetail,
   initializeLaporanSuratPage,
-  updateFiltersAndRefresh
+  updateFiltersAndRefreshAll
 } from '../../redux/laporanSuratThunks';
 
 const LaporanSuratAnakScreen = () => {
@@ -53,6 +55,8 @@ const LaporanSuratAnakScreen = () => {
   const shelterDetailLoading = useSelector(selectShelterDetailLoading);
   const error = useSelector(selectError);
   const initializingPage = useSelector(selectInitializingPage);
+  const refreshingAll = useSelector(selectRefreshingAll);
+  const refreshAllError = useSelector(selectRefreshAllError);
   const filters = useSelector(selectFilters);
   const hasActiveFilters = useSelector(selectHasActiveFilters);
 
@@ -64,16 +68,16 @@ const LaporanSuratAnakScreen = () => {
 
   const initializePage = async () => {
     try {
-      // First get the summary to get shelter ID
-      const summaryResult = await dispatch(initializeLaporanSuratPage()).unwrap();
+      // Initialize filter options and get summary
+      await dispatch(initializeLaporanSuratPage()).unwrap();
       
-      // Get shelter ID from statistics (assuming single shelter for admin)
+      // Get shelter ID from statistics and load initial data
       const result = await dispatch(fetchLaporanSurat()).unwrap();
       if (result.shelter_stats && result.shelter_stats.length > 0) {
         const shelterIdFromStats = result.shelter_stats[0].id_shelter;
         setShelterId(shelterIdFromStats);
         
-        // Load surat list for this shelter
+        // Load initial surat list
         loadSuratList(shelterIdFromStats, 1);
       }
     } catch (error) {
@@ -101,29 +105,56 @@ const LaporanSuratAnakScreen = () => {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await dispatch(fetchLaporanSurat(filters));
       if (shelterId) {
-        await loadSuratList(shelterId, 1);
+        await dispatch(updateFiltersAndRefreshAll({
+          newFilters: filters,
+          shelterId,
+          page: 1
+        })).unwrap();
+        setCurrentPage(1);
+      } else {
+        await dispatch(fetchLaporanSurat(filters));
       }
     } finally {
       setRefreshing(false);
     }
   };
 
-  // Handle filter changes
-  const handleFilterChange = (newFilters) => {
-    dispatch(updateFiltersAndRefresh(newFilters));
-    if (shelterId) {
-      loadSuratList(shelterId, 1);
+  // Handle filter changes (MAIN IMPROVEMENT - using combined thunk)
+  const handleFilterChange = async (newFilters) => {
+    try {
+      if (shelterId) {
+        await dispatch(updateFiltersAndRefreshAll({
+          newFilters,
+          shelterId,
+          page: 1
+        })).unwrap();
+        setCurrentPage(1);
+      } else {
+        // Fallback if no shelterId yet
+        await dispatch(fetchLaporanSurat(newFilters));
+      }
+    } catch (error) {
+      console.error('Failed to apply filters:', error);
     }
     setShowFilters(false);
   };
 
-  const handleClearFilters = () => {
+  const handleClearFilters = async () => {
     dispatch(resetFilters());
-    dispatch(updateFiltersAndRefresh({}));
-    if (shelterId) {
-      loadSuratList(shelterId, 1);
+    try {
+      if (shelterId) {
+        await dispatch(updateFiltersAndRefreshAll({
+          newFilters: {},
+          shelterId,
+          page: 1
+        })).unwrap();
+        setCurrentPage(1);
+      } else {
+        await dispatch(fetchLaporanSurat({}));
+      }
+    } catch (error) {
+      console.error('Failed to clear filters:', error);
     }
     setShowFilters(false);
   };
@@ -139,7 +170,7 @@ const LaporanSuratAnakScreen = () => {
   const handleLoadMore = () => {
     if (shelterDetail.pagination && 
         currentPage < shelterDetail.pagination.last_page && 
-        !shelterDetailLoading) {
+        !shelterDetailLoading && !refreshingAll) {
       loadSuratList(shelterId, currentPage + 1);
     }
   };
@@ -187,6 +218,7 @@ const LaporanSuratAnakScreen = () => {
         <TouchableOpacity
           style={styles.filterButton}
           onPress={() => setShowFilters(true)}
+          disabled={refreshingAll}
         >
           <Ionicons 
             name="filter" 
@@ -204,8 +236,9 @@ const LaporanSuratAnakScreen = () => {
           value={searchText}
           onChangeText={setSearchText}
           onSubmitEditing={handleSearch}
+          editable={!refreshingAll}
         />
-        <TouchableOpacity onPress={handleSearch}>
+        <TouchableOpacity onPress={handleSearch} disabled={refreshingAll}>
           <Ionicons name="search" size={20} color="#9b59b6" />
         </TouchableOpacity>
       </View>
@@ -214,10 +247,18 @@ const LaporanSuratAnakScreen = () => {
         <TouchableOpacity 
           style={styles.clearFiltersButton}
           onPress={handleClearFilters}
+          disabled={refreshingAll}
         >
           <Ionicons name="close-circle" size={16} color="#9b59b6" />
           <Text style={styles.clearFiltersText}>Hapus Filter</Text>
         </TouchableOpacity>
+      )}
+
+      {refreshingAll && (
+        <View style={styles.refreshingIndicator}>
+          <LoadingSpinner size="small" />
+          <Text style={styles.refreshingText}>Memperbarui data...</Text>
+        </View>
       )}
 
       {shelterDetail.pagination && (
@@ -246,11 +287,11 @@ const LaporanSuratAnakScreen = () => {
   }
 
   // Error state
-  if (error && !refreshing) {
+  if ((error || refreshAllError) && !refreshing) {
     return (
       <View style={styles.container}>
         <ErrorMessage 
-          message={error} 
+          message={error || refreshAllError} 
           onRetry={() => dispatch(fetchLaporanSurat(filters))}
         />
       </View>
@@ -282,7 +323,7 @@ const LaporanSuratAnakScreen = () => {
         onEndReachedThreshold={0.1}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={
-          !shelterDetailLoading ? (
+          !shelterDetailLoading && !refreshingAll ? (
             <EmptyState
               icon="mail-outline"
               title="Tidak Ada Surat"
@@ -371,6 +412,22 @@ const styles = StyleSheet.create({
     color: '#9b59b6',
     fontWeight: '500',
     marginLeft: 4
+  },
+  refreshingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#f8f4ff',
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginBottom: 8
+  },
+  refreshingText: {
+    fontSize: 14,
+    color: '#9b59b6',
+    fontWeight: '500',
+    marginLeft: 8
   },
   resultCount: {
     fontSize: 14,
