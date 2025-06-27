@@ -1,50 +1,47 @@
 import { createSlice } from '@reduxjs/toolkit';
 import {
   fetchLaporanAnakBinaan,
-  fetchChildDetailReport,
-  fetchJenisKegiatanOptions,
+  fetchFilterOptions,
   fetchAvailableYears,
   initializeLaporanPage,
-  updateFiltersAndRefresh
+  updateFiltersAndRefreshAll
 } from './laporanThunks';
 
 const initialState = {
   // Main report data
+  summary: {
+    total_children: 0,
+    average_attendance: 0,
+    total_activities: 0
+  },
   children: [],
-  summary: null,
+  pagination: null,
+  
+  // Filter options
   filterOptions: {
     availableYears: [],
-    availableActivityTypes: [],
-    currentYear: new Date().getFullYear(),
-    currentActivityType: null
-  },
-  months: {},
-  
-  // Child detail data
-  childDetail: {
-    child: null,
-    attendanceRecords: [],
-    filter: null
+    availableActivityTypes: []
   },
   
   // Loading states
   loading: false,
-  childDetailLoading: false,
   filterOptionsLoading: false,
   initializingPage: false,
+  refreshingAll: false,
   
   // Error states
   error: null,
-  childDetailError: null,
   filterOptionsError: null,
   initializeError: null,
+  refreshAllError: null,
   
   // UI state
   filters: {
     year: new Date().getFullYear(),
-    jenisKegiatan: null
+    jenisKegiatan: null,
+    search: ''
   },
-  expandedCards: [], // Track which cards are expanded
+  expandedCards: []
 };
 
 const laporanSlice = createSlice({
@@ -61,14 +58,18 @@ const laporanSlice = createSlice({
     setJenisKegiatan: (state, action) => {
       state.filters.jenisKegiatan = action.payload;
     },
+    setSearch: (state, action) => {
+      state.filters.search = action.payload;
+    },
     resetFilters: (state) => {
       state.filters = {
         year: new Date().getFullYear(),
-        jenisKegiatan: null
+        jenisKegiatan: null,
+        search: ''
       };
     },
     
-    // UI state actions
+    // Card expand/collapse (kept for backward compatibility)
     toggleCardExpanded: (state, action) => {
       const childId = action.payload;
       const index = state.expandedCards.indexOf(childId);
@@ -78,42 +79,25 @@ const laporanSlice = createSlice({
         state.expandedCards.push(childId);
       }
     },
-    setCardExpanded: (state, action) => {
-      const { childId, expanded } = action.payload;
-      const index = state.expandedCards.indexOf(childId);
-      if (expanded && index === -1) {
-        state.expandedCards.push(childId);
-      } else if (!expanded && index > -1) {
-        state.expandedCards.splice(index, 1);
-      }
-    },
-    expandAllCards: (state) => {
-      state.expandedCards = state.children.map(child => child.id_anak);
-    },
-    collapseAllCards: (state) => {
-      state.expandedCards = [];
-    },
     
     // Clear data actions
-    clearChildDetail: (state) => {
-      state.childDetail = {
-        child: null,
-        attendanceRecords: [],
-        filter: null
-      };
-      state.childDetailError = null;
-    },
     clearError: (state) => {
       state.error = null;
-    },
-    clearChildDetailError: (state) => {
-      state.childDetailError = null;
     },
     clearFilterOptionsError: (state) => {
       state.filterOptionsError = null;
     },
     clearInitializeError: (state) => {
       state.initializeError = null;
+    },
+    clearRefreshAllError: (state) => {
+      state.refreshAllError = null;
+    },
+    clearAllErrors: (state) => {
+      state.error = null;
+      state.filterOptionsError = null;
+      state.initializeError = null;
+      state.refreshAllError = null;
     }
   },
   extraReducers: (builder) => {
@@ -132,18 +116,28 @@ const laporanSlice = createSlice({
         state.initializeError = action.payload;
       })
       
-      // Update Filters and Refresh
-      .addCase(updateFiltersAndRefresh.pending, (state) => {
-        state.loading = true;
+      // Combined Update Filters and Refresh All
+      .addCase(updateFiltersAndRefreshAll.pending, (state) => {
+        state.refreshingAll = true;
+        state.refreshAllError = null;
         state.error = null;
       })
-      .addCase(updateFiltersAndRefresh.fulfilled, (state) => {
-        state.loading = false;
+      .addCase(updateFiltersAndRefreshAll.fulfilled, (state, action) => {
+        state.refreshingAll = false;
+        state.refreshAllError = null;
         state.error = null;
+        
+        if (action.payload.data) {
+          state.summary = action.payload.data.summary;
+          state.children = action.payload.data.children;
+          if (action.payload.data.pagination) {
+            state.pagination = action.payload.data.pagination;
+          }
+        }
       })
-      .addCase(updateFiltersAndRefresh.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
+      .addCase(updateFiltersAndRefreshAll.rejected, (state, action) => {
+        state.refreshingAll = false;
+        state.refreshAllError = action.payload;
       })
       
       // Fetch Laporan Anak Binaan
@@ -153,10 +147,16 @@ const laporanSlice = createSlice({
       })
       .addCase(fetchLaporanAnakBinaan.fulfilled, (state, action) => {
         state.loading = false;
-        state.children = action.payload.children;
         state.summary = action.payload.summary;
-        state.filterOptions = { ...state.filterOptions, ...action.payload.filter_options };
-        state.months = action.payload.months;
+        state.children = action.payload.children;
+        if (action.payload.pagination) {
+          state.pagination = action.payload.pagination;
+        }
+        // Extract filter options from main response
+        if (action.payload.filter_options) {
+          state.filterOptions.availableYears = action.payload.filter_options.available_years;
+          state.filterOptions.availableActivityTypes = action.payload.filter_options.available_activity_types;
+        }
         state.error = null;
       })
       .addCase(fetchLaporanAnakBinaan.rejected, (state, action) => {
@@ -164,32 +164,17 @@ const laporanSlice = createSlice({
         state.error = action.payload;
       })
       
-      // Fetch Child Detail Report
-      .addCase(fetchChildDetailReport.pending, (state) => {
-        state.childDetailLoading = true;
-        state.childDetailError = null;
-      })
-      .addCase(fetchChildDetailReport.fulfilled, (state, action) => {
-        state.childDetailLoading = false;
-        state.childDetail = action.payload;
-        state.childDetailError = null;
-      })
-      .addCase(fetchChildDetailReport.rejected, (state, action) => {
-        state.childDetailLoading = false;
-        state.childDetailError = action.payload;
-      })
-      
-      // Fetch Jenis Kegiatan Options
-      .addCase(fetchJenisKegiatanOptions.pending, (state) => {
+      // Fetch Filter Options
+      .addCase(fetchFilterOptions.pending, (state) => {
         state.filterOptionsLoading = true;
         state.filterOptionsError = null;
       })
-      .addCase(fetchJenisKegiatanOptions.fulfilled, (state, action) => {
+      .addCase(fetchFilterOptions.fulfilled, (state, action) => {
         state.filterOptionsLoading = false;
-        state.filterOptions.availableActivityTypes = action.payload;
+        state.filterOptions = { ...state.filterOptions, ...action.payload };
         state.filterOptionsError = null;
       })
-      .addCase(fetchJenisKegiatanOptions.rejected, (state, action) => {
+      .addCase(fetchFilterOptions.rejected, (state, action) => {
         state.filterOptionsLoading = false;
         state.filterOptionsError = action.payload;
       })
@@ -216,48 +201,42 @@ export const {
   setFilters,
   setYear,
   setJenisKegiatan,
+  setSearch,
   resetFilters,
   toggleCardExpanded,
-  setCardExpanded,
-  expandAllCards,
-  collapseAllCards,
-  clearChildDetail,
   clearError,
-  clearChildDetailError,
   clearFilterOptionsError,
-  clearInitializeError
+  clearInitializeError,
+  clearRefreshAllError,
+  clearAllErrors
 } = laporanSlice.actions;
 
 // Selectors
-export const selectLaporanState = (state) => state.laporan;
 export const selectChildren = (state) => state.laporan.children;
 export const selectSummary = (state) => state.laporan.summary;
+export const selectPagination = (state) => state.laporan.pagination;
 export const selectFilterOptions = (state) => state.laporan.filterOptions;
-export const selectMonths = (state) => state.laporan.months;
 export const selectFilters = (state) => state.laporan.filters;
 export const selectExpandedCards = (state) => state.laporan.expandedCards;
-export const selectChildDetail = (state) => state.laporan.childDetail;
 export const selectLoading = (state) => state.laporan.loading;
-export const selectChildDetailLoading = (state) => state.laporan.childDetailLoading;
 export const selectFilterOptionsLoading = (state) => state.laporan.filterOptionsLoading;
 export const selectInitializingPage = (state) => state.laporan.initializingPage;
+export const selectRefreshingAll = (state) => state.laporan.refreshingAll;
 export const selectError = (state) => state.laporan.error;
-export const selectChildDetailError = (state) => state.laporan.childDetailError;
 export const selectFilterOptionsError = (state) => state.laporan.filterOptionsError;
 export const selectInitializeError = (state) => state.laporan.initializeError;
+export const selectRefreshAllError = (state) => state.laporan.refreshAllError;
 
 // Derived selectors
-export const selectIsCardExpanded = (state, childId) => 
-  state.laporan.expandedCards.includes(childId);
-
-export const selectFilteredChildren = (state) => {
-  // Return children as-is since filtering is done on backend
-  return state.laporan.children;
+export const selectHasActiveFilters = (state) => {
+  const { jenisKegiatan, search } = state.laporan.filters;
+  return !!(jenisKegiatan || search);
 };
 
 export const selectCurrentFilters = (state) => ({
   year: state.laporan.filters.year,
-  jenisKegiatan: state.laporan.filters.jenisKegiatan
+  jenisKegiatan: state.laporan.filters.jenisKegiatan,
+  search: state.laporan.filters.search
 });
 
 export default laporanSlice.reducer;

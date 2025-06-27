@@ -1,16 +1,19 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { laporanApi } from '../api/laporanApi';
+import { laporanAnakApi } from '../api/laporanAnakApi';
 
-// Fetch main laporan anak binaan with filters
+// Fetch main laporan anak binaan
 export const fetchLaporanAnakBinaan = createAsyncThunk(
   'laporan/fetchLaporanAnakBinaan',
-  async ({ year, jenisKegiatan } = {}, { rejectWithValue }) => {
+  async ({ year, jenisKegiatan, search, page, per_page } = {}, { rejectWithValue }) => {
     try {
       const params = {};
       if (year) params.year = year;
-      if (jenisKegiatan) params.jenis_kegiatan = jenisKegiatan;
+      if (jenisKegiatan) params.jenisKegiatan = jenisKegiatan;
+      if (search) params.search = search;
+      if (page) params.page = page;
+      if (per_page) params.per_page = per_page;
       
-      const response = await laporanApi.getLaporanAnakBinaan(params);
+      const response = await laporanAnakApi.getLaporanAnakBinaan(params);
       return response.data.data;
     } catch (error) {
       const message = error.response?.data?.message || 
@@ -21,48 +24,28 @@ export const fetchLaporanAnakBinaan = createAsyncThunk(
   }
 );
 
-// Fetch child detail report
-export const fetchChildDetailReport = createAsyncThunk(
-  'laporan/fetchChildDetailReport',
-  async ({ childId, year, jenisKegiatan }, { rejectWithValue }) => {
-    try {
-      const params = {};
-      if (year) params.year = year;
-      if (jenisKegiatan) params.jenis_kegiatan = jenisKegiatan;
-      
-      const response = await laporanApi.getChildDetailReport(childId, params);
-      return response.data.data;
-    } catch (error) {
-      const message = error.response?.data?.message || 
-        error.message || 
-        'Failed to fetch child detail report';
-      return rejectWithValue(message);
-    }
-  }
-);
-
-// Fetch jenis kegiatan options for filter
-export const fetchJenisKegiatanOptions = createAsyncThunk(
-  'laporan/fetchJenisKegiatanOptions',
+// Fetch filter options (jenis kegiatan)
+export const fetchFilterOptions = createAsyncThunk(
+  'laporan/fetchFilterOptions',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await laporanApi.getJenisKegiatanOptions();
+      const response = await laporanAnakApi.getJenisKegiatanOptions();
       return response.data.data;
     } catch (error) {
       const message = error.response?.data?.message || 
         error.message || 
-        'Failed to fetch jenis kegiatan options';
+        'Failed to fetch filter options';
       return rejectWithValue(message);
     }
   }
 );
 
-// Fetch available years for filter
+// Fetch available years
 export const fetchAvailableYears = createAsyncThunk(
   'laporan/fetchAvailableYears',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await laporanApi.getAvailableYears();
+      const response = await laporanAnakApi.getAvailableYears();
       return response.data.data;
     } catch (error) {
       const message = error.response?.data?.message || 
@@ -73,40 +56,25 @@ export const fetchAvailableYears = createAsyncThunk(
   }
 );
 
-// Combined thunk to refresh laporan with current filters
-export const refreshLaporanWithFilters = createAsyncThunk(
-  'laporan/refreshLaporanWithFilters',
-  async (_, { getState, dispatch }) => {
-    const { laporan } = getState();
-    const { year, jenisKegiatan } = laporan.filters;
-    
-    return dispatch(fetchLaporanAnakBinaan({ 
-      year, 
-      jenisKegiatan 
-    }));
-  }
-);
-
-// Initialize laporan page data (fetch filters and initial data)
+// Initialize laporan page
 export const initializeLaporanPage = createAsyncThunk(
   'laporan/initializeLaporanPage',
   async ({ year, jenisKegiatan } = {}, { dispatch, rejectWithValue }) => {
     try {
       // Fetch filter options first
+      const filterOptionsResult = await dispatch(fetchFilterOptions()).unwrap();
       const yearsResult = await dispatch(fetchAvailableYears()).unwrap();
-      const activitiesResult = await dispatch(fetchJenisKegiatanOptions()).unwrap();
       
-      // Fetch main data with current or provided filters
-      const currentYear = year || new Date().getFullYear();
+      // Fetch main data
       await dispatch(fetchLaporanAnakBinaan({ 
-        year: currentYear, 
+        year: year || new Date().getFullYear(),
         jenisKegiatan 
       })).unwrap();
       
       return { 
         success: true,
-        years: yearsResult,
-        activities: activitiesResult
+        filterOptions: filterOptionsResult,
+        years: yearsResult
       };
     } catch (error) {
       const message = error.message || 'Failed to initialize laporan page';
@@ -115,17 +83,45 @@ export const initializeLaporanPage = createAsyncThunk(
   }
 );
 
-// Update filters and refresh data
+// Combined update filters and refresh all data
+export const updateFiltersAndRefreshAll = createAsyncThunk(
+  'laporan/updateFiltersAndRefreshAll',
+  async ({ newFilters, page = 1, per_page }, { dispatch, getState, rejectWithValue }) => {
+    try {
+      const { laporan } = getState();
+      const updatedFilters = { ...laporan.filters, ...newFilters };
+      
+      // Update filters in state first
+      dispatch({ type: 'laporan/setFilters', payload: newFilters });
+      
+      // Fetch data with new filters
+      const result = await dispatch(fetchLaporanAnakBinaan({
+        year: updatedFilters.year,
+        jenisKegiatan: updatedFilters.jenisKegiatan,
+        search: updatedFilters.search,
+        page,
+        per_page
+      })).unwrap();
+      
+      return {
+        filters: updatedFilters,
+        data: result
+      };
+    } catch (error) {
+      const message = error.message || 'Failed to update filters and refresh data';
+      return rejectWithValue(message);
+    }
+  }
+);
+
+// DEPRECATED - kept for backward compatibility
 export const updateFiltersAndRefresh = createAsyncThunk(
   'laporan/updateFiltersAndRefresh',
   async (newFilters, { dispatch, getState }) => {
     const { laporan } = getState();
     const updatedFilters = { ...laporan.filters, ...newFilters };
     
-    // Update filters in state first
     dispatch({ type: 'laporan/setFilters', payload: newFilters });
-    
-    // Then fetch with new filters
     return dispatch(fetchLaporanAnakBinaan(updatedFilters)).unwrap();
   }
 );
