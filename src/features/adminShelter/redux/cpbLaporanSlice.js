@@ -20,7 +20,7 @@ const initialState = {
   children: [],
   currentStatus: null,
   
-  // Filter options
+  // Filter options - properly mapped
   filterOptions: {
     jenisKelamin: [],
     kelas: [],
@@ -43,7 +43,7 @@ const initialState = {
   filterOptionsError: null,
   initializeError: null,
   exportError: null,
-  errorDetails: null, // Additional error details from backend
+  errorDetails: null,
   
   // UI state
   filters: {
@@ -52,14 +52,13 @@ const initialState = {
     statusOrangTua: null,
     search: ''
   },
-  activeTab: 'BCPB', // Current active tab
+  activeTab: 'BCPB',
 };
 
 const cpbLaporanSlice = createSlice({
   name: 'cpbLaporan',
   initialState,
   reducers: {
-    // Filter actions
     setFilters: (state, action) => {
       state.filters = { ...state.filters, ...action.payload };
     },
@@ -84,13 +83,11 @@ const cpbLaporanSlice = createSlice({
       };
     },
     
-    // Tab actions
     setActiveTab: (state, action) => {
       state.activeTab = action.payload;
       state.currentStatus = action.payload;
     },
     
-    // Clear data actions
     clearChildren: (state) => {
       state.children = [];
       state.currentStatus = null;
@@ -163,7 +160,16 @@ const cpbLaporanSlice = createSlice({
       .addCase(fetchCpbReport.fulfilled, (state, action) => {
         state.loading = false;
         state.summary = action.payload.summary;
-        state.filterOptions = { ...state.filterOptions, ...action.payload.filter_options };
+        
+        // Map backend filter options to frontend format
+        if (action.payload.filter_options) {
+          const filterOptions = action.payload.filter_options;
+          state.filterOptions = {
+            jenisKelamin: filterOptions.jenis_kelamin || filterOptions.jenisKelamin || [],
+            kelas: filterOptions.kelas || [],
+            statusOrangTua: filterOptions.status_orang_tua || filterOptions.statusOrangTua || []
+          };
+        }
         state.error = null;
       })
       .addCase(fetchCpbReport.rejected, (state, action) => {
@@ -194,7 +200,15 @@ const cpbLaporanSlice = createSlice({
       })
       .addCase(fetchCpbFilterOptions.fulfilled, (state, action) => {
         state.filterOptionsLoading = false;
-        state.filterOptions = action.payload;
+        
+        // Map backend response to frontend format
+        const backendOptions = action.payload;
+        state.filterOptions = {
+          jenisKelamin: backendOptions.jenis_kelamin || backendOptions.jenisKelamin || [],
+          kelas: backendOptions.kelas || [],
+          statusOrangTua: backendOptions.status_orang_tua || backendOptions.statusOrangTua || []
+        };
+        
         state.filterOptionsError = null;
       })
       .addCase(fetchCpbFilterOptions.rejected, (state, action) => {
@@ -281,5 +295,14 @@ export const selectCpbTabCounts = createSelector(
     PB: summary.PB || 0
   })
 );
+
+// Debug selector for filter options
+export const selectCpbFilterOptionsDebug = (state) => ({
+  raw: state.cpbLaporan.filterOptions,
+  hasJenisKelamin: (state.cpbLaporan.filterOptions.jenisKelamin || []).length > 0,
+  hasKelas: (state.cpbLaporan.filterOptions.kelas || []).length > 0,
+  hasStatusOrangTua: (state.cpbLaporan.filterOptions.statusOrangTua || []).length > 0,
+  loading: state.cpbLaporan.filterOptionsLoading
+});
 
 export default cpbLaporanSlice.reducer;

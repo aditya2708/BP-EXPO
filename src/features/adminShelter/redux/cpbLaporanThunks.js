@@ -50,7 +50,14 @@ export const fetchCpbFilterOptions = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await cpbLaporanApi.getFilterOptions();
-      return response.data.data;
+      const data = response.data.data;
+      
+      // Transform backend data to frontend format
+      return {
+        jenisKelamin: data.jenis_kelamin || [],
+        kelas: data.kelas || [],
+        statusOrangTua: data.status_orang_tua || []
+      };
     } catch (error) {
       const message = error.response?.data?.message || 
         error.message || 
@@ -102,11 +109,11 @@ export const initializeCpbLaporanPage = createAsyncThunk(
   'cpbLaporan/initializeCpbLaporanPage',
   async ({ jenisKelamin, kelas, statusOrangTua } = {}, { dispatch, rejectWithValue }) => {
     try {
-      // Fetch filter options first
+      // Fetch filter options first - this is critical for UI
       const filterOptionsResult = await dispatch(fetchCpbFilterOptions()).unwrap();
       
       // Fetch main summary data
-      await dispatch(fetchCpbReport({ 
+      const reportResult = await dispatch(fetchCpbReport({ 
         jenisKelamin, 
         kelas, 
         statusOrangTua 
@@ -122,7 +129,8 @@ export const initializeCpbLaporanPage = createAsyncThunk(
       
       return { 
         success: true,
-        filterOptions: filterOptionsResult
+        filterOptions: filterOptionsResult,
+        report: reportResult
       };
     } catch (error) {
       const message = error.message || 'Failed to initialize CPB laporan page';
@@ -141,12 +149,15 @@ export const updateCpbFiltersAndRefresh = createAsyncThunk(
     // Update filters in state first
     dispatch({ type: 'cpbLaporan/setFilters', payload: newFilters });
     
-    // Refresh summary with new filters
-    await dispatch(fetchCpbReport({
+    // Transform frontend filter names to backend format
+    const backendFilters = {
       jenisKelamin: updatedFilters.jenisKelamin,
       kelas: updatedFilters.kelas,
       statusOrangTua: updatedFilters.statusOrangTua
-    })).unwrap();
+    };
+    
+    // Refresh summary with new filters
+    await dispatch(fetchCpbReport(backendFilters)).unwrap();
     
     // Refresh current tab children data if there's an active tab
     if (cpbLaporan.currentStatus) {
