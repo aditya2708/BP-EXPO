@@ -9,6 +9,7 @@ import {
   FlatList
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const AnakBinaanFilterSection = ({
   visible,
@@ -19,27 +20,42 @@ const AnakBinaanFilterSection = ({
   onClear
 }) => {
   const [tempFilters, setTempFilters] = useState({
-    year: null,
+    start_date: null,
+    end_date: null,
     jenisKegiatan: null
   });
-  const [showYearModal, setShowYearModal] = useState(false);
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
 
   useEffect(() => {
     if (visible) {
       setTempFilters({
-        year: filters.year,
+        start_date: filters.start_date ? new Date(filters.start_date) : null,
+        end_date: filters.end_date ? new Date(filters.end_date) : null,
         jenisKegiatan: filters.jenisKegiatan
       });
     }
   }, [visible, filters]);
 
-  const handleYearChange = (year) => {
-    setShowYearModal(false);
-    setTempFilters(prev => ({
-      ...prev,
-      year
-    }));
+  const handleStartDateChange = (event, selectedDate) => {
+    setShowStartDatePicker(false);
+    if (selectedDate) {
+      setTempFilters(prev => ({
+        ...prev,
+        start_date: selectedDate
+      }));
+    }
+  };
+
+  const handleEndDateChange = (event, selectedDate) => {
+    setShowEndDatePicker(false);
+    if (selectedDate) {
+      setTempFilters(prev => ({
+        ...prev,
+        end_date: selectedDate
+      }));
+    }
   };
 
   const handleActivityChange = (jenisKegiatan) => {
@@ -51,62 +67,35 @@ const AnakBinaanFilterSection = ({
   };
 
   const handleApply = () => {
-    onApply(tempFilters);
+    const formattedFilters = {
+      start_date: tempFilters.start_date ? 
+        tempFilters.start_date.toISOString().split('T')[0] : null,
+      end_date: tempFilters.end_date ? 
+        tempFilters.end_date.toISOString().split('T')[0] : null,
+      jenisKegiatan: tempFilters.jenisKegiatan
+    };
+    onApply(formattedFilters);
   };
 
   const handleClear = () => {
     setTempFilters({
-      year: new Date().getFullYear(),
+      start_date: null,
+      end_date: null,
       jenisKegiatan: null
     });
     onClear();
   };
 
-  const hasActiveFilters = tempFilters.jenisKegiatan;
+  const formatDate = (date) => {
+    if (!date) return 'Pilih tanggal';
+    return date.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
 
-  const renderYearModal = () => (
-    <Modal
-      visible={showYearModal}
-      transparent
-      animationType="slide"
-      onRequestClose={() => setShowYearModal(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Pilih Tahun</Text>
-            <TouchableOpacity onPress={() => setShowYearModal(false)}>
-              <Ionicons name="close" size={24} color="#666" />
-            </TouchableOpacity>
-          </View>
-          
-          <FlatList
-            data={filterOptions.availableYears}
-            keyExtractor={(item) => item.toString()}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[
-                  styles.modalItem,
-                  tempFilters.year === item && styles.modalItemSelected
-                ]}
-                onPress={() => handleYearChange(item)}
-              >
-                <Text style={[
-                  styles.modalItemText,
-                  tempFilters.year === item && styles.modalItemTextSelected
-                ]}>
-                  {item}
-                </Text>
-                {tempFilters.year === item && (
-                  <Ionicons name="checkmark" size={20} color="#9b59b6" />
-                )}
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      </View>
-    </Modal>
-  );
+  const hasActiveFilters = tempFilters.start_date || tempFilters.end_date || tempFilters.jenisKegiatan;
 
   const renderActivityModal = () => (
     <Modal
@@ -187,21 +176,42 @@ const AnakBinaanFilterSection = ({
           </View>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Year Section */}
+            {/* Date Range Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Tahun</Text>
+              <Text style={styles.sectionTitle}>Rentang Tanggal</Text>
               
+              {/* Start Date */}
               <TouchableOpacity
-                style={styles.filterButton}
-                onPress={() => setShowYearModal(true)}
+                style={styles.dateButton}
+                onPress={() => setShowStartDatePicker(true)}
               >
-                <View style={styles.filterButtonContent}>
-                  <Text style={styles.filterLabel}>Tahun</Text>
-                  <Text style={styles.filterValue}>
-                    {tempFilters.year || 'Pilih tahun'}
+                <View style={styles.dateButtonContent}>
+                  <Text style={styles.dateLabel}>Tanggal Mulai</Text>
+                  <Text style={[
+                    styles.dateValue,
+                    !tempFilters.start_date && styles.dateValuePlaceholder
+                  ]}>
+                    {formatDate(tempFilters.start_date)}
                   </Text>
                 </View>
-                <Ionicons name="chevron-down" size={20} color="#9b59b6" />
+                <Ionicons name="calendar-outline" size={20} color="#9b59b6" />
+              </TouchableOpacity>
+
+              {/* End Date */}
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={() => setShowEndDatePicker(true)}
+              >
+                <View style={styles.dateButtonContent}>
+                  <Text style={styles.dateLabel}>Tanggal Akhir</Text>
+                  <Text style={[
+                    styles.dateValue,
+                    !tempFilters.end_date && styles.dateValuePlaceholder
+                  ]}>
+                    {formatDate(tempFilters.end_date)}
+                  </Text>
+                </View>
+                <Ionicons name="calendar-outline" size={20} color="#9b59b6" />
               </TouchableOpacity>
             </View>
 
@@ -245,7 +255,25 @@ const AnakBinaanFilterSection = ({
             </TouchableOpacity>
           </View>
 
-          {renderYearModal()}
+          {/* Date Pickers */}
+          {showStartDatePicker && (
+            <DateTimePicker
+              value={tempFilters.start_date || new Date()}
+              mode="date"
+              display="default"
+              onChange={handleStartDateChange}
+            />
+          )}
+
+          {showEndDatePicker && (
+            <DateTimePicker
+              value={tempFilters.end_date || new Date()}
+              mode="date"
+              display="default"
+              onChange={handleEndDateChange}
+            />
+          )}
+
           {renderActivityModal()}
         </View>
       </View>
@@ -263,7 +291,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '70%'
+    maxHeight: '80%'
   },
   header: {
     flexDirection: 'row',
@@ -291,6 +319,33 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 16
+  },
+  dateButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef'
+  },
+  dateButtonContent: {
+    flex: 1
+  },
+  dateLabel: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4
+  },
+  dateValue: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500'
+  },
+  dateValuePlaceholder: {
+    color: '#999'
   },
   filterButton: {
     flexDirection: 'row',

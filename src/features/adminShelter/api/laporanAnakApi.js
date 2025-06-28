@@ -33,7 +33,7 @@ export const laporanAnakApi = {
   },
 
   /**
-   * Get available years for filter
+   * Get available years for filter (kept for backward compatibility)
    * @returns {Promise} - API response with available years
    */
   getAvailableYears: async () => {
