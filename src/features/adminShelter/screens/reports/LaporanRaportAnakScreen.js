@@ -6,203 +6,277 @@ import {
   FlatList,
   RefreshControl,
   TouchableOpacity,
-  Modal,
-  Alert
+  TextInput
 } from 'react-native';
-import { useSelector, useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 
 import LoadingSpinner from '../../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../../common/components/ErrorMessage';
 import EmptyState from '../../../../common/components/EmptyState';
-import ReportFilters from '../../components/ReportFilters';
+import RaportAttendanceCard from '../../components/RaportAttendanceCard';
 import RaportSummaryCards from '../../components/RaportSummaryCards';
-import RaportCard from '../../components/RaportCard';
+import RaportFilterSection from '../../components/RaportFilterSection';
 
 import {
-  selectRaportLaporanState,
-  selectChildren,
-  selectSummary,
-  selectFilterOptions,
-  selectFilters,
-  selectLoading,
-  selectError,
-  selectInitializingPage,
-  selectExpandedCards,
-  setFilters,
+  selectRaportChildren,
+  selectRaportSummary,
+  selectRaportPagination,
+  selectRaportFilterOptions,
+  selectRaportFilters,
+  selectRaportExpandedCards,
+  selectRaportLoading,
+  selectRaportInitializingPage,
+  selectRaportRefreshingAll,
+  selectRaportError,
+  selectRaportRefreshAllError,
+  selectRaportHasActiveFilters,
+  setSearch,
   resetFilters,
   toggleCardExpanded,
-  expandAllCards,
-  collapseAllCards,
-  clearError
+  clearAllErrors
 } from '../../redux/raportLaporanSlice';
 
 import {
+  fetchLaporanRaport,
   initializeRaportLaporanPage,
-  updateFiltersAndRefresh,
-  fetchChildDetailRaport
+  updateRaportFiltersAndRefreshAll
 } from '../../redux/raportLaporanThunks';
 
-const LaporanRaportAnakScreen = ({ navigation }) => {
+const LaporanRaportAnakScreen = () => {
   const dispatch = useDispatch();
-  const [showFilterModal, setShowFilterModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Redux state
-  const children = useSelector(selectChildren);
-  const summary = useSelector(selectSummary);
-  const filterOptions = useSelector(selectFilterOptions);
-  const filters = useSelector(selectFilters);
-  const loading = useSelector(selectLoading);
-  const error = useSelector(selectError);
-  const initializingPage = useSelector(selectInitializingPage);
-  const expandedCards = useSelector(selectExpandedCards);
+  const children = useSelector(selectRaportChildren);
+  const summary = useSelector(selectRaportSummary);
+  const pagination = useSelector(selectRaportPagination);
+  const filterOptions = useSelector(selectRaportFilterOptions);
+  const filters = useSelector(selectRaportFilters);
+  const expandedCards = useSelector(selectRaportExpandedCards);
+  const loading = useSelector(selectRaportLoading);
+  const initializingPage = useSelector(selectRaportInitializingPage);
+  const refreshingAll = useSelector(selectRaportRefreshingAll);
+  const error = useSelector(selectRaportError);
+  const refreshAllError = useSelector(selectRaportRefreshAllError);
+  const hasActiveFilters = useSelector(selectRaportHasActiveFilters);
 
+  // Initialize page
   useEffect(() => {
-    dispatch(initializeRaportLaporanPage());
+    dispatch(clearAllErrors());
+    initializePage();
   }, [dispatch]);
 
+  const initializePage = async () => {
+    try {
+      await dispatch(initializeRaportLaporanPage()).unwrap();
+      setCurrentPage(1);
+    } catch (error) {
+      console.error('Failed to initialize page:', error);
+    }
+  };
+
+  // Handle refresh
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await dispatch(updateFiltersAndRefresh(filters)).unwrap();
-    } catch (error) {
-      console.error('Refresh failed:', error);
+      await dispatch(updateRaportFiltersAndRefreshAll({
+        newFilters: { ...filters, search: searchText },
+        page: 1
+      })).unwrap();
+      setCurrentPage(1);
     } finally {
       setRefreshing(false);
     }
   };
 
-  const handleFilterChange = (newFilters) => {
-    dispatch(updateFiltersAndRefresh(newFilters));
-    setShowFilterModal(false);
+  // Handle filter changes
+  const handleFilterChange = async (newFilters) => {
+    try {
+      await dispatch(updateRaportFiltersAndRefreshAll({
+        newFilters,
+        page: 1
+      })).unwrap();
+      setCurrentPage(1);
+    } catch (error) {
+      console.error('Failed to apply filters:', error);
+    }
+    setShowFilters(false);
   };
 
-  const handleSemesterChange = (semester_id) => {
-    handleFilterChange({ semester_id });
-  };
-
-  const handleTahunAjaranChange = (tahun_ajaran) => {
-    handleFilterChange({ tahun_ajaran });
-  };
-
-  const handleMataPelajaranChange = (mata_pelajaran) => {
-    handleFilterChange({ mata_pelajaran });
-  };
-
-  const handleStatusChange = (status) => {
-    handleFilterChange({ status });
-  };
-
-  const handleClearFilters = () => {
+  const handleClearFilters = async () => {
     dispatch(resetFilters());
-    dispatch(updateFiltersAndRefresh({}));
-    setShowFilterModal(false);
+    setSearchText('');
+    try {
+      await dispatch(updateRaportFiltersAndRefreshAll({
+        newFilters: { 
+          start_date: null,
+          end_date: null,
+          mata_pelajaran: null,
+          search: '' 
+        },
+        page: 1
+      })).unwrap();
+      setCurrentPage(1);
+    } catch (error) {
+      console.error('Failed to clear filters:', error);
+    }
+    setShowFilters(false);
   };
 
+  // Handle search
+  const handleSearch = async () => {
+    if (!searchText.trim()) return;
+    
+    try {
+      await dispatch(updateRaportFiltersAndRefreshAll({
+        newFilters: { ...filters, search: searchText.trim() },
+        page: 1
+      })).unwrap();
+      setCurrentPage(1);
+    } catch (error) {
+      console.error('Failed to search:', error);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (pagination && 
+        currentPage < pagination.last_page && 
+        !loading && !refreshingAll) {
+      loadMoreData();
+    }
+  };
+
+  const loadMoreData = async () => {
+    try {
+      await dispatch(fetchLaporanRaport({
+        start_date: filters.start_date,
+        end_date: filters.end_date,
+        mata_pelajaran: filters.mata_pelajaran,
+        search: searchText,
+        page: currentPage + 1
+      })).unwrap();
+      setCurrentPage(currentPage + 1);
+    } catch (error) {
+      console.error('Failed to load more data:', error);
+    }
+  };
+
+  // Handle child item press
+  const handleChildPress = (child) => {
+    console.log('Child pressed:', child.full_name);
+    // TODO: Navigate to child detail
+  };
+
+  // Handle card expand/collapse
   const handleCardToggle = (childId) => {
     dispatch(toggleCardExpanded(childId));
   };
 
-  const handleExpandAll = () => {
-    dispatch(expandAllCards());
-  };
-
-  const handleCollapseAll = () => {
-    dispatch(collapseAllCards());
-  };
-
-  const handleViewChildDetail = (childId) => {
-    navigation.navigate('RaportChildDetail', { 
-      childId,
-      filters: filters
-    });
-  };
-
-  const handleRaportDetail = async (childId, raportId) => {
-    navigation.navigate('RaportChildDetail', { 
-      childId, 
-      filters: filters
-    });
-  };
-
-  const renderChild = ({ item }) => (
-    <RaportCard
-      child={item}
-      expanded={expandedCards.includes(item.id_anak)}
-      onToggle={() => handleCardToggle(item.id_anak)}
-      onViewDetail={() => handleViewChildDetail(item.id_anak)}
-      onRaportDetail={handleRaportDetail}
-    />
-  );
-
+  // Render header
   const renderHeader = () => (
-    <View>
-      {/* Filter Section */}
-      <View style={styles.filterSection}>
+    <View style={styles.header}>
+      <View style={styles.headerTop}>
+        <Text style={styles.title}>Laporan Raport Anak</Text>
         <TouchableOpacity
           style={styles.filterButton}
-          onPress={() => setShowFilterModal(true)}
+          onPress={() => setShowFilters(true)}
+          disabled={refreshingAll}
         >
-          <Ionicons name="filter" size={20} color="#9b59b6" />
-          <Text style={styles.filterButtonText}>Filter</Text>
+          <Ionicons 
+            name="filter" 
+            size={20} 
+            color={hasActiveFilters ? '#9b59b6' : '#666'} 
+          />
         </TouchableOpacity>
-
-        <View style={styles.filterActions}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleExpandAll}
-          >
-            <Text style={styles.actionButtonText}>Expand All</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleCollapseAll}
-          >
-            <Text style={styles.actionButtonText}>Collapse All</Text>
-          </TouchableOpacity>
-        </View>
       </View>
 
-      {/* Summary Cards */}
-      {summary && (
-        <RaportSummaryCards summary={summary} />
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Cari nama anak..."
+          value={searchText}
+          onChangeText={setSearchText}
+          onSubmitEditing={handleSearch}
+          editable={!refreshingAll}
+        />
+        <TouchableOpacity 
+          style={styles.searchButton}
+          onPress={handleSearch} 
+          disabled={refreshingAll || !searchText.trim()}
+        >
+          <Text style={[
+            styles.searchButtonText,
+            (!searchText.trim() || refreshingAll) && styles.searchButtonTextDisabled
+          ]}>
+            Cari
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {(hasActiveFilters || searchText.trim()) && (
+        <TouchableOpacity 
+          style={styles.clearFiltersButton}
+          onPress={() => {
+            if (searchText.trim()) {
+              setSearchText('');
+            }
+            handleClearFilters();
+          }}
+          disabled={refreshingAll}
+        >
+          <Ionicons name="close-circle" size={16} color="#9b59b6" />
+          <Text style={styles.clearFiltersText}>
+            {searchText.trim() ? 'Hapus Pencarian' : 'Hapus Filter'}
+          </Text>
+        </TouchableOpacity>
       )}
 
-      {/* Applied Filters Info */}
-      {(filters.semester_id || filters.tahun_ajaran || filters.mata_pelajaran || filters.status) && (
-        <View style={styles.appliedFilters}>
-          <Text style={styles.appliedFiltersText}>
-            Filters applied: {Object.values(filters).filter(Boolean).length}
-          </Text>
-          <TouchableOpacity onPress={handleClearFilters}>
-            <Text style={styles.clearFiltersText}>Clear All</Text>
-          </TouchableOpacity>
+      {refreshingAll && (
+        <View style={styles.refreshingIndicator}>
+          <LoadingSpinner size="small" />
+          <Text style={styles.refreshingText}>Memperbarui data...</Text>
         </View>
       )}
 
-      <Text style={styles.sectionTitle}>
-        Anak Binaan ({children.length})
-      </Text>
+      {pagination && (
+        <Text style={styles.resultCount}>
+          {pagination.total} anak ditemukan
+        </Text>
+      )}
     </View>
   );
 
+  const renderChildItem = ({ item }) => (
+    <RaportAttendanceCard
+      child={item}
+      isExpanded={expandedCards.includes(item.id_anak)}
+      onToggle={() => handleCardToggle(item.id_anak)}
+      onChildPress={handleChildPress}
+    />
+  );
+
+  const renderFooter = () => {
+    if (!loading || currentPage === 1) return null;
+    return <LoadingSpinner />;
+  };
+
+  // Loading state
   if (initializingPage) {
-    return (
-      <LoadingSpinner 
-        fullScreen 
-        message="Memuat laporan raport..." 
-      />
-    );
+    return <LoadingSpinner fullScreen message="Memuat laporan raport..." />;
   }
 
-  if (error && !children.length) {
+  // Error state
+  if ((error || refreshAllError) && !refreshing) {
     return (
       <View style={styles.container}>
-        <ErrorMessage
-          message={error}
-          onRetry={() => dispatch(initializeRaportLaporanPage())}
+        <ErrorMessage 
+          message={error || refreshAllError} 
+          onRetry={() => dispatch(fetchLaporanRaport(filters))}
         />
       </View>
     );
@@ -212,69 +286,49 @@ const LaporanRaportAnakScreen = ({ navigation }) => {
     <View style={styles.container}>
       <FlatList
         data={children}
-        renderItem={renderChild}
+        renderItem={renderChildItem}
         keyExtractor={(item) => item.id_anak.toString()}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={
-          <EmptyState
-            icon="document-text-outline"
-            title="Tidak Ada Data Raport"
-            message="Belum ada data raport untuk filter yang dipilih"
-            onRetry={handleRefresh}
-          />
+        ListHeaderComponent={
+          <View>
+            {renderHeader()}
+            <RaportSummaryCards summary={summary} />
+          </View>
         }
+        contentContainerStyle={styles.listContainer}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
             colors={['#9b59b6']}
+            tintColor="#9b59b6"
           />
         }
-        contentContainerStyle={styles.listContainer}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.1}
+        ListFooterComponent={renderFooter}
+        ListEmptyComponent={
+          !loading && !refreshingAll ? (
+            <EmptyState
+              icon="document-text-outline"
+              title="Tidak Ada Data"
+              message="Tidak ada data raport untuk filter yang dipilih"
+              actionButtonText="Refresh"
+              onActionPress={handleRefresh}
+            />
+          ) : null
+        }
         showsVerticalScrollIndicator={false}
       />
 
       {/* Filter Modal */}
-      <Modal
-        visible={showFilterModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowFilterModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Filter Laporan Raport</Text>
-              <TouchableOpacity onPress={() => setShowFilterModal(false)}>
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-
-            <ReportFilters
-              filters={filters}
-              filterOptions={{
-                availableYears: filterOptions.tahunAjaran,
-                availableActivityTypes: filterOptions.mataPelajaran,
-                availableSemesters: filterOptions.semesters,
-                availableStatus: filterOptions.statusOptions
-              }}
-              onSemesterChange={handleSemesterChange}
-              onYearChange={handleTahunAjaranChange}
-              onActivityTypeChange={handleMataPelajaranChange}
-              onStatusChange={handleStatusChange}
-              onClearFilter={handleClearFilters}
-              showSemesterFilter={true}
-              showStatusFilter={true}
-            />
-          </View>
-        </View>
-      </Modal>
-
-      {loading && (
-        <View style={styles.loadingOverlay}>
-          <LoadingSpinner message="Memuat data..." />
-        </View>
-      )}
+      <RaportFilterSection
+        visible={showFilters}
+        filters={filters}
+        filterOptions={filterOptions}
+        onClose={() => setShowFilters(false)}
+        onApply={handleFilterChange}
+        onClear={handleClearFilters}
+      />
     </View>
   );
 };
@@ -284,110 +338,105 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5'
   },
-  listContainer: {
-    paddingBottom: 20
+  header: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2
   },
-  filterSection: {
+  headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0'
+    marginBottom: 16
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333'
   },
   filterButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f8f9fa'
+  },
+  searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8f4ff',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 8
+  },
+  searchIcon: {
+    marginRight: 8
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#333'
+  },
+  searchButton: {
+    backgroundColor: '#9b59b6',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#9b59b6'
+    borderRadius: 6,
+    marginLeft: 8
   },
-  filterButtonText: {
+  searchButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600'
+  },
+  searchButtonTextDisabled: {
+    opacity: 0.5
+  },
+  clearFiltersButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    backgroundColor: '#f8f4ff',
+    marginBottom: 8
+  },
+  clearFiltersText: {
+    fontSize: 14,
+    color: '#9b59b6',
+    fontWeight: '500',
+    marginLeft: 4
+  },
+  refreshingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#f8f4ff',
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginBottom: 8
+  },
+  refreshingText: {
+    fontSize: 14,
     color: '#9b59b6',
     fontWeight: '500',
     marginLeft: 8
   },
-  filterActions: {
-    flexDirection: 'row',
-    gap: 8
-  },
-  actionButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 6
-  },
-  actionButtonText: {
-    fontSize: 12,
+  resultCount: {
+    fontSize: 14,
     color: '#666',
-    fontWeight: '500'
+    marginTop: 4
   },
-  appliedFilters: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  listContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#e8f4fd',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd'
-  },
-  appliedFiltersText: {
-    fontSize: 14,
-    color: '#2196f3',
-    fontWeight: '500'
-  },
-  clearFiltersText: {
-    fontSize: 14,
-    color: '#f44336',
-    fontWeight: '500'
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0'
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end'
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%'
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0'
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333'
-  },
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center'
+    paddingBottom: 20
   }
 });
 
