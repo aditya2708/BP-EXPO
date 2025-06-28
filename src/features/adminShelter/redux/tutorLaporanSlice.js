@@ -2,23 +2,20 @@ import { createSlice } from '@reduxjs/toolkit';
 import {
   fetchLaporanTutor,
   fetchTutorDetailReport,
-  fetchMapelOptions,
   fetchTutorJenisKegiatanOptions,
   fetchTutorAvailableYears,
   initializeTutorLaporanPage,
-  updateTutorFiltersAndRefresh
+  updateTutorFiltersAndRefreshAll
 } from './tutorLaporanThunks';
 
 const initialState = {
   tutors: [],
   summary: null,
+  pagination: null,
   filterOptions: {
     availableYears: [],
     availableActivityTypes: [],
-    availableMapel: [],
-    currentYear: new Date().getFullYear(),
-    currentActivityType: null,
-    currentMapel: null
+    currentActivityType: null
   },
   months: {},
   
@@ -32,16 +29,19 @@ const initialState = {
   tutorDetailLoading: false,
   filterOptionsLoading: false,
   initializingPage: false,
+  refreshingAll: false,
   
   error: null,
   tutorDetailError: null,
   filterOptionsError: null,
   initializeError: null,
+  refreshAllError: null,
   
   filters: {
-    year: new Date().getFullYear(),
+    start_date: null,
+    end_date: null,
     jenisKegiatan: null,
-    maple: null
+    search: ''
   },
   expandedCards: [],
 };
@@ -53,20 +53,24 @@ const tutorLaporanSlice = createSlice({
     setFilters: (state, action) => {
       state.filters = { ...state.filters, ...action.payload };
     },
-    setYear: (state, action) => {
-      state.filters.year = action.payload;
+    setStartDate: (state, action) => {
+      state.filters.start_date = action.payload;
+    },
+    setEndDate: (state, action) => {
+      state.filters.end_date = action.payload;
     },
     setJenisKegiatan: (state, action) => {
       state.filters.jenisKegiatan = action.payload;
     },
-    setMapel: (state, action) => {
-      state.filters.maple = action.payload;
+    setSearch: (state, action) => {
+      state.filters.search = action.payload;
     },
     resetFilters: (state) => {
       state.filters = {
-        year: new Date().getFullYear(),
+        start_date: null,
+        end_date: null,
         jenisKegiatan: null,
-        maple: null
+        search: ''
       };
     },
     
@@ -114,6 +118,16 @@ const tutorLaporanSlice = createSlice({
     },
     clearInitializeError: (state) => {
       state.initializeError = null;
+    },
+    clearRefreshAllError: (state) => {
+      state.refreshAllError = null;
+    },
+    clearAllErrors: (state) => {
+      state.error = null;
+      state.tutorDetailError = null;
+      state.filterOptionsError = null;
+      state.initializeError = null;
+      state.refreshAllError = null;
     }
   },
   extraReducers: (builder) => {
@@ -131,17 +145,31 @@ const tutorLaporanSlice = createSlice({
         state.initializeError = action.payload;
       })
       
-      .addCase(updateTutorFiltersAndRefresh.pending, (state) => {
-        state.loading = true;
+      .addCase(updateTutorFiltersAndRefreshAll.pending, (state) => {
+        state.refreshingAll = true;
+        state.refreshAllError = null;
         state.error = null;
       })
-      .addCase(updateTutorFiltersAndRefresh.fulfilled, (state) => {
-        state.loading = false;
+      .addCase(updateTutorFiltersAndRefreshAll.fulfilled, (state, action) => {
+        state.refreshingAll = false;
+        state.refreshAllError = null;
         state.error = null;
+        
+        if (action.payload.tutorData) {
+          if (action.payload.append) {
+            state.tutors = [...state.tutors, ...action.payload.tutorData.tutors];
+          } else {
+            state.tutors = action.payload.tutorData.tutors;
+          }
+          state.summary = action.payload.tutorData.summary;
+          state.pagination = action.payload.tutorData.pagination;
+          state.filterOptions = { ...state.filterOptions, ...action.payload.tutorData.filter_options };
+          state.months = action.payload.tutorData.months;
+        }
       })
-      .addCase(updateTutorFiltersAndRefresh.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
+      .addCase(updateTutorFiltersAndRefreshAll.rejected, (state, action) => {
+        state.refreshingAll = false;
+        state.refreshAllError = action.payload;
       })
       
       .addCase(fetchLaporanTutor.pending, (state) => {
@@ -150,8 +178,13 @@ const tutorLaporanSlice = createSlice({
       })
       .addCase(fetchLaporanTutor.fulfilled, (state, action) => {
         state.loading = false;
-        state.tutors = action.payload.tutors;
+        if (action.payload.append) {
+          state.tutors = [...state.tutors, ...action.payload.tutors];
+        } else {
+          state.tutors = action.payload.tutors;
+        }
         state.summary = action.payload.summary;
+        state.pagination = action.payload.pagination;
         state.filterOptions = { ...state.filterOptions, ...action.payload.filter_options };
         state.months = action.payload.months;
         state.error = null;
@@ -173,20 +206,6 @@ const tutorLaporanSlice = createSlice({
       .addCase(fetchTutorDetailReport.rejected, (state, action) => {
         state.tutorDetailLoading = false;
         state.tutorDetailError = action.payload;
-      })
-      
-      .addCase(fetchMapelOptions.pending, (state) => {
-        state.filterOptionsLoading = true;
-        state.filterOptionsError = null;
-      })
-      .addCase(fetchMapelOptions.fulfilled, (state, action) => {
-        state.filterOptionsLoading = false;
-        state.filterOptions.availableMapel = action.payload;
-        state.filterOptionsError = null;
-      })
-      .addCase(fetchMapelOptions.rejected, (state, action) => {
-        state.filterOptionsLoading = false;
-        state.filterOptionsError = action.payload;
       })
       
       .addCase(fetchTutorJenisKegiatanOptions.pending, (state) => {
@@ -221,9 +240,10 @@ const tutorLaporanSlice = createSlice({
 
 export const {
   setFilters,
-  setYear,
+  setStartDate,
+  setEndDate,
   setJenisKegiatan,
-  setMapel,
+  setSearch,
   resetFilters,
   toggleCardExpanded,
   setCardExpanded,
@@ -233,13 +253,16 @@ export const {
   clearError,
   clearTutorDetailError,
   clearFilterOptionsError,
-  clearInitializeError
+  clearInitializeError,
+  clearRefreshAllError,
+  clearAllErrors
 } = tutorLaporanSlice.actions;
 
 // Selectors
 export const selectTutorLaporanState = (state) => state.tutorLaporan;
 export const selectTutors = (state) => state.tutorLaporan.tutors;
 export const selectTutorSummary = (state) => state.tutorLaporan.summary;
+export const selectTutorPagination = (state) => state.tutorLaporan.pagination;
 export const selectTutorFilterOptions = (state) => state.tutorLaporan.filterOptions;
 export const selectTutorMonths = (state) => state.tutorLaporan.months;
 export const selectTutorFilters = (state) => state.tutorLaporan.filters;
@@ -249,18 +272,26 @@ export const selectTutorLoading = (state) => state.tutorLaporan.loading;
 export const selectTutorDetailLoading = (state) => state.tutorLaporan.tutorDetailLoading;
 export const selectTutorFilterOptionsLoading = (state) => state.tutorLaporan.filterOptionsLoading;
 export const selectTutorInitializingPage = (state) => state.tutorLaporan.initializingPage;
+export const selectTutorRefreshingAll = (state) => state.tutorLaporan.refreshingAll;
 export const selectTutorError = (state) => state.tutorLaporan.error;
 export const selectTutorDetailError = (state) => state.tutorLaporan.tutorDetailError;
 export const selectTutorFilterOptionsError = (state) => state.tutorLaporan.filterOptionsError;
 export const selectTutorInitializeError = (state) => state.tutorLaporan.initializeError;
+export const selectTutorRefreshAllError = (state) => state.tutorLaporan.refreshAllError;
 
 export const selectIsTutorCardExpanded = (state, tutorId) => 
   state.tutorLaporan.expandedCards.includes(tutorId);
 
 export const selectTutorCurrentFilters = (state) => ({
-  year: state.tutorLaporan.filters.year,
+  start_date: state.tutorLaporan.filters.start_date,
+  end_date: state.tutorLaporan.filters.end_date,
   jenisKegiatan: state.tutorLaporan.filters.jenisKegiatan,
-  maple: state.tutorLaporan.filters.maple
+  search: state.tutorLaporan.filters.search
 });
+
+export const selectTutorHasActiveFilters = (state) => {
+  const { start_date, end_date, jenisKegiatan, search } = state.tutorLaporan.filters;
+  return !!(start_date || end_date || jenisKegiatan || search);
+};
 
 export default tutorLaporanSlice.reducer;

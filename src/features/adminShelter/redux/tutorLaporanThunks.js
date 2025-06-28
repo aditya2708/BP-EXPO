@@ -3,15 +3,16 @@ import { tutorLaporanApi } from '../api/tutorLaporanApi';
 
 export const fetchLaporanTutor = createAsyncThunk(
   'tutorLaporan/fetchLaporanTutor',
-  async ({ year, jenisKegiatan, maple } = {}, { rejectWithValue }) => {
+  async ({ start_date, end_date, jenisKegiatan, search, page = 1, append = false } = {}, { rejectWithValue }) => {
     try {
-      const params = {};
-      if (year) params.year = year;
+      const params = { page };
+      if (start_date) params.start_date = start_date;
+      if (end_date) params.end_date = end_date;
       if (jenisKegiatan) params.jenis_kegiatan = jenisKegiatan;
-      if (maple) params.maple = maple;
+      if (search) params.search = search;
       
       const response = await tutorLaporanApi.getLaporanTutor(params);
-      return response.data.data;
+      return { ...response.data.data, append };
     } catch (error) {
       const message = error.response?.data?.message || 
         error.message || 
@@ -23,10 +24,11 @@ export const fetchLaporanTutor = createAsyncThunk(
 
 export const fetchTutorDetailReport = createAsyncThunk(
   'tutorLaporan/fetchTutorDetailReport',
-  async ({ tutorId, year, jenisKegiatan }, { rejectWithValue }) => {
+  async ({ tutorId, start_date, end_date, jenisKegiatan }, { rejectWithValue }) => {
     try {
       const params = {};
-      if (year) params.year = year;
+      if (start_date) params.start_date = start_date;
+      if (end_date) params.end_date = end_date;
       if (jenisKegiatan) params.jenis_kegiatan = jenisKegiatan;
       
       const response = await tutorLaporanApi.getTutorDetailReport(tutorId, params);
@@ -35,21 +37,6 @@ export const fetchTutorDetailReport = createAsyncThunk(
       const message = error.response?.data?.message || 
         error.message || 
         'Failed to fetch tutor detail report';
-      return rejectWithValue(message);
-    }
-  }
-);
-
-export const fetchMapelOptions = createAsyncThunk(
-  'tutorLaporan/fetchMapelOptions',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await tutorLaporanApi.getMapelOptions();
-      return response.data.data;
-    } catch (error) {
-      const message = error.response?.data?.message || 
-        error.message || 
-        'Failed to fetch mapel options';
       return rejectWithValue(message);
     }
   }
@@ -89,36 +76,35 @@ export const refreshTutorLaporanWithFilters = createAsyncThunk(
   'tutorLaporan/refreshTutorLaporanWithFilters',
   async (_, { getState, dispatch }) => {
     const { tutorLaporan } = getState();
-    const { year, jenisKegiatan, maple } = tutorLaporan.filters;
+    const { start_date, end_date, jenisKegiatan, search } = tutorLaporan.filters;
     
     return dispatch(fetchLaporanTutor({ 
-      year, 
+      start_date, 
+      end_date,
       jenisKegiatan,
-      maple 
+      search 
     }));
   }
 );
 
 export const initializeTutorLaporanPage = createAsyncThunk(
   'tutorLaporan/initializeTutorLaporanPage',
-  async ({ year, jenisKegiatan, maple } = {}, { dispatch, rejectWithValue }) => {
+  async ({ start_date, end_date, jenisKegiatan, search } = {}, { dispatch, rejectWithValue }) => {
     try {
       const yearsResult = await dispatch(fetchTutorAvailableYears()).unwrap();
       const activitiesResult = await dispatch(fetchTutorJenisKegiatanOptions()).unwrap();
-      const mapelResult = await dispatch(fetchMapelOptions()).unwrap();
       
-      const currentYear = year || new Date().getFullYear();
       await dispatch(fetchLaporanTutor({ 
-        year: currentYear, 
+        start_date, 
+        end_date,
         jenisKegiatan,
-        maple 
+        search
       })).unwrap();
       
       return { 
         success: true,
         years: yearsResult,
-        activities: activitiesResult,
-        mapel: mapelResult
+        activities: activitiesResult
       };
     } catch (error) {
       const message = error.message || 'Failed to initialize tutor laporan page';
@@ -127,14 +113,34 @@ export const initializeTutorLaporanPage = createAsyncThunk(
   }
 );
 
-export const updateTutorFiltersAndRefresh = createAsyncThunk(
-  'tutorLaporan/updateTutorFiltersAndRefresh',
-  async (newFilters, { dispatch, getState }) => {
-    const { tutorLaporan } = getState();
-    const updatedFilters = { ...tutorLaporan.filters, ...newFilters };
-    
-    dispatch({ type: 'tutorLaporan/setFilters', payload: newFilters });
-    
-    return dispatch(fetchLaporanTutor(updatedFilters)).unwrap();
+export const updateTutorFiltersAndRefreshAll = createAsyncThunk(
+  'tutorLaporan/updateTutorFiltersAndRefreshAll',
+  async ({ newFilters, page = 1, append = false }, { dispatch, getState, rejectWithValue }) => {
+    try {
+      const { tutorLaporan } = getState();
+      const updatedFilters = { ...tutorLaporan.filters, ...newFilters };
+      
+      // Update filters in state first
+      dispatch({ type: 'tutorLaporan/setFilters', payload: newFilters });
+      
+      // Fetch tutor data with new filters
+      const tutorDataResult = await dispatch(fetchLaporanTutor({
+        start_date: updatedFilters.start_date,
+        end_date: updatedFilters.end_date,
+        jenisKegiatan: updatedFilters.jenisKegiatan,
+        search: updatedFilters.search,
+        page,
+        append
+      })).unwrap();
+      
+      return {
+        filters: updatedFilters,
+        tutorData: tutorDataResult,
+        append
+      };
+    } catch (error) {
+      const message = error.message || 'Failed to update filters and refresh data';
+      return rejectWithValue(message);
+    }
   }
 );
