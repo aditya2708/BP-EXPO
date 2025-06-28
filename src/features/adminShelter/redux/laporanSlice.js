@@ -12,7 +12,8 @@ const initialState = {
   summary: {
     total_children: 0,
     average_attendance: 0,
-    total_activities: 0
+    total_activities: 0,
+    date_range: null
   },
   children: [],
   pagination: null,
@@ -37,7 +38,8 @@ const initialState = {
   
   // UI state
   filters: {
-    year: new Date().getFullYear(),
+    start_date: null,
+    end_date: null,
     jenisKegiatan: null,
     search: ''
   },
@@ -52,8 +54,11 @@ const laporanSlice = createSlice({
     setFilters: (state, action) => {
       state.filters = { ...state.filters, ...action.payload };
     },
-    setYear: (state, action) => {
-      state.filters.year = action.payload;
+    setStartDate: (state, action) => {
+      state.filters.start_date = action.payload;
+    },
+    setEndDate: (state, action) => {
+      state.filters.end_date = action.payload;
     },
     setJenisKegiatan: (state, action) => {
       state.filters.jenisKegiatan = action.payload;
@@ -63,13 +68,14 @@ const laporanSlice = createSlice({
     },
     resetFilters: (state) => {
       state.filters = {
-        year: new Date().getFullYear(),
+        start_date: null,
+        end_date: null,
         jenisKegiatan: null,
         search: ''
       };
     },
     
-    // Card expand/collapse (kept for backward compatibility)
+    // Card expand/collapse
     toggleCardExpanded: (state, action) => {
       const childId = action.payload;
       const index = state.expandedCards.indexOf(childId);
@@ -199,7 +205,8 @@ const laporanSlice = createSlice({
 // Action creators
 export const {
   setFilters,
-  setYear,
+  setStartDate,
+  setEndDate,
   setJenisKegiatan,
   setSearch,
   resetFilters,
@@ -229,12 +236,13 @@ export const selectRefreshAllError = (state) => state.laporan.refreshAllError;
 
 // Derived selectors
 export const selectHasActiveFilters = (state) => {
-  const { jenisKegiatan, search } = state.laporan.filters;
-  return !!(jenisKegiatan || search);
+  const { start_date, end_date, jenisKegiatan, search } = state.laporan.filters;
+  return !!(start_date || end_date || jenisKegiatan || search);
 };
 
 export const selectCurrentFilters = (state) => ({
-  year: state.laporan.filters.year,
+  start_date: state.laporan.filters.start_date,
+  end_date: state.laporan.filters.end_date,
   jenisKegiatan: state.laporan.filters.jenisKegiatan,
   search: state.laporan.filters.search
 });

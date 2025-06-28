@@ -4,10 +4,11 @@ import { laporanAnakApi } from '../api/laporanAnakApi';
 // Fetch main laporan anak binaan
 export const fetchLaporanAnakBinaan = createAsyncThunk(
   'laporan/fetchLaporanAnakBinaan',
-  async ({ year, jenisKegiatan, search, page, per_page } = {}, { rejectWithValue }) => {
+  async ({ start_date, end_date, jenisKegiatan, search, page, per_page } = {}, { rejectWithValue }) => {
     try {
       const params = {};
-      if (year) params.year = year;
+      if (start_date) params.start_date = start_date;
+      if (end_date) params.end_date = end_date;
       if (jenisKegiatan) params.jenisKegiatan = jenisKegiatan;
       if (search) params.search = search;
       if (page) params.page = page;
@@ -59,15 +60,20 @@ export const fetchAvailableYears = createAsyncThunk(
 // Initialize laporan page
 export const initializeLaporanPage = createAsyncThunk(
   'laporan/initializeLaporanPage',
-  async ({ year, jenisKegiatan } = {}, { dispatch, rejectWithValue }) => {
+  async ({ start_date, end_date, jenisKegiatan } = {}, { dispatch, rejectWithValue }) => {
     try {
       // Fetch filter options first
       const filterOptionsResult = await dispatch(fetchFilterOptions()).unwrap();
       const yearsResult = await dispatch(fetchAvailableYears()).unwrap();
       
+      // Set default date range to current year if not provided
+      const defaultStartDate = start_date || `${new Date().getFullYear()}-01-01`;
+      const defaultEndDate = end_date || `${new Date().getFullYear()}-12-31`;
+      
       // Fetch main data
       await dispatch(fetchLaporanAnakBinaan({ 
-        year: year || new Date().getFullYear(),
+        start_date: defaultStartDate,
+        end_date: defaultEndDate,
         jenisKegiatan 
       })).unwrap();
       
@@ -96,7 +102,8 @@ export const updateFiltersAndRefreshAll = createAsyncThunk(
       
       // Fetch data with new filters
       const result = await dispatch(fetchLaporanAnakBinaan({
-        year: updatedFilters.year,
+        start_date: updatedFilters.start_date,
+        end_date: updatedFilters.end_date,
         jenisKegiatan: updatedFilters.jenisKegiatan,
         search: updatedFilters.search,
         page,
