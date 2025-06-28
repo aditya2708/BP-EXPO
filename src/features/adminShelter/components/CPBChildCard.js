@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const CPBChildCard = ({ child, onPress, onExport }) => {
+const CPBChildCard = ({ child, onPress }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'BCPB':
@@ -32,10 +32,15 @@ const CPBChildCard = ({ child, onPress, onExport }) => {
     return gender === 'Laki-laki' ? '#3498db' : '#e91e63';
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return null;
+    return new Date(dateString).toLocaleDateString('id-ID');
+  };
+
   return (
     <TouchableOpacity
       style={styles.card}
-      onPress={onPress}
+      onPress={() => onPress(child)}
       activeOpacity={0.7}
     >
       <View style={styles.cardContent}>
@@ -74,7 +79,7 @@ const CPBChildCard = ({ child, onPress, onExport }) => {
           </View>
         </View>
 
-        {/* Right section - Details and actions */}
+        {/* Right section - Details and status */}
         <View style={styles.rightSection}>
           {/* Status CPB Badge */}
           <View style={[
@@ -111,20 +116,20 @@ const CPBChildCard = ({ child, onPress, onExport }) => {
               <View style={styles.detailRow}>
                 <Ionicons name="calendar" size={12} color="#666" />
                 <Text style={styles.detailText}>
-                  Sponsor: {new Date(child.sponsorship_date).toLocaleDateString('id-ID')}
+                  Sponsor: {formatDate(child.sponsorship_date)}
+                </Text>
+              </View>
+            )}
+
+            {child.created_at && (
+              <View style={styles.detailRow}>
+                <Ionicons name="time" size={12} color="#666" />
+                <Text style={styles.detailText}>
+                  Daftar: {formatDate(child.created_at)}
                 </Text>
               </View>
             )}
           </View>
-
-          {/* Export Button */}
-          <TouchableOpacity
-            style={styles.exportButton}
-            onPress={onExport}
-          >
-            <Ionicons name="download" size={16} color="#9b59b6" />
-            <Text style={styles.exportText}>Export</Text>
-          </TouchableOpacity>
         </View>
       </View>
     </TouchableOpacity>
@@ -150,7 +155,7 @@ const styles = StyleSheet.create({
   leftSection: {
     flexDirection: 'row',
     flex: 1,
-    marginRight: 12
+    marginRight: 16
   },
   photo: {
     width: 60,
@@ -192,7 +197,7 @@ const styles = StyleSheet.create({
   rightSection: {
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    minWidth: 100
+    minWidth: 120
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -220,21 +225,6 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 4,
     textAlign: 'right'
-  },
-  exportButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f4ff',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 6,
-    marginTop: 8
-  },
-  exportText: {
-    fontSize: 12,
-    color: '#9b59b6',
-    fontWeight: '500',
-    marginLeft: 4
   }
 });
 
