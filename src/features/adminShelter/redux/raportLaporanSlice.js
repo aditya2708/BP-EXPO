@@ -1,34 +1,38 @@
 import { createSlice } from '@reduxjs/toolkit';
 import {
   fetchLaporanRaport,
-  fetchChildDetailRaport,
-  fetchSemesterOptions,
-  fetchMataPelajaranOptions,
-  fetchAvailableYears,
+  fetchChildDetailReport,
+  fetchRaportFilterOptions,
+  fetchRaportAvailableYears,
   initializeRaportLaporanPage,
-  updateFiltersAndRefresh
+  updateRaportFiltersAndRefreshAll
 } from './raportLaporanThunks';
 
 const initialState = {
   // Main report data
   children: [],
-  summary: null,
-  filterOptions: {
-    semesters: [],
-    tahunAjaran: [],
-    mataPelajaran: [],
-    statusOptions: ['published', 'draft', 'archived'],
-    currentSemester: null,
-    currentTahunAjaran: new Date().getFullYear(),
-    currentMataPelajaran: null,
-    currentStatus: null
+  summary: {
+    total_children: 0,
+    total_raport: 0,
+    published_raport: 0,
+    draft_raport: 0,
+    average_grade: 0,
+    passing_percentage: 0
   },
+  pagination: null,
   
   // Child detail data
   childDetail: {
     child: null,
-    raportRecords: [],
+    raport_records: [],
     filter: null
+  },
+  
+  // Filter options
+  filterOptions: {
+    availableYears: [],
+    availableMataPelajaran: [],
+    availableSemesters: []
   },
   
   // Loading states
@@ -36,21 +40,23 @@ const initialState = {
   childDetailLoading: false,
   filterOptionsLoading: false,
   initializingPage: false,
+  refreshingAll: false,
   
   // Error states
   error: null,
   childDetailError: null,
   filterOptionsError: null,
   initializeError: null,
+  refreshAllError: null,
   
   // UI state
   filters: {
-    semester_id: null,
-    tahun_ajaran: null,
+    start_date: null,
+    end_date: null,
     mata_pelajaran: null,
-    status: null
+    search: ''
   },
-  expandedCards: [], // Track which cards are expanded
+  expandedCards: []
 };
 
 const raportLaporanSlice = createSlice({
@@ -61,28 +67,28 @@ const raportLaporanSlice = createSlice({
     setFilters: (state, action) => {
       state.filters = { ...state.filters, ...action.payload };
     },
-    setSemester: (state, action) => {
-      state.filters.semester_id = action.payload;
+    setStartDate: (state, action) => {
+      state.filters.start_date = action.payload;
     },
-    setTahunAjaran: (state, action) => {
-      state.filters.tahun_ajaran = action.payload;
+    setEndDate: (state, action) => {
+      state.filters.end_date = action.payload;
     },
     setMataPelajaran: (state, action) => {
       state.filters.mata_pelajaran = action.payload;
     },
-    setStatus: (state, action) => {
-      state.filters.status = action.payload;
+    setSearch: (state, action) => {
+      state.filters.search = action.payload;
     },
     resetFilters: (state) => {
       state.filters = {
-        semester_id: null,
-        tahun_ajaran: null,
+        start_date: null,
+        end_date: null,
         mata_pelajaran: null,
-        status: null
+        search: ''
       };
     },
     
-    // UI state actions
+    // Card expansion
     toggleCardExpanded: (state, action) => {
       const childId = action.payload;
       const index = state.expandedCards.indexOf(childId);
@@ -92,72 +98,61 @@ const raportLaporanSlice = createSlice({
         state.expandedCards.push(childId);
       }
     },
-    setCardExpanded: (state, action) => {
-      const { childId, expanded } = action.payload;
-      const index = state.expandedCards.indexOf(childId);
-      if (expanded && index === -1) {
-        state.expandedCards.push(childId);
-      } else if (!expanded && index > -1) {
-        state.expandedCards.splice(index, 1);
-      }
-    },
-    expandAllCards: (state) => {
-      state.expandedCards = state.children.map(child => child.id_anak);
-    },
-    collapseAllCards: (state) => {
-      state.expandedCards = [];
-    },
     
     // Clear data actions
     clearChildDetail: (state) => {
       state.childDetail = {
         child: null,
-        raportRecords: [],
+        raport_records: [],
         filter: null
       };
       state.childDetailError = null;
     },
-    clearError: (state) => {
+    clearAllErrors: (state) => {
       state.error = null;
-    },
-    clearChildDetailError: (state) => {
       state.childDetailError = null;
-    },
-    clearFilterOptionsError: (state) => {
       state.filterOptionsError = null;
-    },
-    clearInitializeError: (state) => {
       state.initializeError = null;
+      state.refreshAllError = null;
     }
   },
   extraReducers: (builder) => {
     builder
-      // Initialize Raport Laporan Page
+      // Initialize Page
       .addCase(initializeRaportLaporanPage.pending, (state) => {
         state.initializingPage = true;
         state.initializeError = null;
       })
       .addCase(initializeRaportLaporanPage.fulfilled, (state) => {
         state.initializingPage = false;
-        state.initializeError = null;
       })
       .addCase(initializeRaportLaporanPage.rejected, (state, action) => {
         state.initializingPage = false;
         state.initializeError = action.payload;
       })
       
-      // Update Filters and Refresh
-      .addCase(updateFiltersAndRefresh.pending, (state) => {
-        state.loading = true;
-        state.error = null;
+      // Update Filters and Refresh All
+      .addCase(updateRaportFiltersAndRefreshAll.pending, (state) => {
+        state.refreshingAll = true;
+        state.refreshAllError = null;
       })
-      .addCase(updateFiltersAndRefresh.fulfilled, (state) => {
-        state.loading = false;
-        state.error = null;
+      .addCase(updateRaportFiltersAndRefreshAll.fulfilled, (state, action) => {
+        state.refreshingAll = false;
+        
+        if (action.payload.raportData) {
+          if (action.payload.append) {
+            state.children = [...state.children, ...action.payload.raportData.children];
+          } else {
+            state.children = action.payload.raportData.children;
+          }
+          state.summary = action.payload.raportData.summary;
+          state.pagination = action.payload.raportData.pagination;
+          state.filterOptions = { ...state.filterOptions, ...action.payload.raportData.filter_options };
+        }
       })
-      .addCase(updateFiltersAndRefresh.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
+      .addCase(updateRaportFiltersAndRefreshAll.rejected, (state, action) => {
+        state.refreshingAll = false;
+        state.refreshAllError = action.payload;
       })
       
       // Fetch Laporan Raport
@@ -167,128 +162,97 @@ const raportLaporanSlice = createSlice({
       })
       .addCase(fetchLaporanRaport.fulfilled, (state, action) => {
         state.loading = false;
-        state.children = action.payload.children;
+        if (action.payload.append) {
+          state.children = [...state.children, ...action.payload.children];
+        } else {
+          state.children = action.payload.children;
+        }
         state.summary = action.payload.summary;
+        state.pagination = action.payload.pagination;
         state.filterOptions = { ...state.filterOptions, ...action.payload.filter_options };
-        state.error = null;
       })
       .addCase(fetchLaporanRaport.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
       
-      // Fetch Child Detail Raport
-      .addCase(fetchChildDetailRaport.pending, (state) => {
+      // Fetch Child Detail
+      .addCase(fetchChildDetailReport.pending, (state) => {
         state.childDetailLoading = true;
         state.childDetailError = null;
       })
-      .addCase(fetchChildDetailRaport.fulfilled, (state, action) => {
+      .addCase(fetchChildDetailReport.fulfilled, (state, action) => {
         state.childDetailLoading = false;
         state.childDetail = action.payload;
-        state.childDetailError = null;
       })
-      .addCase(fetchChildDetailRaport.rejected, (state, action) => {
+      .addCase(fetchChildDetailReport.rejected, (state, action) => {
         state.childDetailLoading = false;
         state.childDetailError = action.payload;
       })
       
-      // Fetch Semester Options
-      .addCase(fetchSemesterOptions.pending, (state) => {
+      // Fetch Filter Options
+      .addCase(fetchRaportFilterOptions.pending, (state) => {
         state.filterOptionsLoading = true;
         state.filterOptionsError = null;
       })
-      .addCase(fetchSemesterOptions.fulfilled, (state, action) => {
+      .addCase(fetchRaportFilterOptions.fulfilled, (state, action) => {
         state.filterOptionsLoading = false;
-        state.filterOptions.semesters = action.payload;
-        state.filterOptionsError = null;
+        state.filterOptions = { ...state.filterOptions, ...action.payload };
       })
-      .addCase(fetchSemesterOptions.rejected, (state, action) => {
-        state.filterOptionsLoading = false;
-        state.filterOptionsError = action.payload;
-      })
-      
-      // Fetch Mata Pelajaran Options
-      .addCase(fetchMataPelajaranOptions.pending, (state) => {
-        state.filterOptionsLoading = true;
-        state.filterOptionsError = null;
-      })
-      .addCase(fetchMataPelajaranOptions.fulfilled, (state, action) => {
-        state.filterOptionsLoading = false;
-        state.filterOptions.mataPelajaran = action.payload;
-        state.filterOptionsError = null;
-      })
-      .addCase(fetchMataPelajaranOptions.rejected, (state, action) => {
+      .addCase(fetchRaportFilterOptions.rejected, (state, action) => {
         state.filterOptionsLoading = false;
         state.filterOptionsError = action.payload;
       })
       
       // Fetch Available Years
-      .addCase(fetchAvailableYears.pending, (state) => {
-        state.filterOptionsLoading = true;
-        state.filterOptionsError = null;
-      })
-      .addCase(fetchAvailableYears.fulfilled, (state, action) => {
-        state.filterOptionsLoading = false;
-        state.filterOptions.tahunAjaran = action.payload;
-        state.filterOptionsError = null;
-      })
-      .addCase(fetchAvailableYears.rejected, (state, action) => {
-        state.filterOptionsLoading = false;
-        state.filterOptionsError = action.payload;
+      .addCase(fetchRaportAvailableYears.fulfilled, (state, action) => {
+        state.filterOptions.availableYears = action.payload;
       });
   }
 });
 
-// Action creators
 export const {
   setFilters,
-  setSemester,
-  setTahunAjaran,
+  setStartDate,
+  setEndDate,
   setMataPelajaran,
-  setStatus,
+  setSearch,
   resetFilters,
   toggleCardExpanded,
-  setCardExpanded,
-  expandAllCards,
-  collapseAllCards,
   clearChildDetail,
-  clearError,
-  clearChildDetailError,
-  clearFilterOptionsError,
-  clearInitializeError
+  clearAllErrors
 } = raportLaporanSlice.actions;
 
 // Selectors
 export const selectRaportLaporanState = (state) => state.raportLaporan;
-export const selectChildren = (state) => state.raportLaporan.children;
-export const selectSummary = (state) => state.raportLaporan.summary;
-export const selectFilterOptions = (state) => state.raportLaporan.filterOptions;
-export const selectFilters = (state) => state.raportLaporan.filters;
-export const selectExpandedCards = (state) => state.raportLaporan.expandedCards;
-export const selectChildDetail = (state) => state.raportLaporan.childDetail;
-export const selectLoading = (state) => state.raportLaporan.loading;
-export const selectChildDetailLoading = (state) => state.raportLaporan.childDetailLoading;
-export const selectFilterOptionsLoading = (state) => state.raportLaporan.filterOptionsLoading;
-export const selectInitializingPage = (state) => state.raportLaporan.initializingPage;
-export const selectError = (state) => state.raportLaporan.error;
-export const selectChildDetailError = (state) => state.raportLaporan.childDetailError;
-export const selectFilterOptionsError = (state) => state.raportLaporan.filterOptionsError;
-export const selectInitializeError = (state) => state.raportLaporan.initializeError;
+export const selectRaportChildren = (state) => state.raportLaporan.children;
+export const selectRaportSummary = (state) => state.raportLaporan.summary;
+export const selectRaportPagination = (state) => state.raportLaporan.pagination;
+export const selectRaportFilterOptions = (state) => state.raportLaporan.filterOptions;
+export const selectRaportFilters = (state) => state.raportLaporan.filters;
+export const selectRaportExpandedCards = (state) => state.raportLaporan.expandedCards;
+export const selectRaportChildDetail = (state) => state.raportLaporan.childDetail;
+export const selectRaportLoading = (state) => state.raportLaporan.loading;
+export const selectRaportChildDetailLoading = (state) => state.raportLaporan.childDetailLoading;
+export const selectRaportFilterOptionsLoading = (state) => state.raportLaporan.filterOptionsLoading;
+export const selectRaportInitializingPage = (state) => state.raportLaporan.initializingPage;
+export const selectRaportRefreshingAll = (state) => state.raportLaporan.refreshingAll;
+export const selectRaportError = (state) => state.raportLaporan.error;
+export const selectRaportChildDetailError = (state) => state.raportLaporan.childDetailError;
+export const selectRaportFilterOptionsError = (state) => state.raportLaporan.filterOptionsError;
+export const selectRaportInitializeError = (state) => state.raportLaporan.initializeError;
+export const selectRaportRefreshAllError = (state) => state.raportLaporan.refreshAllError;
 
-// Derived selectors
-export const selectIsCardExpanded = (state, childId) => 
-  state.raportLaporan.expandedCards.includes(childId);
-
-export const selectFilteredChildren = (state) => {
-  // Return children as-is since filtering is done on backend
-  return state.raportLaporan.children;
+export const selectRaportHasActiveFilters = (state) => {
+  const { start_date, end_date, mata_pelajaran, search } = state.raportLaporan.filters;
+  return !!(start_date || end_date || mata_pelajaran || search);
 };
 
-export const selectCurrentFilters = (state) => ({
-  semester_id: state.raportLaporan.filters.semester_id,
-  tahun_ajaran: state.raportLaporan.filters.tahun_ajaran,
+export const selectRaportCurrentFilters = (state) => ({
+  start_date: state.raportLaporan.filters.start_date,
+  end_date: state.raportLaporan.filters.end_date,
   mata_pelajaran: state.raportLaporan.filters.mata_pelajaran,
-  status: state.raportLaporan.filters.status
+  search: state.raportLaporan.filters.search
 });
 
 export default raportLaporanSlice.reducer;

@@ -1,19 +1,18 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { raportLaporanApi } from '../api/raportLaporanApi';
 
-// Fetch main laporan raport with filters
 export const fetchLaporanRaport = createAsyncThunk(
   'raportLaporan/fetchLaporanRaport',
-  async ({ semester_id, tahun_ajaran, mata_pelajaran, status } = {}, { rejectWithValue }) => {
+  async ({ start_date, end_date, mata_pelajaran, search, page = 1, append = false } = {}, { rejectWithValue }) => {
     try {
-      const params = {};
-      if (semester_id) params.semester_id = semester_id;
-      if (tahun_ajaran) params.tahun_ajaran = tahun_ajaran;
+      const params = { page };
+      if (start_date) params.start_date = start_date;
+      if (end_date) params.end_date = end_date;
       if (mata_pelajaran) params.mata_pelajaran = mata_pelajaran;
-      if (status) params.status = status;
+      if (search) params.search = search;
       
       const response = await raportLaporanApi.getLaporanRaport(params);
-      return response.data.data;
+      return { ...response.data.data, append };
     } catch (error) {
       const message = error.response?.data?.message || 
         error.message || 
@@ -23,14 +22,13 @@ export const fetchLaporanRaport = createAsyncThunk(
   }
 );
 
-// Fetch child detail raport report
-export const fetchChildDetailRaport = createAsyncThunk(
-  'raportLaporan/fetchChildDetailRaport',
-  async ({ childId, semester_id, tahun_ajaran, mata_pelajaran }, { rejectWithValue }) => {
+export const fetchChildDetailReport = createAsyncThunk(
+  'raportLaporan/fetchChildDetailReport',
+  async ({ childId, start_date, end_date, mata_pelajaran }, { rejectWithValue }) => {
     try {
       const params = {};
-      if (semester_id) params.semester_id = semester_id;
-      if (tahun_ajaran) params.tahun_ajaran = tahun_ajaran;
+      if (start_date) params.start_date = start_date;
+      if (end_date) params.end_date = end_date;
       if (mata_pelajaran) params.mata_pelajaran = mata_pelajaran;
       
       const response = await raportLaporanApi.getChildDetailReport(childId, params);
@@ -38,47 +36,36 @@ export const fetchChildDetailRaport = createAsyncThunk(
     } catch (error) {
       const message = error.response?.data?.message || 
         error.message || 
-        'Failed to fetch child raport detail';
+        'Failed to fetch child detail report';
       return rejectWithValue(message);
     }
   }
 );
 
-// Fetch semester options for filter
-export const fetchSemesterOptions = createAsyncThunk(
-  'raportLaporan/fetchSemesterOptions',
+export const fetchRaportFilterOptions = createAsyncThunk(
+  'raportLaporan/fetchRaportFilterOptions',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await raportLaporanApi.getSemesterOptions();
-      return response.data.data;
+      const [semesterResponse, mataPelajaranResponse] = await Promise.all([
+        raportLaporanApi.getSemesterOptions(),
+        raportLaporanApi.getMataPelajaranOptions()
+      ]);
+      
+      return {
+        availableSemesters: semesterResponse.data.data,
+        availableMataPelajaran: mataPelajaranResponse.data.data
+      };
     } catch (error) {
       const message = error.response?.data?.message || 
         error.message || 
-        'Failed to fetch semester options';
+        'Failed to fetch filter options';
       return rejectWithValue(message);
     }
   }
 );
 
-// Fetch mata pelajaran options for filter
-export const fetchMataPelajaranOptions = createAsyncThunk(
-  'raportLaporan/fetchMataPelajaranOptions',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await raportLaporanApi.getMataPelajaranOptions();
-      return response.data.data;
-    } catch (error) {
-      const message = error.response?.data?.message || 
-        error.message || 
-        'Failed to fetch mata pelajaran options';
-      return rejectWithValue(message);
-    }
-  }
-);
-
-// Fetch available years for filter
-export const fetchAvailableYears = createAsyncThunk(
-  'raportLaporan/fetchAvailableYears',
+export const fetchRaportAvailableYears = createAsyncThunk(
+  'raportLaporan/fetchRaportAvailableYears',
   async (_, { rejectWithValue }) => {
     try {
       const response = await raportLaporanApi.getAvailableYears();
@@ -92,44 +79,25 @@ export const fetchAvailableYears = createAsyncThunk(
   }
 );
 
-// Combined thunk to refresh laporan with current filters
-export const refreshLaporanWithFilters = createAsyncThunk(
-  'raportLaporan/refreshLaporanWithFilters',
-  async (_, { getState, dispatch }) => {
-    const { raportLaporan } = getState();
-    const { semester_id, tahun_ajaran, mata_pelajaran, status } = raportLaporan.filters;
-    
-    return dispatch(fetchLaporanRaport({ 
-      semester_id, 
-      tahun_ajaran, 
-      mata_pelajaran, 
-      status 
-    }));
-  }
-);
-
-// Initialize raport laporan page data (fetch filters and initial data)
 export const initializeRaportLaporanPage = createAsyncThunk(
   'raportLaporan/initializeRaportLaporanPage',
-  async ({ semester_id, tahun_ajaran, mata_pelajaran, status } = {}, { dispatch, rejectWithValue }) => {
+  async ({ start_date, end_date, mata_pelajaran, search } = {}, { dispatch, rejectWithValue }) => {
     try {
-      // Fetch filter options first
-      const semesterResult = await dispatch(fetchSemesterOptions()).unwrap();
-      const mataPelajaranResult = await dispatch(fetchMataPelajaranOptions()).unwrap();
-      const yearsResult = await dispatch(fetchAvailableYears()).unwrap();
+      const [filterOptionsResult, yearsResult] = await Promise.all([
+        dispatch(fetchRaportFilterOptions()).unwrap(),
+        dispatch(fetchRaportAvailableYears()).unwrap()
+      ]);
       
-      // Fetch main data with current or provided filters
       await dispatch(fetchLaporanRaport({ 
-        semester_id, 
-        tahun_ajaran, 
-        mata_pelajaran, 
-        status 
+        start_date, 
+        end_date,
+        mata_pelajaran,
+        search
       })).unwrap();
       
       return { 
         success: true,
-        semesters: semesterResult,
-        mataPelajaran: mataPelajaranResult,
+        filterOptions: filterOptionsResult,
         years: yearsResult
       };
     } catch (error) {
@@ -139,17 +107,34 @@ export const initializeRaportLaporanPage = createAsyncThunk(
   }
 );
 
-// Update filters and refresh data
-export const updateFiltersAndRefresh = createAsyncThunk(
-  'raportLaporan/updateFiltersAndRefresh',
-  async (newFilters, { dispatch, getState }) => {
-    const { raportLaporan } = getState();
-    const updatedFilters = { ...raportLaporan.filters, ...newFilters };
-    
-    // Update filters in state first
-    dispatch({ type: 'raportLaporan/setFilters', payload: newFilters });
-    
-    // Then fetch with new filters
-    return dispatch(fetchLaporanRaport(updatedFilters)).unwrap();
+export const updateRaportFiltersAndRefreshAll = createAsyncThunk(
+  'raportLaporan/updateRaportFiltersAndRefreshAll',
+  async ({ newFilters, page = 1, append = false }, { dispatch, getState, rejectWithValue }) => {
+    try {
+      const { raportLaporan } = getState();
+      const updatedFilters = { ...raportLaporan.filters, ...newFilters };
+      
+      // Update filters in state first
+      dispatch({ type: 'raportLaporan/setFilters', payload: newFilters });
+      
+      // Fetch raport data with new filters
+      const raportDataResult = await dispatch(fetchLaporanRaport({
+        start_date: updatedFilters.start_date,
+        end_date: updatedFilters.end_date,
+        mata_pelajaran: updatedFilters.mata_pelajaran,
+        search: updatedFilters.search,
+        page,
+        append
+      })).unwrap();
+      
+      return {
+        filters: updatedFilters,
+        raportData: raportDataResult,
+        append
+      };
+    } catch (error) {
+      const message = error.message || 'Failed to update filters and refresh data';
+      return rejectWithValue(message);
+    }
   }
 );
