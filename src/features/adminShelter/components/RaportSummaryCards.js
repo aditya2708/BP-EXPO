@@ -7,6 +7,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 const RaportSummaryCards = ({ summary }) => {
+  if (!summary) return null;
+
   const getGradeColor = (grade) => {
     if (grade >= 85) return '#4caf50';
     if (grade >= 75) return '#ff9800';
@@ -24,7 +26,7 @@ const RaportSummaryCards = ({ summary }) => {
   const summaryData = [
     {
       title: 'Total Anak',
-      value: summary.total_anak || 0,
+      value: summary.total_children || 0,
       icon: 'people',
       color: '#2196f3',
       subtitle: 'dengan raport'
@@ -58,7 +60,6 @@ const RaportSummaryCards = ({ summary }) => {
       subtitle: 'mata pelajaran'
     }
   ];
-
   const renderCard = (item, index) => (
     <View key={index} style={styles.card}>
       <View style={styles.cardHeader}>

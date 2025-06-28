@@ -6,12 +6,14 @@ import api from '../../../api/axiosConfig';
  */
 export const raportLaporanApi = {
   /**
-   * Get laporan raport with filters
+   * Get laporan raport with date range filters (updated approach)
    * @param {Object} params - Query parameters
-   * @param {number} params.semester_id - Semester ID filter
-   * @param {string} params.tahun_ajaran - Academic year filter
+   * @param {string} params.start_date - Start date filter (YYYY-MM-DD)
+   * @param {string} params.end_date - End date filter (YYYY-MM-DD)
    * @param {string} params.mata_pelajaran - Subject filter
-   * @param {string} params.status - Raport status filter
+   * @param {string} params.search - Search by child name
+   * @param {number} params.page - Page number for pagination
+   * @param {number} params.per_page - Items per page
    * @returns {Promise} - API response with laporan data
    */
   getLaporanRaport: async (params = {}) => {
@@ -19,11 +21,11 @@ export const raportLaporanApi = {
   },
 
   /**
-   * Get child detail raport report
+   * Get child detail raport report with date range
    * @param {number|string} childId - Child ID
    * @param {Object} params - Query parameters
-   * @param {number} params.semester_id - Semester ID filter
-   * @param {string} params.tahun_ajaran - Academic year filter
+   * @param {string} params.start_date - Start date filter (YYYY-MM-DD)
+   * @param {string} params.end_date - End date filter (YYYY-MM-DD)
    * @param {string} params.mata_pelajaran - Subject filter
    * @returns {Promise} - API response with child detail data
    */
@@ -32,7 +34,7 @@ export const raportLaporanApi = {
   },
 
   /**
-   * Get available semester options for filter
+   * Get available semester options for filter (legacy support)
    * @returns {Promise} - API response with semester options
    */
   getSemesterOptions: async () => {
