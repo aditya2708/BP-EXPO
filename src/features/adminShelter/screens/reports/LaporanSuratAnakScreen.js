@@ -14,54 +14,50 @@ import { Ionicons } from '@expo/vector-icons';
 import LoadingSpinner from '../../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../../common/components/ErrorMessage';
 import EmptyState from '../../../../common/components/EmptyState';
-import ChildAttendanceCard from '../../components/ChildAttendanceCard';
-import ChildSummaryCard from '../../components/ChildSummaryCard';
-import AnakBinaanFilterSection from '../../components/AnakBinaanFilterSection';
+import SuratItemCard from '../../components/SuratItemCard';
+import SuratFilterSection from '../../components/SuratFilterSection';
 
 import {
-  selectChildren,
-  selectSummary,
-  selectPagination,
-  selectFilterOptions,
-  selectFilters,
-  selectExpandedCards,
+  selectStatistics,
+  selectShelterDetail,
   selectLoading,
+  selectShelterDetailLoading,
+  selectError,
   selectInitializingPage,
   selectRefreshingAll,
-  selectError,
   selectRefreshAllError,
+  selectFilters,
   selectHasActiveFilters,
   setSearch,
   resetFilters,
-  toggleCardExpanded,
   clearAllErrors
-} from '../../redux/laporanSlice';
+} from '../../redux/laporanSuratSlice';
 
 import {
-  fetchLaporanAnakBinaan,
-  initializeLaporanPage,
+  fetchLaporanSurat,
+  fetchShelterDetail,
+  initializeLaporanSuratPage,
   updateFiltersAndRefreshAll
-} from '../../redux/laporanThunks';
+} from '../../redux/laporanSuratThunks';
 
-const LaporanAnakBinaanScreen = () => {
+const LaporanSuratAnakScreen = () => {
   const dispatch = useDispatch();
   const [refreshing, setRefreshing] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [shelterId, setShelterId] = useState(null);
 
   // Redux state
-  const children = useSelector(selectChildren);
-  const summary = useSelector(selectSummary);
-  const pagination = useSelector(selectPagination);
-  const filterOptions = useSelector(selectFilterOptions);
-  const filters = useSelector(selectFilters);
-  const expandedCards = useSelector(selectExpandedCards);
+  const statistics = useSelector(selectStatistics);
+  const shelterDetail = useSelector(selectShelterDetail);
   const loading = useSelector(selectLoading);
+  const shelterDetailLoading = useSelector(selectShelterDetailLoading);
+  const error = useSelector(selectError);
   const initializingPage = useSelector(selectInitializingPage);
   const refreshingAll = useSelector(selectRefreshingAll);
-  const error = useSelector(selectError);
   const refreshAllError = useSelector(selectRefreshAllError);
+  const filters = useSelector(selectFilters);
   const hasActiveFilters = useSelector(selectHasActiveFilters);
 
   // Initialize page
@@ -72,18 +68,36 @@ const LaporanAnakBinaanScreen = () => {
 
   const initializePage = async () => {
     try {
-      // Set default date range to current year
-      const currentYear = new Date().getFullYear();
-      const defaultStartDate = `${currentYear}-01-01`;
-      const defaultEndDate = `${currentYear}-12-31`;
+      // Initialize filter options and get summary
+      await dispatch(initializeLaporanSuratPage()).unwrap();
       
-      await dispatch(initializeLaporanPage({
-        start_date: defaultStartDate,
-        end_date: defaultEndDate
-      })).unwrap();
-      setCurrentPage(1);
+      // Get shelter ID from statistics and load initial data
+      const result = await dispatch(fetchLaporanSurat()).unwrap();
+      if (result.shelter_stats && result.shelter_stats.length > 0) {
+        const shelterIdFromStats = result.shelter_stats[0].id_shelter;
+        setShelterId(shelterIdFromStats);
+        
+        // Load initial surat list
+        loadSuratList(shelterIdFromStats, 1);
+      }
     } catch (error) {
       console.error('Failed to initialize page:', error);
+    }
+  };
+
+  const loadSuratList = async (targetShelterId, page = 1) => {
+    if (!targetShelterId) return;
+
+    try {
+      await dispatch(fetchShelterDetail({
+        shelterId: targetShelterId,
+        page,
+        ...filters,
+        search: searchText
+      })).unwrap();
+      setCurrentPage(page);
+    } catch (error) {
+      console.error('Failed to load surat list:', error);
     }
   };
 
@@ -91,24 +105,35 @@ const LaporanAnakBinaanScreen = () => {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await dispatch(updateFiltersAndRefreshAll({
-        newFilters: { ...filters, search: searchText },
-        page: 1
-      })).unwrap();
-      setCurrentPage(1);
+      if (shelterId) {
+        await dispatch(updateFiltersAndRefreshAll({
+          newFilters: filters,
+          shelterId,
+          page: 1
+        })).unwrap();
+        setCurrentPage(1);
+      } else {
+        await dispatch(fetchLaporanSurat(filters));
+      }
     } finally {
       setRefreshing(false);
     }
   };
 
-  // Handle filter changes
+  // Handle filter changes (MAIN IMPROVEMENT - using combined thunk)
   const handleFilterChange = async (newFilters) => {
     try {
-      await dispatch(updateFiltersAndRefreshAll({
-        newFilters,
-        page: 1
-      })).unwrap();
-      setCurrentPage(1);
+      if (shelterId) {
+        await dispatch(updateFiltersAndRefreshAll({
+          newFilters,
+          shelterId,
+          page: 1
+        })).unwrap();
+        setCurrentPage(1);
+      } else {
+        // Fallback if no shelterId yet
+        await dispatch(fetchLaporanSurat(newFilters));
+      }
     } catch (error) {
       console.error('Failed to apply filters:', error);
     }
@@ -117,108 +142,90 @@ const LaporanAnakBinaanScreen = () => {
 
   const handleClearFilters = async () => {
     dispatch(resetFilters());
-    setSearchText('');
+    setSearchText(''); // Clear search text as well
     try {
-      // Reset to current year default
-      const currentYear = new Date().getFullYear();
-      await dispatch(updateFiltersAndRefreshAll({
-        newFilters: { 
-          start_date: `${currentYear}-01-01`,
-          end_date: `${currentYear}-12-31`,
-          jenisKegiatan: null,
-          search: '' 
-        },
-        page: 1
-      })).unwrap();
-      setCurrentPage(1);
+      if (shelterId) {
+        await dispatch(updateFiltersAndRefreshAll({
+          newFilters: { search: '' }, // Explicitly clear search
+          shelterId,
+          page: 1
+        })).unwrap();
+        setCurrentPage(1);
+      } else {
+        await dispatch(fetchLaporanSurat({}));
+      }
     } catch (error) {
       console.error('Failed to clear filters:', error);
     }
     setShowFilters(false);
   };
 
-  // Handle search
+  // Handle search (UPDATED - using unified refresh logic)
   const handleSearch = async () => {
     if (!searchText.trim()) return;
     
     try {
-      await dispatch(updateFiltersAndRefreshAll({
-        newFilters: { ...filters, search: searchText.trim() },
-        page: 1
-      })).unwrap();
-      setCurrentPage(1);
+      if (shelterId) {
+        await dispatch(updateFiltersAndRefreshAll({
+          newFilters: { ...filters, search: searchText.trim() },
+          shelterId,
+          page: 1
+        })).unwrap();
+        setCurrentPage(1);
+      }
     } catch (error) {
       console.error('Failed to search:', error);
     }
   };
 
   const handleLoadMore = () => {
-    if (pagination && 
-        currentPage < pagination.last_page && 
-        !loading && !refreshingAll) {
-      loadMoreData();
+    if (shelterDetail.pagination && 
+        currentPage < shelterDetail.pagination.last_page && 
+        !shelterDetailLoading && !refreshingAll) {
+      loadSuratList(shelterId, currentPage + 1);
     }
   };
 
-  const loadMoreData = async () => {
-    try {
-      await dispatch(fetchLaporanAnakBinaan({
-        start_date: filters.start_date,
-        end_date: filters.end_date,
-        jenisKegiatan: filters.jenisKegiatan,
-        search: searchText,
-        page: currentPage + 1
-      })).unwrap();
-      setCurrentPage(currentPage + 1);
-    } catch (error) {
-      console.error('Failed to load more data:', error);
-    }
+  // Handle surat item press
+  const handleSuratPress = (surat) => {
+    // TODO: Navigate to surat detail or handle action
+    console.log('Surat pressed:', surat.id_surat);
   };
 
-  // Handle child item press
-  const handleChildPress = (child) => {
-    console.log('Child pressed:', child.full_name);
-    // TODO: Navigate to child detail
-  };
-
-  // Handle card expand/collapse
-  const handleCardToggle = (childId) => {
-    dispatch(toggleCardExpanded(childId));
-  };
-
-  // Render summary with date range info
+  // Render summary statistics
   const renderSummary = () => {
-    if (!summary) return null;
+    if (!statistics) return null;
 
     return (
       <View style={styles.summaryContainer}>
-        <ChildSummaryCard summary={summary} />
-        {summary.date_range && (
-          <View style={styles.dateRangeInfo}>
-            <Text style={styles.dateRangeText}>
-              Periode: {formatDate(summary.date_range.start_date)} - {formatDate(summary.date_range.end_date)}
-            </Text>
+        <Text style={styles.summaryTitle}>Ringkasan</Text>
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryValue}>{statistics.total_surat}</Text>
+            <Text style={styles.summaryLabel}>Total Surat</Text>
           </View>
-        )}
+          <View style={styles.summaryItem}>
+            <Text style={[styles.summaryValue, { color: '#4caf50' }]}>
+              {statistics.total_terbaca}
+            </Text>
+            <Text style={styles.summaryLabel}>Terbaca</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={[styles.summaryValue, { color: '#f44336' }]}>
+              {statistics.total_belum_terbaca}
+            </Text>
+            <Text style={styles.summaryLabel}>Belum Baca</Text>
+          </View>
+        </View>
       </View>
     );
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('id-ID', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
   };
 
   // Render header
   const renderHeader = () => (
     <View style={styles.header}>
       <View style={styles.headerTop}>
-        <Text style={styles.title}>Laporan Anak Binaan</Text>
+        <Text style={styles.title}>Laporan Surat Anak</Text>
         <TouchableOpacity
           style={styles.filterButton}
           onPress={() => setShowFilters(true)}
@@ -236,7 +243,7 @@ const LaporanAnakBinaanScreen = () => {
         <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Cari nama anak..."
+          placeholder="Cari nama anak atau pesan..."
           value={searchText}
           onChangeText={setSearchText}
           onSubmitEditing={handleSearch}
@@ -281,31 +288,29 @@ const LaporanAnakBinaanScreen = () => {
         </View>
       )}
 
-      {pagination && (
+      {shelterDetail.pagination && (
         <Text style={styles.resultCount}>
-          {pagination.total} anak binaan ditemukan
+          {shelterDetail.pagination.total} surat ditemukan
         </Text>
       )}
     </View>
   );
 
-  const renderChildItem = ({ item }) => (
-    <ChildAttendanceCard
-      child={item}
-      isExpanded={expandedCards.includes(item.id_anak)}
-      onToggle={() => handleCardToggle(item.id_anak)}
-      onChildPress={handleChildPress}
+  const renderSuratItem = ({ item }) => (
+    <SuratItemCard
+      surat={item}
+      onPress={() => handleSuratPress(item)}
     />
   );
 
   const renderFooter = () => {
-    if (!loading || currentPage === 1) return null;
+    if (!shelterDetailLoading || currentPage === 1) return null;
     return <LoadingSpinner />;
   };
 
   // Loading state
   if (initializingPage) {
-    return <LoadingSpinner fullScreen message="Memuat laporan anak binaan..." />;
+    return <LoadingSpinner fullScreen message="Memuat laporan surat..." />;
   }
 
   // Error state
@@ -314,7 +319,7 @@ const LaporanAnakBinaanScreen = () => {
       <View style={styles.container}>
         <ErrorMessage 
           message={error || refreshAllError} 
-          onRetry={() => dispatch(fetchLaporanAnakBinaan(filters))}
+          onRetry={() => dispatch(fetchLaporanSurat(filters))}
         />
       </View>
     );
@@ -323,9 +328,9 @@ const LaporanAnakBinaanScreen = () => {
   return (
     <View style={styles.container}>
       <FlatList
-        data={children}
-        renderItem={renderChildItem}
-        keyExtractor={(item) => item.id_anak.toString()}
+        data={shelterDetail.surat_list}
+        renderItem={renderSuratItem}
+        keyExtractor={(item) => item.id_surat.toString()}
         ListHeaderComponent={
           <View>
             {renderHeader()}
@@ -345,11 +350,11 @@ const LaporanAnakBinaanScreen = () => {
         onEndReachedThreshold={0.1}
         ListFooterComponent={renderFooter}
         ListEmptyComponent={
-          !loading && !refreshingAll ? (
+          !shelterDetailLoading && !refreshingAll ? (
             <EmptyState
-              icon="people-outline"
-              title="Tidak Ada Data"
-              message="Tidak ada data anak binaan untuk filter yang dipilih"
+              icon="mail-outline"
+              title="Tidak Ada Surat"
+              message="Tidak ada data surat untuk shelter ini"
               actionButtonText="Refresh"
               onActionPress={handleRefresh}
             />
@@ -359,10 +364,9 @@ const LaporanAnakBinaanScreen = () => {
       />
 
       {/* Filter Modal */}
-      <AnakBinaanFilterSection
+      <SuratFilterSection
         visible={showFilters}
         filters={filters}
-        filterOptions={filterOptions}
         onClose={() => setShowFilters(false)}
         onApply={handleFilterChange}
         onClear={handleClearFilters}
@@ -474,21 +478,37 @@ const styles = StyleSheet.create({
     marginTop: 4
   },
   summaryContainer: {
-    marginBottom: 8
+    backgroundColor: '#fff',
+    padding: 16,
+    marginBottom: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2
   },
-  dateRangeInfo: {
-    backgroundColor: '#f8f4ff',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 8
+  summaryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12
   },
-  dateRangeText: {
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around'
+  },
+  summaryItem: {
+    alignItems: 'center'
+  },
+  summaryValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#9b59b6'
+  },
+  summaryLabel: {
     fontSize: 12,
-    color: '#9b59b6',
-    fontWeight: '500',
-    textAlign: 'center'
+    color: '#666',
+    marginTop: 4
   },
   listContainer: {
     paddingHorizontal: 16,
@@ -496,4 +516,4 @@ const styles = StyleSheet.create({
   }
 });
 
-export default LaporanAnakBinaanScreen;
+export default LaporanSuratAnakScreen;

@@ -6,7 +6,8 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
-  TextInput
+  TextInput,
+  Alert
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,7 @@ import {
   initializeCpbLaporanPage,
   updateCpbFiltersAndRefresh,
   fetchCpbTabData,
+  fetchCpbFilterOptions,
   exportCpbData
 } from '../../redux/cpbLaporanThunks';
 import {
@@ -33,13 +35,16 @@ import {
   selectCpbActiveTab,
   selectCpbLoading,
   selectCpbChildrenLoading,
+  selectCpbFilterOptionsLoading,
   selectCpbError,
   selectCpbChildrenError,
+  selectCpbFilterOptionsError,
   selectCpbHasActiveFilters,
   selectCpbTabCounts,
   selectCpbExportLoading,
   selectCpbExportError,
   selectCpbErrorDetails,
+  selectCpbFilterOptionsDebug,
   setActiveTab,
   setSearch,
   resetFilters,
@@ -58,13 +63,16 @@ const CPBReportScreen = () => {
   const activeTab = useSelector(selectCpbActiveTab);
   const loading = useSelector(selectCpbLoading);
   const childrenLoading = useSelector(selectCpbChildrenLoading);
+  const filterOptionsLoading = useSelector(selectCpbFilterOptionsLoading);
   const error = useSelector(selectCpbError);
   const childrenError = useSelector(selectCpbChildrenError);
+  const filterOptionsError = useSelector(selectCpbFilterOptionsError);
   const hasActiveFilters = useSelector(selectCpbHasActiveFilters);
   const tabCounts = useSelector(selectCpbTabCounts);
   const exportLoading = useSelector(selectCpbExportLoading);
   const exportError = useSelector(selectCpbExportError);
   const errorDetails = useSelector(selectCpbErrorDetails);
+  const filterOptionsDebug = useSelector(selectCpbFilterOptionsDebug);
   
   // Local state
   const [refreshing, setRefreshing] = useState(false);
@@ -74,9 +82,16 @@ const CPBReportScreen = () => {
 
   // Initialize page data
   useEffect(() => {
-    dispatch(clearAllErrors()); // Clear any previous errors
+    dispatch(clearAllErrors());
     dispatch(initializeCpbLaporanPage());
   }, [dispatch]);
+
+  // Debug log for filter options
+  useEffect(() => {
+    if (__DEV__) {
+      console.log('CPB Filter Options Debug:', filterOptionsDebug);
+    }
+  }, [filterOptionsDebug]);
 
   // Handle refresh
   const handleRefresh = async () => {
@@ -87,7 +102,7 @@ const CPBReportScreen = () => {
         await dispatch(fetchCpbByStatus({ 
           status: currentStatus, 
           ...filters,
-          search: searchText 
+          search: filters.search 
         }));
       }
     } finally {
@@ -101,40 +116,80 @@ const CPBReportScreen = () => {
     await dispatch(fetchCpbTabData(status));
   };
 
+  // Handle filter modal open
+  const handleOpenFilters = async () => {
+    // Ensure filter options are loaded before showing modal
+    if (!filterOptionsLoading && !filterOptionsError && 
+        (!filterOptions.jenisKelamin?.length && 
+         !filterOptions.kelas?.length && 
+         !filterOptions.statusOrangTua?.length)) {
+      // Try to fetch filter options if they seem empty
+      await dispatch(fetchCpbFilterOptions());
+    }
+    setShowFilters(true);
+  };
+
   // Handle filter changes
   const handleFilterChange = (newFilters) => {
     dispatch(updateCpbFiltersAndRefresh(newFilters));
   };
 
   const handleClearFilters = () => {
+    setSearchText('');
     dispatch(resetFilters());
     dispatch(updateCpbFiltersAndRefresh({}));
   };
 
-  // Handle search
-  const handleSearchChange = (text) => {
-    setSearchText(text);
-    dispatch(setSearch(text));
+  // Handle manual search
+  const handleSearch = () => {
+    if (!searchText.trim()) {
+      Alert.alert('Peringatan', 'Masukkan nama anak yang ingin dicari');
+      return;
+    }
     
-    // Debounce search
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-      if (currentStatus) {
-        dispatch(fetchCpbByStatus({ 
-          status: currentStatus, 
-          ...filters,
-          search: text 
-        }));
-      }
-    }, 500);
+    dispatch(setSearch(searchText.trim()));
+    if (currentStatus) {
+      dispatch(fetchCpbByStatus({ 
+        status: currentStatus, 
+        ...filters,
+        search: searchText.trim()
+      }));
+    }
   };
 
-  let searchTimeout;
+  const handleClearSearch = () => {
+    setSearchText('');
+    dispatch(setSearch(''));
+    if (currentStatus) {
+      dispatch(fetchCpbByStatus({ 
+        status: currentStatus, 
+        ...filters,
+        search: ''
+      }));
+    }
+  };
 
   // Handle child press
   const handleChildPress = (child) => {
-    // TODO: Navigate to child detail screen
     console.log('Child pressed:', child.full_name);
+  };
+
+  // Handle export
+  const handleExport = async () => {
+    if (!children.length) {
+      Alert.alert('Peringatan', 'Tidak ada data untuk diexport');
+      return;
+    }
+
+    try {
+      await dispatch(exportCpbData({
+        status: currentStatus,
+        ...filters
+      })).unwrap();
+      Alert.alert('Sukses', 'Data berhasil diexport');
+    } catch (error) {
+      console.error('Export failed:', error);
+    }
   };
 
   // Render detailed error message
@@ -149,44 +204,21 @@ const CPBReportScreen = () => {
         {details && (
           <View style={styles.errorDetailsContainer}>
             {details.child_id && (
-              <Text style={styles.errorDetail}>
-                Child ID: {details.child_id}
-              </Text>
+              <Text style={styles.errorDetail}>Child ID: {details.child_id}</Text>
             )}
             {details.child_name && (
-              <Text style={styles.errorDetail}>
-                Child Name: {details.child_name}
-              </Text>
+              <Text style={styles.errorDetail}>Child Name: {details.child_name}</Text>
             )}
             {details.error_message && (
-              <Text style={styles.errorDetail}>
-                Error: {details.error_message}
-              </Text>
+              <Text style={styles.errorDetail}>Error: {details.error_message}</Text>
             )}
             {details.file && details.line && (
-              <Text style={styles.errorDetail}>
-                Location: {details.file}:{details.line}
-              </Text>
+              <Text style={styles.errorDetail}>Location: {details.file}:{details.line}</Text>
             )}
           </View>
         )}
       </View>
     );
-  };
-
-  // Handle export
-  const handleExport = async () => {
-    try {
-      await dispatch(exportCpbData({
-        status: currentStatus,
-        ...filters
-      })).unwrap();
-      // TODO: Show success message or download file
-      console.log('Export successful');
-    } catch (error) {
-      console.error('Export failed:', error);
-      // Error is already handled in Redux state
-    }
   };
 
   // Render header
@@ -196,25 +228,39 @@ const CPBReportScreen = () => {
         <Text style={styles.title}>Laporan CPB</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity
-            style={styles.filterButton}
-            onPress={() => setShowFilters(true)}
+            style={[styles.actionButton, hasActiveFilters && styles.actionButtonActive]}
+            onPress={handleOpenFilters}
+            disabled={childrenLoading}
           >
             <Ionicons 
               name="filter" 
               size={20} 
-              color={hasActiveFilters ? '#9b59b6' : '#666'} 
+              color={hasActiveFilters ? '#fff' : '#9b59b6'} 
             />
+            <Text style={[
+              styles.actionButtonText,
+              hasActiveFilters && styles.actionButtonTextActive
+            ]}>
+              Filter
+            </Text>
           </TouchableOpacity>
+
           <TouchableOpacity
-            style={[styles.exportButton, exportLoading && styles.exportButtonDisabled]}
+            style={[styles.actionButton, exportLoading && styles.actionButtonDisabled]}
             onPress={handleExport}
-            disabled={exportLoading}
+            disabled={exportLoading || !children.length}
           >
             {exportLoading ? (
-              <Ionicons name="hourglass" size={20} color="#9b59b6" />
+              <LoadingSpinner size="small" color="#9b59b6" />
             ) : (
               <Ionicons name="download" size={20} color="#9b59b6" />
             )}
+            <Text style={[
+              styles.actionButtonText,
+              exportLoading && styles.actionButtonTextDisabled
+            ]}>
+              Export
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -224,26 +270,61 @@ const CPBReportScreen = () => {
         <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Cari nama anak..."
+          placeholder="Masukkan nama anak..."
           value={searchText}
-          onChangeText={handleSearchChange}
+          onChangeText={setSearchText}
+          onSubmitEditing={handleSearch}
+          editable={!childrenLoading}
         />
         {searchText ? (
-          <TouchableOpacity onPress={() => handleSearchChange('')}>
+          <TouchableOpacity 
+            style={styles.clearSearchButton}
+            onPress={handleClearSearch}
+          >
             <Ionicons name="close-circle" size={20} color="#666" />
           </TouchableOpacity>
         ) : null}
+        
+        <TouchableOpacity
+          style={[
+            styles.searchButton,
+            (!searchText.trim() || childrenLoading) && styles.searchButtonDisabled
+          ]}
+          onPress={handleSearch}
+          disabled={!searchText.trim() || childrenLoading}
+        >
+          <Text style={[
+            styles.searchButtonText,
+            (!searchText.trim() || childrenLoading) && styles.searchButtonTextDisabled
+          ]}>
+            Cari
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Clear Filters */}
-      {hasActiveFilters && (
+      {(hasActiveFilters || filters.search) && (
         <TouchableOpacity 
           style={styles.clearFiltersButton}
           onPress={handleClearFilters}
+          disabled={childrenLoading}
         >
           <Ionicons name="close-circle" size={16} color="#9b59b6" />
-          <Text style={styles.clearFiltersText}>Hapus Filter</Text>
+          <Text style={styles.clearFiltersText}>
+            {filters.search ? 'Hapus Pencarian & Filter' : 'Hapus Filter'}
+          </Text>
         </TouchableOpacity>
+      )}
+
+      {/* Debug Filter Options - Remove in production */}
+      {__DEV__ && (
+        <View style={styles.debugContainer}>
+          <Text style={styles.debugText}>
+            Filter Debug: Loading={filterOptionsLoading ? 'Y' : 'N'}, 
+            Error={filterOptionsError ? 'Y' : 'N'}, 
+            Data={filterOptionsDebug.hasJenisKelamin || filterOptionsDebug.hasKelas || filterOptionsDebug.hasStatusOrangTua ? 'Y' : 'N'}
+          </Text>
+        </View>
       )}
 
       {/* Export Error */}
@@ -345,7 +426,6 @@ const CPBReportScreen = () => {
                     key={child.id_anak}
                     child={child}
                     onPress={() => handleChildPress(child)}
-                    onExport={() => console.log('Export child:', child.id_anak)}
                   />
                 ))}
               </View>
@@ -395,20 +475,36 @@ const styles = StyleSheet.create({
   },
   headerActions: {
     flexDirection: 'row',
-    gap: 12
+    gap: 8
   },
-  filterButton: {
-    padding: 8,
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: '#f8f9fa'
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#e9ecef'
   },
-  exportButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#f8f9fa'
+  actionButtonActive: {
+    backgroundColor: '#9b59b6',
+    borderColor: '#9b59b6'
   },
-  exportButtonDisabled: {
+  actionButtonDisabled: {
     opacity: 0.5
+  },
+  actionButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#9b59b6',
+    marginLeft: 4
+  },
+  actionButtonTextActive: {
+    color: '#fff'
+  },
+  actionButtonTextDisabled: {
+    color: '#999'
   },
   searchContainer: {
     flexDirection: 'row',
@@ -416,7 +512,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
     borderRadius: 8,
     paddingHorizontal: 12,
-    marginBottom: 8
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e9ecef'
   },
   searchIcon: {
     marginRight: 8
@@ -426,6 +524,27 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     color: '#333'
+  },
+  clearSearchButton: {
+    padding: 4,
+    marginRight: 8
+  },
+  searchButton: {
+    backgroundColor: '#9b59b6',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6
+  },
+  searchButtonDisabled: {
+    backgroundColor: '#e9ecef'
+  },
+  searchButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600'
+  },
+  searchButtonTextDisabled: {
+    color: '#999'
   },
   clearFiltersButton: {
     flexDirection: 'row',
@@ -441,6 +560,18 @@ const styles = StyleSheet.create({
     color: '#9b59b6',
     fontWeight: '500',
     marginLeft: 4
+  },
+  debugContainer: {
+    backgroundColor: '#fff3cd',
+    padding: 8,
+    borderRadius: 4,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#ffeaa7'
+  },
+  debugText: {
+    fontSize: 12,
+    color: '#856404'
   },
   exportErrorContainer: {
     backgroundColor: '#ffebee',
