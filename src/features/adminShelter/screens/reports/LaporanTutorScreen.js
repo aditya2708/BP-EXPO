@@ -3,139 +3,333 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
-  RefreshControl
+  FlatList,
+  RefreshControl,
+  TouchableOpacity,
+  TextInput
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
+import { Ionicons } from '@expo/vector-icons';
+
 import LoadingSpinner from '../../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../../common/components/ErrorMessage';
 import EmptyState from '../../../../common/components/EmptyState';
-import ReportFilters from '../../components/ReportFilters';
 import TutorAttendanceCard from '../../components/TutorAttendanceCard';
+import TutorFilterSection from '../../components/TutorFilterSection';
 import { formatPercentage } from '../../utils/reportUtils';
-import {
-  fetchLaporanTutor,
-  initializeTutorLaporanPage,
-  updateTutorFiltersAndRefresh
-} from '../../redux/tutorLaporanThunks';
+
 import {
   selectTutors,
   selectTutorSummary,
+  selectTutorPagination,
   selectTutorFilterOptions,
   selectTutorFilters,
   selectTutorExpandedCards,
   selectTutorLoading,
+  selectTutorInitializingPage,
+  selectTutorRefreshingAll,
   selectTutorError,
-  toggleCardExpanded
+  selectTutorRefreshAllError,
+  selectTutorHasActiveFilters,
+  setSearch,
+  resetFilters,
+  toggleCardExpanded,
+  clearAllErrors
 } from '../../redux/tutorLaporanSlice';
+
+import {
+  fetchLaporanTutor,
+  initializeTutorLaporanPage,
+  updateTutorFiltersAndRefreshAll
+} from '../../redux/tutorLaporanThunks';
 
 const LaporanTutorScreen = () => {
   const dispatch = useDispatch();
-  
+  const [refreshing, setRefreshing] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Redux state
   const tutors = useSelector(selectTutors);
   const summary = useSelector(selectTutorSummary);
+  const pagination = useSelector(selectTutorPagination);
   const filterOptions = useSelector(selectTutorFilterOptions);
   const filters = useSelector(selectTutorFilters);
   const expandedCards = useSelector(selectTutorExpandedCards);
   const loading = useSelector(selectTutorLoading);
+  const initializingPage = useSelector(selectTutorInitializingPage);
+  const refreshingAll = useSelector(selectTutorRefreshingAll);
   const error = useSelector(selectTutorError);
-  
-  const [refreshing, setRefreshing] = useState(false);
+  const refreshAllError = useSelector(selectTutorRefreshAllError);
+  const hasActiveFilters = useSelector(selectTutorHasActiveFilters);
 
+  // Initialize page
   useEffect(() => {
-    dispatch(initializeTutorLaporanPage());
+    dispatch(clearAllErrors());
+    initializePage();
   }, [dispatch]);
 
+  const initializePage = async () => {
+    try {
+      const currentYear = new Date().getFullYear();
+      const defaultStartDate = `${currentYear}-01-01`;
+      const defaultEndDate = `${currentYear}-12-31`;
+      
+      await dispatch(initializeTutorLaporanPage({
+        start_date: defaultStartDate,
+        end_date: defaultEndDate
+      })).unwrap();
+      setCurrentPage(1);
+    } catch (error) {
+      console.error('Failed to initialize page:', error);
+    }
+  };
+
+  // Handle refresh
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await dispatch(fetchLaporanTutor(filters));
+      await dispatch(updateTutorFiltersAndRefreshAll({
+        newFilters: { ...filters, search: searchText },
+        page: 1
+      })).unwrap();
+      setCurrentPage(1);
     } finally {
       setRefreshing(false);
     }
   };
 
-  const handleYearChange = (year) => {
-    dispatch(updateTutorFiltersAndRefresh({ year }));
+  // Handle filter changes
+  const handleFilterChange = async (newFilters) => {
+    try {
+      await dispatch(updateTutorFiltersAndRefreshAll({
+        newFilters,
+        page: 1
+      })).unwrap();
+      setCurrentPage(1);
+    } catch (error) {
+      console.error('Failed to apply filters:', error);
+    }
+    setShowFilters(false);
   };
 
-  const handleActivityTypeChange = (jenisKegiatan) => {
-    dispatch(updateTutorFiltersAndRefresh({ jenisKegiatan }));
+  const handleClearFilters = async () => {
+    dispatch(resetFilters());
+    setSearchText('');
+    try {
+      const currentYear = new Date().getFullYear();
+      await dispatch(updateTutorFiltersAndRefreshAll({
+        newFilters: { 
+          start_date: `${currentYear}-01-01`,
+          end_date: `${currentYear}-12-31`,
+          jenisKegiatan: null,
+          search: '' 
+        },
+        page: 1
+      })).unwrap();
+      setCurrentPage(1);
+    } catch (error) {
+      console.error('Failed to clear filters:', error);
+    }
+    setShowFilters(false);
   };
 
-  const handleMapelChange = (maple) => {
-    dispatch(updateTutorFiltersAndRefresh({ maple }));
+  // Handle search
+  const handleSearch = async () => {
+    if (!searchText.trim()) return;
+    
+    try {
+      await dispatch(updateTutorFiltersAndRefreshAll({
+        newFilters: { ...filters, search: searchText.trim() },
+        page: 1
+      })).unwrap();
+      setCurrentPage(1);
+    } catch (error) {
+      console.error('Failed to search:', error);
+    }
   };
 
-  const handleClearFilter = () => {
-    dispatch(updateTutorFiltersAndRefresh({ jenisKegiatan: null, maple: null }));
+  const handleLoadMore = () => {
+    if (pagination && 
+        currentPage < pagination.last_page && 
+        !loading && !refreshingAll) {
+      loadMoreData();
+    }
   };
 
+  const loadMoreData = async () => {
+    try {
+      await dispatch(fetchLaporanTutor({
+        start_date: filters.start_date,
+        end_date: filters.end_date,
+        jenisKegiatan: filters.jenisKegiatan,
+        search: searchText,
+        page: currentPage + 1,
+        append: true
+      })).unwrap();
+      setCurrentPage(currentPage + 1);
+    } catch (error) {
+      console.error('Failed to load more data:', error);
+    }
+  };
+
+  // Handle tutor item press
+  const handleTutorPress = (tutor) => {
+    console.log('Tutor pressed:', tutor.nama);
+    // TODO: Navigate to tutor detail
+  };
+
+  // Handle card expand/collapse
   const handleCardToggle = (tutorId) => {
     dispatch(toggleCardExpanded(tutorId));
   };
 
-  const handleTutorPress = (tutor) => {
-    console.log('Tutor pressed:', tutor.nama);
-  };
-
+  // Render summary with date range info
   const renderSummary = () => {
     if (!summary) return null;
 
     return (
       <View style={styles.summaryContainer}>
-        <Text style={styles.summaryTitle}>Ringkasan</Text>
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>{summary.total_tutors}</Text>
-            <Text style={styles.summaryLabel}>Total Tutor</Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>{formatPercentage(summary.average_attendance)}%</Text>
-            <Text style={styles.summaryLabel}>Rata-rata</Text>
-          </View>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>{summary.total_activities}</Text>
-            <Text style={styles.summaryLabel}>Aktivitas</Text>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>Ringkasan</Text>
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryValue}>{summary.total_tutors}</Text>
+              <Text style={styles.summaryLabel}>Total Tutor</Text>
+            </View>
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryValue}>{formatPercentage(summary.average_attendance)}%</Text>
+              <Text style={styles.summaryLabel}>Rata-rata</Text>
+            </View>
+            <View style={styles.summaryItem}>
+              <Text style={styles.summaryValue}>{summary.total_activities}</Text>
+              <Text style={styles.summaryLabel}>Aktivitas</Text>
+            </View>
           </View>
         </View>
+        {summary.date_range && (
+          <View style={styles.dateRangeInfo}>
+            <Text style={styles.dateRangeText}>
+              Periode: {formatDate(summary.date_range.start_date)} - {formatDate(summary.date_range.end_date)}
+            </Text>
+          </View>
+        )}
       </View>
     );
   };
 
-  if (loading && !refreshing) {
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  // Render header
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <View style={styles.headerTop}>
+        <Text style={styles.title}>Laporan Tutor</Text>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setShowFilters(true)}
+          disabled={refreshingAll}
+        >
+          <Ionicons 
+            name="filter" 
+            size={20} 
+            color={hasActiveFilters ? '#9b59b6' : '#666'} 
+          />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Cari nama tutor..."
+          value={searchText}
+          onChangeText={setSearchText}
+          onSubmitEditing={handleSearch}
+          editable={!refreshingAll}
+        />
+        <TouchableOpacity 
+          style={styles.searchButton}
+          onPress={handleSearch} 
+          disabled={refreshingAll || !searchText.trim()}
+        >
+          <Text style={[
+            styles.searchButtonText,
+            (!searchText.trim() || refreshingAll) && styles.searchButtonTextDisabled
+          ]}>
+            Cari
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {(hasActiveFilters || searchText.trim()) && (
+        <TouchableOpacity 
+          style={styles.clearFiltersButton}
+          onPress={() => {
+            if (searchText.trim()) {
+              setSearchText('');
+            }
+            handleClearFilters();
+          }}
+          disabled={refreshingAll}
+        >
+          <Ionicons name="close-circle" size={16} color="#9b59b6" />
+          <Text style={styles.clearFiltersText}>
+            {searchText.trim() ? 'Hapus Pencarian' : 'Hapus Filter'}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {refreshingAll && (
+        <View style={styles.refreshingIndicator}>
+          <LoadingSpinner size="small" />
+          <Text style={styles.refreshingText}>Memperbarui data...</Text>
+        </View>
+      )}
+
+      {pagination && (
+        <Text style={styles.resultCount}>
+          {pagination.total} tutor ditemukan
+        </Text>
+      )}
+    </View>
+  );
+
+  const renderTutorItem = ({ item }) => (
+    <TutorAttendanceCard
+      tutor={item}
+      isExpanded={expandedCards.includes(item.id_tutor)}
+      onToggle={() => handleCardToggle(item.id_tutor)}
+      onTutorPress={handleTutorPress}
+    />
+  );
+
+  const renderFooter = () => {
+    if (!loading || currentPage === 1) return null;
+    return <LoadingSpinner />;
+  };
+
+  // Loading state
+  if (initializingPage) {
     return <LoadingSpinner fullScreen message="Memuat laporan tutor..." />;
   }
 
-  if (error && !refreshing) {
+  // Error state
+  if ((error || refreshAllError) && !refreshing) {
     return (
       <View style={styles.container}>
         <ErrorMessage 
-          message={error} 
+          message={error || refreshAllError} 
           onRetry={() => dispatch(fetchLaporanTutor(filters))}
-        />
-      </View>
-    );
-  }
-
-  if (!loading && tutors.length === 0 && !error) {
-    return (
-      <View style={styles.container}>
-        <ReportFilters
-          filters={filters}
-          filterOptions={filterOptions}
-          onYearChange={handleYearChange}
-          onActivityTypeChange={handleActivityTypeChange}
-          onMapelChange={handleMapelChange}
-          onClearFilter={handleClearFilter}
-          showMapelFilter={true}
-        />
-        <EmptyState
-          icon="school-outline"
-          title="Tidak ada data"
-          message="Tidak ada data tutor untuk filter yang dipilih"
-          actionButtonText="Refresh"
-          onActionPress={handleRefresh}
         />
       </View>
     );
@@ -143,9 +337,17 @@ const LaporanTutorScreen = () => {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+      <FlatList
+        data={tutors}
+        renderItem={renderTutorItem}
+        keyExtractor={(item) => item.id_tutor.toString()}
+        ListHeaderComponent={
+          <View>
+            {renderHeader()}
+            {renderSummary()}
+          </View>
+        }
+        contentContainerStyle={styles.listContainer}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -154,32 +356,32 @@ const LaporanTutorScreen = () => {
             tintColor="#9b59b6"
           />
         }
-      >
-        <ReportFilters
-          filters={filters}
-          filterOptions={filterOptions}
-          onYearChange={handleYearChange}
-          onActivityTypeChange={handleActivityTypeChange}
-          onMapelChange={handleMapelChange}
-          onClearFilter={handleClearFilter}
-          showMapelFilter={true}
-        />
-        
-        {renderSummary()}
-        
-        <View style={styles.tutorsContainer}>
-          <Text style={styles.sectionTitle}>Daftar Tutor</Text>
-          {tutors.map((tutor) => (
-            <TutorAttendanceCard
-              key={tutor.id_tutor}
-              tutor={tutor}
-              isExpanded={expandedCards.includes(tutor.id_tutor)}
-              onToggle={() => handleCardToggle(tutor.id_tutor)}
-              onTutorPress={handleTutorPress}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.1}
+        ListFooterComponent={renderFooter}
+        ListEmptyComponent={
+          !loading && !refreshingAll ? (
+            <EmptyState
+              icon="school-outline"
+              title="Tidak Ada Data"
+              message="Tidak ada data tutor untuk filter yang dipilih"
+              actionButtonText="Refresh"
+              onActionPress={handleRefresh}
             />
-          ))}
-        </View>
-      </ScrollView>
+          ) : null
+        }
+        showsVerticalScrollIndicator={false}
+      />
+
+      {/* Filter Modal */}
+      <TutorFilterSection
+        visible={showFilters}
+        filters={filters}
+        filterOptions={filterOptions}
+        onClose={() => setShowFilters(false)}
+        onApply={handleFilterChange}
+        onClear={handleClearFilters}
+      />
     </View>
   );
 };
@@ -189,13 +391,106 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5'
   },
-  scrollView: {
-    flex: 1
+  header: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2
   },
-  scrollContent: {
-    paddingBottom: 20
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333'
+  },
+  filterButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f8f9fa'
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 8
+  },
+  searchIcon: {
+    marginRight: 8
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#333'
+  },
+  searchButton: {
+    backgroundColor: '#9b59b6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginLeft: 8
+  },
+  searchButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600'
+  },
+  searchButtonTextDisabled: {
+    opacity: 0.5
+  },
+  clearFiltersButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    backgroundColor: '#f8f4ff',
+    marginBottom: 8
+  },
+  clearFiltersText: {
+    fontSize: 14,
+    color: '#9b59b6',
+    fontWeight: '500',
+    marginLeft: 4
+  },
+  refreshingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#f8f4ff',
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginBottom: 8
+  },
+  refreshingText: {
+    fontSize: 14,
+    color: '#9b59b6',
+    fontWeight: '500',
+    marginLeft: 8
+  },
+  resultCount: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4
   },
   summaryContainer: {
+    marginBottom: 8
+  },
+  summaryCard: {
     backgroundColor: '#fff',
     padding: 16,
     marginBottom: 8,
@@ -228,14 +523,22 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 4
   },
-  tutorsContainer: {
-    paddingHorizontal: 16
+  dateRangeInfo: {
+    backgroundColor: '#f8f4ff',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginHorizontal: 16,
+    borderRadius: 8
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12
+  dateRangeText: {
+    fontSize: 12,
+    color: '#9b59b6',
+    fontWeight: '500',
+    textAlign: 'center'
+  },
+  listContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 20
   }
 });
 
