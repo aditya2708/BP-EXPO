@@ -4,14 +4,9 @@ import { cpbLaporanApi } from '../api/cpbLaporanApi';
 // Fetch main CPB report with summary counts
 export const fetchCpbReport = createAsyncThunk(
   'cpbLaporan/fetchCpbReport',
-  async ({ jenisKelamin, kelas, statusOrangTua } = {}, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      const params = {};
-      if (jenisKelamin) params.jenis_kelamin = jenisKelamin;
-      if (kelas) params.kelas = kelas;
-      if (statusOrangTua) params.status_orang_tua = statusOrangTua;
-      
-      const response = await cpbLaporanApi.getCpbReport(params);
+      const response = await cpbLaporanApi.getCpbReport();
       return response.data.data;
     } catch (error) {
       const message = error.response?.data?.message || 
@@ -25,12 +20,9 @@ export const fetchCpbReport = createAsyncThunk(
 // Fetch children by specific CPB status
 export const fetchCpbByStatus = createAsyncThunk(
   'cpbLaporan/fetchCpbByStatus',
-  async ({ status, jenisKelamin, kelas, statusOrangTua, search }, { rejectWithValue }) => {
+  async ({ status, search }, { rejectWithValue }) => {
     try {
       const params = {};
-      if (jenisKelamin) params.jenis_kelamin = jenisKelamin;
-      if (kelas) params.kelas = kelas;
-      if (statusOrangTua) params.status_orang_tua = statusOrangTua;
       if (search) params.search = search;
       
       const response = await cpbLaporanApi.getCpbByStatus(status, params);
@@ -44,39 +36,13 @@ export const fetchCpbByStatus = createAsyncThunk(
   }
 );
 
-// Fetch CPB filter options
-export const fetchCpbFilterOptions = createAsyncThunk(
-  'cpbLaporan/fetchCpbFilterOptions',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await cpbLaporanApi.getFilterOptions();
-      const data = response.data.data;
-      
-      // Transform backend data to frontend format
-      return {
-        jenisKelamin: data.jenis_kelamin || [],
-        kelas: data.kelas || [],
-        statusOrangTua: data.status_orang_tua || []
-      };
-    } catch (error) {
-      const message = error.response?.data?.message || 
-        error.message || 
-        'Failed to fetch filter options';
-      return rejectWithValue(message);
-    }
-  }
-);
-
 // Export CPB data
 export const exportCpbData = createAsyncThunk(
   'cpbLaporan/exportCpbData',
-  async ({ status, jenisKelamin, kelas, statusOrangTua } = {}, { rejectWithValue }) => {
+  async ({ status } = {}, { rejectWithValue }) => {
     try {
       const params = {};
       if (status) params.status = status;
-      if (jenisKelamin) params.jenis_kelamin = jenisKelamin;
-      if (kelas) params.kelas = kelas;
-      if (statusOrangTua) params.status_orang_tua = statusOrangTua;
       
       const response = await cpbLaporanApi.exportCpbData(params);
       return response.data.data;
@@ -89,47 +55,19 @@ export const exportCpbData = createAsyncThunk(
   }
 );
 
-// Combined thunk to refresh CPB report with current filters
-export const refreshCpbWithFilters = createAsyncThunk(
-  'cpbLaporan/refreshCpbWithFilters',
-  async (_, { getState, dispatch }) => {
-    const { cpbLaporan } = getState();
-    const { jenisKelamin, kelas, statusOrangTua } = cpbLaporan.filters;
-    
-    return dispatch(fetchCpbReport({ 
-      jenisKelamin, 
-      kelas, 
-      statusOrangTua 
-    }));
-  }
-);
-
-// Initialize CPB laporan page data (fetch filters and initial data)
+// Initialize CPB laporan page data
 export const initializeCpbLaporanPage = createAsyncThunk(
   'cpbLaporan/initializeCpbLaporanPage',
-  async ({ jenisKelamin, kelas, statusOrangTua } = {}, { dispatch, rejectWithValue }) => {
+  async (params = {}, { dispatch, rejectWithValue }) => {
     try {
-      // Fetch filter options first - this is critical for UI
-      const filterOptionsResult = await dispatch(fetchCpbFilterOptions()).unwrap();
-      
       // Fetch main summary data
-      const reportResult = await dispatch(fetchCpbReport({ 
-        jenisKelamin, 
-        kelas, 
-        statusOrangTua 
-      })).unwrap();
+      const reportResult = await dispatch(fetchCpbReport()).unwrap();
       
       // Fetch initial BCPB children data
-      await dispatch(fetchCpbByStatus({ 
-        status: 'BCPB',
-        jenisKelamin, 
-        kelas, 
-        statusOrangTua 
-      })).unwrap();
+      await dispatch(fetchCpbByStatus({ status: 'BCPB' })).unwrap();
       
       return { 
         success: true,
-        filterOptions: filterOptionsResult,
         report: reportResult
       };
     } catch (error) {
@@ -139,54 +77,13 @@ export const initializeCpbLaporanPage = createAsyncThunk(
   }
 );
 
-// Update filters and refresh data
-export const updateCpbFiltersAndRefresh = createAsyncThunk(
-  'cpbLaporan/updateCpbFiltersAndRefresh',
-  async (newFilters, { dispatch, getState }) => {
-    const { cpbLaporan } = getState();
-    const updatedFilters = { ...cpbLaporan.filters, ...newFilters };
-    
-    // Update filters in state first
-    dispatch({ type: 'cpbLaporan/setFilters', payload: newFilters });
-    
-    // Transform frontend filter names to backend format
-    const backendFilters = {
-      jenisKelamin: updatedFilters.jenisKelamin,
-      kelas: updatedFilters.kelas,
-      statusOrangTua: updatedFilters.statusOrangTua
-    };
-    
-    // Refresh summary with new filters
-    await dispatch(fetchCpbReport(backendFilters)).unwrap();
-    
-    // Refresh current tab children data if there's an active tab
-    if (cpbLaporan.currentStatus) {
-      return dispatch(fetchCpbByStatus({
-        status: cpbLaporan.currentStatus,
-        jenisKelamin: updatedFilters.jenisKelamin,
-        kelas: updatedFilters.kelas,
-        statusOrangTua: updatedFilters.statusOrangTua,
-        search: updatedFilters.search
-      })).unwrap();
-    }
-    
-    return true;
-  }
-);
-
-// Fetch children for specific tab with current filters
+// Fetch children for specific tab
 export const fetchCpbTabData = createAsyncThunk(
   'cpbLaporan/fetchCpbTabData',
   async (status, { getState, dispatch }) => {
     const { cpbLaporan } = getState();
-    const { jenisKelamin, kelas, statusOrangTua, search } = cpbLaporan.filters;
+    const { search } = cpbLaporan.filters;
     
-    return dispatch(fetchCpbByStatus({
-      status,
-      jenisKelamin,
-      kelas,
-      statusOrangTua,
-      search
-    })).unwrap();
+    return dispatch(fetchCpbByStatus({ status, search })).unwrap();
   }
 );
