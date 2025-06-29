@@ -38,5 +38,17 @@ export const laporanAnakApi = {
    */
   getAvailableYears: async () => {
     return await api.get('/admin-shelter/laporan/available-years');
+  },
+
+  /**
+   * Export laporan anak binaan as PDF
+   * @param {Object} params - Query parameters
+   * @returns {Promise} - API response with PDF blob
+   */
+  exportLaporanAnakPdf: async (params = {}) => {
+    return await api.get('/admin-shelter/laporan/anak-binaan/export', { 
+      params: { ...params, format: 'pdf' },
+      responseType: 'blob'
+    });
   }
 };
