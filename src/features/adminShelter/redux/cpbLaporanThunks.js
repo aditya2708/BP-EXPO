@@ -36,7 +36,7 @@ export const fetchCpbByStatus = createAsyncThunk(
   }
 );
 
-// Export CPB data
+// Export CPB data (JSON)
 export const exportCpbData = createAsyncThunk(
   'cpbLaporan/exportCpbData',
   async ({ status } = {}, { rejectWithValue }) => {
@@ -50,6 +50,35 @@ export const exportCpbData = createAsyncThunk(
       const message = error.response?.data?.message || 
         error.message || 
         'Failed to export CPB data';
+      return rejectWithValue(message);
+    }
+  }
+);
+
+// Export CPB data as PDF
+export const exportCpbPdf = createAsyncThunk(
+  'cpbLaporan/exportCpbPdf',
+  async ({ status } = {}, { rejectWithValue }) => {
+    try {
+      const params = { format: 'pdf' };
+      if (status) params.status = status;
+      
+      const response = await cpbLaporanApi.exportCpbPdf(params);
+      
+      // Handle blob response for PDF
+      if (response.data instanceof Blob) {
+        return {
+          blob: response.data,
+          filename: response.headers['content-disposition']?.match(/filename="([^"]+)"/)?.[1] || 
+                   `laporan-cpb-${status ? status.toLowerCase() + '-' : ''}${new Date().toISOString().split('T')[0]}.pdf`
+        };
+      }
+      
+      return response.data;
+    } catch (error) {
+      const message = error.response?.data?.message || 
+        error.message || 
+        'Failed to export CPB PDF';
       return rejectWithValue(message);
     }
   }
