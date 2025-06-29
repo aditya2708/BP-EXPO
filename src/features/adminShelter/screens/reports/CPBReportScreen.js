@@ -7,22 +7,29 @@ import {
   RefreshControl,
   TouchableOpacity,
   TextInput,
-  Alert
+  Alert,
+  Platform
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import * as MediaLibrary from 'expo-media-library';
+
 import LoadingSpinner from '../../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../../common/components/ErrorMessage';
 import EmptyState from '../../../../common/components/EmptyState';
 import CPBStatusTabs from '../../components/CPBStatusTabs';
 import CPBChildCard from '../../components/CPBChildCard';
+
 import {
   fetchCpbReport,
   fetchCpbByStatus,
   initializeCpbLaporanPage,
   fetchCpbTabData,
-  exportCpbData
+  exportCpbPdf
 } from '../../redux/cpbLaporanThunks';
+
 import {
   selectCpbSummary,
   selectCpbChildren,
@@ -34,11 +41,14 @@ import {
   selectCpbError,
   selectCpbChildrenError,
   selectCpbTabCounts,
-  selectCpbExportLoading,
-  selectCpbExportError,
+  selectCpbPdfExportLoading,
+  selectCpbPdfExportError,
+  selectCpbPdfBlob,
+  selectCpbPdfFilename,
   setActiveTab,
   setSearch,
-  clearAllErrors
+  clearAllErrors,
+  clearPdfData
 } from '../../redux/cpbLaporanSlice';
 
 const CPBReportScreen = () => {
@@ -55,8 +65,10 @@ const CPBReportScreen = () => {
   const error = useSelector(selectCpbError);
   const childrenError = useSelector(selectCpbChildrenError);
   const tabCounts = useSelector(selectCpbTabCounts);
-  const exportLoading = useSelector(selectCpbExportLoading);
-  const exportError = useSelector(selectCpbExportError);
+  const pdfExportLoading = useSelector(selectCpbPdfExportLoading);
+  const pdfExportError = useSelector(selectCpbPdfExportError);
+  const pdfBlob = useSelector(selectCpbPdfBlob);
+  const pdfFilename = useSelector(selectCpbPdfFilename);
   
   // Local state
   const [refreshing, setRefreshing] = useState(false);
@@ -67,6 +79,63 @@ const CPBReportScreen = () => {
     dispatch(clearAllErrors());
     dispatch(initializeCpbLaporanPage());
   }, [dispatch]);
+
+  // Handle PDF download when blob is available
+  useEffect(() => {
+    if (pdfBlob && pdfFilename) {
+      handlePdfDownload();
+    }
+  }, [pdfBlob, pdfFilename]);
+
+  const handlePdfDownload = async () => {
+    try {
+      // Create file URI
+      const fileUri = FileSystem.documentDirectory + pdfFilename;
+      
+      // Convert blob to base64
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64Data = reader.result.split(',')[1];
+        
+        try {
+          // Write file
+          await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+
+          // Check if sharing is available
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(fileUri, {
+              mimeType: 'application/pdf',
+              dialogTitle: 'Simpan atau Bagikan PDF'
+            });
+          } else {
+            // Fallback: save to media library
+            const { status } = await MediaLibrary.requestPermissionsAsync();
+            if (status === 'granted') {
+              await MediaLibrary.saveToLibraryAsync(fileUri);
+              Alert.alert('Berhasil', 'PDF berhasil disimpan ke galeri');
+            } else {
+              Alert.alert('Info', `PDF tersimpan di: ${fileUri}`);
+            }
+          }
+          
+          // Clear PDF data after successful download
+          dispatch(clearPdfData());
+          
+        } catch (error) {
+          console.error('File operation error:', error);
+          Alert.alert('Error', 'Gagal menyimpan file PDF');
+        }
+      };
+      
+      reader.readAsDataURL(pdfBlob);
+      
+    } catch (error) {
+      console.error('PDF download error:', error);
+      Alert.alert('Error', 'Gagal mendownload PDF');
+    }
+  };
 
   // Handle refresh
   const handleRefresh = async () => {
@@ -90,7 +159,7 @@ const CPBReportScreen = () => {
     await dispatch(fetchCpbTabData(status));
   };
 
-  // Handle manual search
+  // Handle search
   const handleSearch = () => {
     if (!searchText.trim()) {
       Alert.alert('Peringatan', 'Masukkan nama anak yang ingin dicari');
@@ -122,7 +191,7 @@ const CPBReportScreen = () => {
     console.log('Child pressed:', child.full_name);
   };
 
-  // Handle export
+  // Handle PDF export
   const handleExport = async () => {
     if (!children.length) {
       Alert.alert('Peringatan', 'Tidak ada data untuk diexport');
@@ -130,35 +199,34 @@ const CPBReportScreen = () => {
     }
 
     try {
-      await dispatch(exportCpbData({
-        status: currentStatus
-      })).unwrap();
-      Alert.alert('Sukses', 'Data berhasil diexport');
+      // Export all data regardless of active tab
+      await dispatch(exportCpbPdf()).unwrap();
     } catch (error) {
       console.error('Export failed:', error);
+      Alert.alert('Error', 'Gagal export PDF: ' + error);
     }
   };
 
-  // Render header
+  // Render header with PDF export only
   const renderHeader = () => (
     <View style={styles.header}>
       <View style={styles.headerTop}>
         <Text style={styles.title}>Laporan CPB</Text>
         <TouchableOpacity
-          style={[styles.actionButton, exportLoading && styles.actionButtonDisabled]}
+          style={[styles.exportButton, pdfExportLoading && styles.exportButtonDisabled]}
           onPress={handleExport}
-          disabled={exportLoading || !children.length}
+          disabled={pdfExportLoading || !children.length}
         >
-          {exportLoading ? (
-            <LoadingSpinner size="small" color="#9b59b6" />
+          {pdfExportLoading ? (
+            <LoadingSpinner size="small" color="#fff" />
           ) : (
-            <Ionicons name="download" size={20} color="#9b59b6" />
+            <Ionicons name="document-text" size={18} color="#fff" />
           )}
           <Text style={[
-            styles.actionButtonText,
-            exportLoading && styles.actionButtonTextDisabled
+            styles.exportButtonText,
+            pdfExportLoading && styles.exportButtonTextDisabled
           ]}>
-            Export
+            Export PDF
           </Text>
         </TouchableOpacity>
       </View>
@@ -213,10 +281,10 @@ const CPBReportScreen = () => {
       )}
 
       {/* Export Error */}
-      {exportError && (
+      {pdfExportError && (
         <View style={styles.exportErrorContainer}>
           <Text style={styles.exportErrorText}>
-            Export gagal: {exportError}
+            Export gagal: {pdfExportError}
           </Text>
         </View>
       )}
@@ -333,27 +401,25 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333'
   },
-  actionButton: {
+  exportButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#e9ecef'
+    backgroundColor: '#9b59b6'
   },
-  actionButtonDisabled: {
+  exportButtonDisabled: {
     opacity: 0.5
   },
-  actionButtonText: {
+  exportButtonText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#9b59b6',
-    marginLeft: 4
+    fontWeight: '600',
+    color: '#fff',
+    marginLeft: 6
   },
-  actionButtonTextDisabled: {
-    color: '#999'
+  exportButtonTextDisabled: {
+    color: '#ccc'
   },
   searchContainer: {
     flexDirection: 'row',
