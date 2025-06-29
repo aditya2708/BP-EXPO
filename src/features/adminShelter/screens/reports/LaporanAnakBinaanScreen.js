@@ -6,10 +6,14 @@ import {
   FlatList,
   RefreshControl,
   TouchableOpacity,
-  TextInput
+  TextInput,
+  Alert
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import * as MediaLibrary from 'expo-media-library';
 
 import LoadingSpinner from '../../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../../common/components/ErrorMessage';
@@ -17,6 +21,13 @@ import EmptyState from '../../../../common/components/EmptyState';
 import ChildAttendanceCard from '../../components/ChildAttendanceCard';
 import ChildSummaryCard from '../../components/ChildSummaryCard';
 import AnakBinaanFilterSection from '../../components/AnakBinaanFilterSection';
+
+import {
+  fetchLaporanAnakBinaan,
+  initializeLaporanPage,
+  updateFiltersAndRefreshAll,
+  exportLaporanAnakPdf
+} from '../../redux/laporanThunks';
 
 import {
   selectChildren,
@@ -28,20 +39,19 @@ import {
   selectLoading,
   selectInitializingPage,
   selectRefreshingAll,
+  selectPdfExportLoading,
   selectError,
   selectRefreshAllError,
+  selectPdfExportError,
+  selectPdfBlob,
+  selectPdfFilename,
   selectHasActiveFilters,
   setSearch,
   resetFilters,
   toggleCardExpanded,
-  clearAllErrors
+  clearAllErrors,
+  clearPdfData
 } from '../../redux/laporanSlice';
-
-import {
-  fetchLaporanAnakBinaan,
-  initializeLaporanPage,
-  updateFiltersAndRefreshAll
-} from '../../redux/laporanThunks';
 
 const LaporanAnakBinaanScreen = () => {
   const dispatch = useDispatch();
@@ -60,8 +70,12 @@ const LaporanAnakBinaanScreen = () => {
   const loading = useSelector(selectLoading);
   const initializingPage = useSelector(selectInitializingPage);
   const refreshingAll = useSelector(selectRefreshingAll);
+  const pdfExportLoading = useSelector(selectPdfExportLoading);
   const error = useSelector(selectError);
   const refreshAllError = useSelector(selectRefreshAllError);
+  const pdfExportError = useSelector(selectPdfExportError);
+  const pdfBlob = useSelector(selectPdfBlob);
+  const pdfFilename = useSelector(selectPdfFilename);
   const hasActiveFilters = useSelector(selectHasActiveFilters);
 
   // Initialize page
@@ -69,6 +83,57 @@ const LaporanAnakBinaanScreen = () => {
     dispatch(clearAllErrors());
     initializePage();
   }, [dispatch]);
+
+  // Handle PDF download when blob is available
+  useEffect(() => {
+    if (pdfBlob && pdfFilename) {
+      handlePdfDownload();
+    }
+  }, [pdfBlob, pdfFilename]);
+
+  const handlePdfDownload = async () => {
+    try {
+      const fileUri = FileSystem.documentDirectory + pdfFilename;
+      const reader = new FileReader();
+      
+      reader.onload = async () => {
+        const base64Data = reader.result.split(',')[1];
+        
+        try {
+          await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(fileUri, {
+              mimeType: 'application/pdf',
+              dialogTitle: 'Simpan atau Bagikan PDF'
+            });
+          } else {
+            const { status } = await MediaLibrary.requestPermissionsAsync();
+            if (status === 'granted') {
+              await MediaLibrary.saveToLibraryAsync(fileUri);
+              Alert.alert('Berhasil', 'PDF berhasil disimpan ke galeri');
+            } else {
+              Alert.alert('Info', `PDF tersimpan di: ${fileUri}`);
+            }
+          }
+          
+          dispatch(clearPdfData());
+          
+        } catch (error) {
+          console.error('File operation error:', error);
+          Alert.alert('Error', 'Gagal menyimpan file PDF');
+        }
+      };
+      
+      reader.readAsDataURL(pdfBlob);
+      
+    } catch (error) {
+      console.error('PDF download error:', error);
+      Alert.alert('Error', 'Gagal mendownload PDF');
+    }
+  };
 
   const initializePage = async () => {
     try {
@@ -171,6 +236,26 @@ const LaporanAnakBinaanScreen = () => {
     // TODO: Navigate to child detail
   };
 
+  // Handle PDF export
+  const handleExport = async () => {
+    if (!children.length) {
+      Alert.alert('Peringatan', 'Tidak ada data untuk diexport');
+      return;
+    }
+
+    try {
+      await dispatch(exportLaporanAnakPdf({
+        start_date: filters.start_date,
+        end_date: filters.end_date,
+        jenisKegiatan: filters.jenisKegiatan,
+        search: searchText
+      })).unwrap();
+    } catch (error) {
+      console.error('Export failed:', error);
+      Alert.alert('Error', 'Gagal export PDF: ' + error);
+    }
+  };
+
   // Handle card expand/collapse
   const handleCardToggle = (childId) => {
     dispatch(toggleCardExpanded(childId));
@@ -181,17 +266,36 @@ const LaporanAnakBinaanScreen = () => {
     <View style={styles.header}>
       <View style={styles.headerTop}>
         <Text style={styles.title}>Laporan Anak Binaan</Text>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setShowFilters(true)}
-          disabled={refreshingAll}
-        >
-          <Ionicons 
-            name="filter" 
-            size={20} 
-            color={hasActiveFilters ? '#9b59b6' : '#666'} 
-          />
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setShowFilters(true)}
+            disabled={refreshingAll}
+          >
+            <Ionicons 
+              name="filter" 
+              size={20} 
+              color={hasActiveFilters ? '#9b59b6' : '#666'} 
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.exportButton, (pdfExportLoading || !children.length) && styles.exportButtonDisabled]}
+            onPress={handleExport}
+            disabled={pdfExportLoading || !children.length}
+          >
+            {pdfExportLoading ? (
+              <LoadingSpinner size="small" color="#fff" />
+            ) : (
+              <Ionicons name="document-text" size={18} color="#fff" />
+            )}
+            <Text style={[
+              styles.exportButtonText,
+              (pdfExportLoading || !children.length) && styles.exportButtonTextDisabled
+            ]}>
+              PDF
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.searchContainer}>
@@ -234,6 +338,15 @@ const LaporanAnakBinaanScreen = () => {
             {searchText.trim() ? 'Hapus Pencarian' : 'Hapus Filter'}
           </Text>
         </TouchableOpacity>
+      )}
+
+      {/* Export Error */}
+      {pdfExportError && (
+        <View style={styles.exportErrorContainer}>
+          <Text style={styles.exportErrorText}>
+            Export gagal: {pdfExportError}
+          </Text>
+        </View>
       )}
 
       {refreshingAll && (
@@ -360,10 +473,35 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333'
   },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8
+  },
   filterButton: {
     padding: 8,
     borderRadius: 8,
     backgroundColor: '#f8f9fa'
+  },
+  exportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#9b59b6'
+  },
+  exportButtonDisabled: {
+    opacity: 0.5
+  },
+  exportButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+    marginLeft: 4
+  },
+  exportButtonTextDisabled: {
+    color: '#ccc'
   },
   searchContainer: {
     flexDirection: 'row',
@@ -429,6 +567,16 @@ const styles = StyleSheet.create({
     color: '#9b59b6',
     fontWeight: '500',
     marginLeft: 8
+  },
+  exportErrorContainer: {
+    backgroundColor: '#ffebee',
+    padding: 8,
+    borderRadius: 4,
+    marginTop: 8
+  },
+  exportErrorText: {
+    fontSize: 12,
+    color: '#c62828'
   },
   resultCount: {
     fontSize: 14,
