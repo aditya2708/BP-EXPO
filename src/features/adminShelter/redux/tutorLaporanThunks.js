@@ -42,6 +42,58 @@ export const fetchTutorDetailReport = createAsyncThunk(
   }
 );
 
+export const exportTutorData = createAsyncThunk(
+  'tutorLaporan/exportTutorData',
+  async ({ start_date, end_date, jenisKegiatan, search } = {}, { rejectWithValue }) => {
+    try {
+      const params = {};
+      if (start_date) params.start_date = start_date;
+      if (end_date) params.end_date = end_date;
+      if (jenisKegiatan) params.jenis_kegiatan = jenisKegiatan;
+      if (search) params.search = search;
+      
+      const response = await tutorLaporanApi.exportTutorData(params);
+      return response.data.data;
+    } catch (error) {
+      const message = error.response?.data?.message || 
+        error.message || 
+        'Failed to export tutor data';
+      return rejectWithValue(message);
+    }
+  }
+);
+
+export const exportTutorPdf = createAsyncThunk(
+  'tutorLaporan/exportTutorPdf',
+  async ({ start_date, end_date, jenisKegiatan, search } = {}, { rejectWithValue }) => {
+    try {
+      const params = {};
+      if (start_date) params.start_date = start_date;
+      if (end_date) params.end_date = end_date;
+      if (jenisKegiatan) params.jenis_kegiatan = jenisKegiatan;
+      if (search) params.search = search;
+      
+      const response = await tutorLaporanApi.exportTutorPdf(params);
+      
+      // Handle blob response for PDF
+      if (response.data instanceof Blob) {
+        return {
+          blob: response.data,
+          filename: response.headers['content-disposition']?.match(/filename="([^"]+)"/)?.[1] || 
+                   `laporan-tutor-${new Date().toISOString().split('T')[0]}.pdf`
+        };
+      }
+      
+      return response.data;
+    } catch (error) {
+      const message = error.response?.data?.message || 
+        error.message || 
+        'Failed to export tutor PDF';
+      return rejectWithValue(message);
+    }
+  }
+);
+
 export const fetchTutorJenisKegiatanOptions = createAsyncThunk(
   'tutorLaporan/fetchTutorJenisKegiatanOptions',
   async (_, { rejectWithValue }) => {

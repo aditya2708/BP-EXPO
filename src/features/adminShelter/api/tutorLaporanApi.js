@@ -19,5 +19,16 @@ export const tutorLaporanApi = {
 
   getAvailableYears: async () => {
     return await api.get('/admin-shelter/laporan/tutor/available-years');
+  },
+
+  exportTutorData: async (params = {}) => {
+    return await api.get('/admin-shelter/laporan/tutor/export', { params });
+  },
+
+  exportTutorPdf: async (params = {}) => {
+    return await api.get('/admin-shelter/laporan/tutor/export', {
+      params: { ...params, format: 'pdf' },
+      responseType: 'blob'
+    });
   }
 };
