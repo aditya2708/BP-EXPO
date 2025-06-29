@@ -5,69 +5,94 @@ import {
   fetchJenisHistoriOptions,
   fetchAvailableYears,
   initializeHistoriLaporanPage,
-  updateFiltersAndRefresh
+  updateFiltersAndRefreshAll
 } from './historiLaporanThunks';
 
 const initialState = {
-  // Main report data
   historiList: [],
   summary: null,
+  pagination: null,
   filterOptions: {
     availableYears: [],
-    availableJenisHistori: [],
-    currentYear: new Date().getFullYear(),
-    currentJenisHistori: null
+    availableJenisHistori: []
   },
   
-  // Detail data
   selectedHistori: null,
   
-  // Loading states
   loading: false,
   detailLoading: false,
   filterOptionsLoading: false,
   initializingPage: false,
+  refreshingAll: false,
   
-  // Error states
   error: null,
   detailError: null,
   filterOptionsError: null,
   initializeError: null,
+  refreshAllError: null,
   
-  // UI state
   filters: {
-    year: new Date().getFullYear(),
-    jenisHistori: null,
+    start_date: null,
+    end_date: null,
+    jenis_histori: null,
     search: ''
-  }
+  },
+  expandedCards: [],
 };
 
 const historiLaporanSlice = createSlice({
   name: 'historiLaporan',
   initialState,
   reducers: {
-    // Filter actions
     setFilters: (state, action) => {
       state.filters = { ...state.filters, ...action.payload };
     },
-    setYear: (state, action) => {
-      state.filters.year = action.payload;
+    setStartDate: (state, action) => {
+      state.filters.start_date = action.payload;
+    },
+    setEndDate: (state, action) => {
+      state.filters.end_date = action.payload;
     },
     setJenisHistori: (state, action) => {
-      state.filters.jenisHistori = action.payload;
+      state.filters.jenis_histori = action.payload;
     },
     setSearch: (state, action) => {
       state.filters.search = action.payload;
     },
     resetFilters: (state) => {
       state.filters = {
-        year: new Date().getFullYear(),
-        jenisHistori: null,
+        start_date: null,
+        end_date: null,
+        jenis_histori: null,
         search: ''
       };
     },
     
-    // Clear data actions
+    toggleCardExpanded: (state, action) => {
+      const historiId = action.payload;
+      const index = state.expandedCards.indexOf(historiId);
+      if (index > -1) {
+        state.expandedCards.splice(index, 1);
+      } else {
+        state.expandedCards.push(historiId);
+      }
+    },
+    setCardExpanded: (state, action) => {
+      const { historiId, expanded } = action.payload;
+      const index = state.expandedCards.indexOf(historiId);
+      if (expanded && index === -1) {
+        state.expandedCards.push(historiId);
+      } else if (!expanded && index > -1) {
+        state.expandedCards.splice(index, 1);
+      }
+    },
+    expandAllCards: (state) => {
+      state.expandedCards = state.historiList.map(histori => histori.id_histori);
+    },
+    collapseAllCards: (state) => {
+      state.expandedCards = [];
+    },
+    
     clearSelectedHistori: (state) => {
       state.selectedHistori = null;
       state.detailError = null;
@@ -83,11 +108,20 @@ const historiLaporanSlice = createSlice({
     },
     clearInitializeError: (state) => {
       state.initializeError = null;
+    },
+    clearRefreshAllError: (state) => {
+      state.refreshAllError = null;
+    },
+    clearAllErrors: (state) => {
+      state.error = null;
+      state.detailError = null;
+      state.filterOptionsError = null;
+      state.initializeError = null;
+      state.refreshAllError = null;
     }
   },
   extraReducers: (builder) => {
     builder
-      // Initialize Histori Laporan Page
       .addCase(initializeHistoriLaporanPage.pending, (state) => {
         state.initializingPage = true;
         state.initializeError = null;
@@ -101,29 +135,45 @@ const historiLaporanSlice = createSlice({
         state.initializeError = action.payload;
       })
       
-      // Update Filters and Refresh
-      .addCase(updateFiltersAndRefresh.pending, (state) => {
-        state.loading = true;
+      .addCase(updateFiltersAndRefreshAll.pending, (state) => {
+        state.refreshingAll = true;
+        state.refreshAllError = null;
         state.error = null;
       })
-      .addCase(updateFiltersAndRefresh.fulfilled, (state) => {
-        state.loading = false;
+      .addCase(updateFiltersAndRefreshAll.fulfilled, (state, action) => {
+        state.refreshingAll = false;
+        state.refreshAllError = null;
         state.error = null;
+        
+        if (action.payload.historiData) {
+          if (action.payload.append) {
+            state.historiList = [...state.historiList, ...action.payload.historiData.histori_list];
+          } else {
+            state.historiList = action.payload.historiData.histori_list;
+          }
+          state.summary = action.payload.historiData.summary;
+          state.pagination = action.payload.historiData.pagination;
+          state.filterOptions = { ...state.filterOptions, ...action.payload.historiData.filter_options };
+        }
       })
-      .addCase(updateFiltersAndRefresh.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
+      .addCase(updateFiltersAndRefreshAll.rejected, (state, action) => {
+        state.refreshingAll = false;
+        state.refreshAllError = action.payload;
       })
       
-      // Fetch Laporan Histori
       .addCase(fetchLaporanHistori.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchLaporanHistori.fulfilled, (state, action) => {
         state.loading = false;
-        state.historiList = action.payload.histori_list;
+        if (action.payload.append) {
+          state.historiList = [...state.historiList, ...action.payload.histori_list];
+        } else {
+          state.historiList = action.payload.histori_list;
+        }
         state.summary = action.payload.summary;
+        state.pagination = action.payload.pagination;
         state.filterOptions = { ...state.filterOptions, ...action.payload.filter_options };
         state.error = null;
       })
@@ -132,7 +182,6 @@ const historiLaporanSlice = createSlice({
         state.error = action.payload;
       })
       
-      // Fetch Histori Detail
       .addCase(fetchHistoriDetail.pending, (state) => {
         state.detailLoading = true;
         state.detailError = null;
@@ -147,7 +196,6 @@ const historiLaporanSlice = createSlice({
         state.detailError = action.payload;
       })
       
-      // Fetch Jenis Histori Options
       .addCase(fetchJenisHistoriOptions.pending, (state) => {
         state.filterOptionsLoading = true;
         state.filterOptionsError = null;
@@ -162,7 +210,6 @@ const historiLaporanSlice = createSlice({
         state.filterOptionsError = action.payload;
       })
       
-      // Fetch Available Years
       .addCase(fetchAvailableYears.pending, (state) => {
         state.filterOptionsLoading = true;
         state.filterOptionsError = null;
@@ -179,45 +226,59 @@ const historiLaporanSlice = createSlice({
   }
 });
 
-// Action creators
 export const {
   setFilters,
-  setYear,
+  setStartDate,
+  setEndDate,
   setJenisHistori,
   setSearch,
   resetFilters,
+  toggleCardExpanded,
+  setCardExpanded,
+  expandAllCards,
+  collapseAllCards,
   clearSelectedHistori,
   clearError,
   clearDetailError,
   clearFilterOptionsError,
-  clearInitializeError
+  clearInitializeError,
+  clearRefreshAllError,
+  clearAllErrors
 } = historiLaporanSlice.actions;
 
 // Selectors
 export const selectHistoriLaporanState = (state) => state.historiLaporan;
 export const selectHistoriList = (state) => state.historiLaporan.historiList;
 export const selectSummary = (state) => state.historiLaporan.summary;
+export const selectPagination = (state) => state.historiLaporan.pagination;
 export const selectFilterOptions = (state) => state.historiLaporan.filterOptions;
 export const selectFilters = (state) => state.historiLaporan.filters;
+export const selectExpandedCards = (state) => state.historiLaporan.expandedCards;
 export const selectSelectedHistori = (state) => state.historiLaporan.selectedHistori;
 export const selectLoading = (state) => state.historiLaporan.loading;
 export const selectDetailLoading = (state) => state.historiLaporan.detailLoading;
 export const selectFilterOptionsLoading = (state) => state.historiLaporan.filterOptionsLoading;
 export const selectInitializingPage = (state) => state.historiLaporan.initializingPage;
+export const selectRefreshingAll = (state) => state.historiLaporan.refreshingAll;
 export const selectError = (state) => state.historiLaporan.error;
 export const selectDetailError = (state) => state.historiLaporan.detailError;
 export const selectFilterOptionsError = (state) => state.historiLaporan.filterOptionsError;
 export const selectInitializeError = (state) => state.historiLaporan.initializeError;
+export const selectRefreshAllError = (state) => state.historiLaporan.refreshAllError;
 
-// Derived selectors
-export const selectFilteredHistoriList = (state) => {
-  return state.historiLaporan.historiList;
-};
+export const selectIsHistoriCardExpanded = (state, historiId) => 
+  state.historiLaporan.expandedCards.includes(historiId);
 
 export const selectCurrentFilters = (state) => ({
-  year: state.historiLaporan.filters.year,
-  jenisHistori: state.historiLaporan.filters.jenisHistori,
+  start_date: state.historiLaporan.filters.start_date,
+  end_date: state.historiLaporan.filters.end_date,
+  jenis_histori: state.historiLaporan.filters.jenis_histori,
   search: state.historiLaporan.filters.search
 });
+
+export const selectHasActiveFilters = (state) => {
+  const { start_date, end_date, jenis_histori, search } = state.historiLaporan.filters;
+  return !!(start_date || end_date || jenis_histori || search);
+};
 
 export default historiLaporanSlice.reducer;

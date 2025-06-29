@@ -1,18 +1,18 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { historiLaporanApi } from '../api/historiLaporanApi';
 
-// Fetch main laporan histori with filters
 export const fetchLaporanHistori = createAsyncThunk(
   'historiLaporan/fetchLaporanHistori',
-  async ({ year, jenisHistori, search } = {}, { rejectWithValue }) => {
+  async ({ start_date, end_date, jenis_histori, search, page = 1, append = false } = {}, { rejectWithValue }) => {
     try {
-      const params = {};
-      if (year) params.year = year;
-      if (jenisHistori) params.jenis_histori = jenisHistori;
+      const params = { page };
+      if (start_date) params.start_date = start_date;
+      if (end_date) params.end_date = end_date;
+      if (jenis_histori) params.jenis_histori = jenis_histori;
       if (search) params.search = search;
       
       const response = await historiLaporanApi.getLaporanHistori(params);
-      return response.data.data;
+      return { ...response.data.data, append };
     } catch (error) {
       const message = error.response?.data?.message || 
         error.message || 
@@ -22,12 +22,16 @@ export const fetchLaporanHistori = createAsyncThunk(
   }
 );
 
-// Fetch histori detail
 export const fetchHistoriDetail = createAsyncThunk(
   'historiLaporan/fetchHistoriDetail',
-  async (historiId, { rejectWithValue }) => {
+  async ({ historiId, start_date, end_date, jenis_histori }, { rejectWithValue }) => {
     try {
-      const response = await historiLaporanApi.getHistoriDetail(historiId);
+      const params = {};
+      if (start_date) params.start_date = start_date;
+      if (end_date) params.end_date = end_date;
+      if (jenis_histori) params.jenis_histori = jenis_histori;
+      
+      const response = await historiLaporanApi.getHistoriDetail(historiId, params);
       return response.data.data;
     } catch (error) {
       const message = error.response?.data?.message || 
@@ -38,7 +42,6 @@ export const fetchHistoriDetail = createAsyncThunk(
   }
 );
 
-// Fetch jenis histori options for filter
 export const fetchJenisHistoriOptions = createAsyncThunk(
   'historiLaporan/fetchJenisHistoriOptions',
   async (_, { rejectWithValue }) => {
@@ -54,7 +57,6 @@ export const fetchJenisHistoriOptions = createAsyncThunk(
   }
 );
 
-// Fetch available years for filter
 export const fetchAvailableYears = createAsyncThunk(
   'historiLaporan/fetchAvailableYears',
   async (_, { rejectWithValue }) => {
@@ -70,27 +72,24 @@ export const fetchAvailableYears = createAsyncThunk(
   }
 );
 
-// Initialize histori laporan page data
 export const initializeHistoriLaporanPage = createAsyncThunk(
   'historiLaporan/initializeHistoriLaporanPage',
-  async ({ year, jenisHistori, search } = {}, { dispatch, rejectWithValue }) => {
+  async ({ start_date, end_date, jenis_histori, search } = {}, { dispatch, rejectWithValue }) => {
     try {
-      // Fetch filter options first
       const yearsResult = await dispatch(fetchAvailableYears()).unwrap();
       const jenisHistoriResult = await dispatch(fetchJenisHistoriOptions()).unwrap();
       
-      // Fetch main data with current or provided filters
-      const currentYear = year || new Date().getFullYear();
       await dispatch(fetchLaporanHistori({ 
-        year: currentYear, 
-        jenisHistori,
-        search 
+        start_date, 
+        end_date,
+        jenis_histori,
+        search
       })).unwrap();
       
       return { 
         success: true,
         years: yearsResult,
-        jenisHistori: jenisHistoriResult
+        jenisHistoriOptions: jenisHistoriResult
       };
     } catch (error) {
       const message = error.message || 'Failed to initialize histori laporan page';
@@ -99,17 +98,47 @@ export const initializeHistoriLaporanPage = createAsyncThunk(
   }
 );
 
-// Update filters and refresh data
-export const updateFiltersAndRefresh = createAsyncThunk(
-  'historiLaporan/updateFiltersAndRefresh',
-  async (newFilters, { dispatch, getState }) => {
+export const updateFiltersAndRefreshAll = createAsyncThunk(
+  'historiLaporan/updateFiltersAndRefreshAll',
+  async ({ newFilters, page = 1, append = false }, { dispatch, getState, rejectWithValue }) => {
+    try {
+      const { historiLaporan } = getState();
+      const updatedFilters = { ...historiLaporan.filters, ...newFilters };
+      
+      dispatch({ type: 'historiLaporan/setFilters', payload: newFilters });
+      
+      const historiDataResult = await dispatch(fetchLaporanHistori({
+        start_date: updatedFilters.start_date,
+        end_date: updatedFilters.end_date,
+        jenis_histori: updatedFilters.jenis_histori,
+        search: updatedFilters.search,
+        page,
+        append
+      })).unwrap();
+      
+      return {
+        filters: updatedFilters,
+        historiData: historiDataResult,
+        append
+      };
+    } catch (error) {
+      const message = error.message || 'Failed to update filters and refresh data';
+      return rejectWithValue(message);
+    }
+  }
+);
+
+export const refreshHistoriLaporanWithFilters = createAsyncThunk(
+  'historiLaporan/refreshHistoriLaporanWithFilters',
+  async (_, { getState, dispatch }) => {
     const { historiLaporan } = getState();
-    const updatedFilters = { ...historiLaporan.filters, ...newFilters };
+    const { start_date, end_date, jenis_histori, search } = historiLaporan.filters;
     
-    // Update filters in state first
-    dispatch({ type: 'historiLaporan/setFilters', payload: newFilters });
-    
-    // Then fetch with new filters
-    return dispatch(fetchLaporanHistori(updatedFilters)).unwrap();
+    return dispatch(fetchLaporanHistori({ 
+      start_date, 
+      end_date,
+      jenis_histori,
+      search 
+    }));
   }
 );
