@@ -27,12 +27,12 @@ const KeuanganFormScreen = () => {
     id_anak: '',
     tingkat_sekolah: '',
     semester: '',
-    bimbel: '',
-    eskul_dan_keagamaan: '',
-    laporan: '',
-    uang_tunai: '',
-    donasi: '',
-    subsidi_infak: '',
+    bimbel: 0,
+    eskul_dan_keagamaan: 0,
+    laporan: 0,
+    uang_tunai: 0,
+    donasi: 0,
+    subsidi_infak: 0,
   });
 
   const [children, setChildren] = useState([]);
@@ -62,15 +62,38 @@ const KeuanganFormScreen = () => {
         id_anak: keuangan.id_anak?.toString() || '',
         tingkat_sekolah: keuangan.tingkat_sekolah || '',
         semester: keuangan.semester || '',
-        bimbel: keuangan.bimbel?.toString() || '',
-        eskul_dan_keagamaan: keuangan.eskul_dan_keagamaan?.toString() || '',
-        laporan: keuangan.laporan?.toString() || '',
-        uang_tunai: keuangan.uang_tunai?.toString() || '',
-        donasi: keuangan.donasi?.toString() || '',
-        subsidi_infak: keuangan.subsidi_infak?.toString() || '',
+        bimbel: parseNumber(keuangan.bimbel),
+        eskul_dan_keagamaan: parseNumber(keuangan.eskul_dan_keagamaan),
+        laporan: parseNumber(keuangan.laporan),
+        uang_tunai: parseNumber(keuangan.uang_tunai),
+        donasi: parseNumber(keuangan.donasi),
+        subsidi_infak: parseNumber(keuangan.subsidi_infak),
       });
     }
   }, [isEdit, keuangan]);
+
+  // Parse number from various formats
+  const parseNumber = (value) => {
+    if (value === null || value === undefined || value === '') return 0;
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    return isNaN(numValue) ? 0 : numValue;
+  };
+
+  // Format number to Indonesian currency display
+  const formatCurrency = (value) => {
+    const numValue = parseNumber(value);
+    return new Intl.NumberFormat('id-ID', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(numValue);
+  };
+
+  // Parse currency input
+  const parseCurrencyInput = (value) => {
+    // Remove all non-digit characters
+    const cleaned = value.replace(/\D/g, '');
+    return cleaned === '' ? 0 : parseInt(cleaned, 10);
+  };
 
   const fetchChildren = async () => {
     try {
@@ -99,6 +122,14 @@ const KeuanganFormScreen = () => {
     }));
   };
 
+  const handleCurrencyInputChange = (field, value) => {
+    const numericValue = parseCurrencyInput(value);
+    setFormData(prev => ({
+      ...prev,
+      [field]: numericValue,
+    }));
+  };
+
   const validateForm = () => {
     const errors = [];
 
@@ -109,8 +140,12 @@ const KeuanganFormScreen = () => {
     // Validate numeric fields
     const numericFields = ['bimbel', 'eskul_dan_keagamaan', 'laporan', 'uang_tunai', 'donasi', 'subsidi_infak'];
     numericFields.forEach(field => {
-      if (formData[field] && isNaN(Number(formData[field]))) {
-        errors.push(`${field.replace('_', ' ')} harus berupa angka`);
+      const value = formData[field];
+      if (value < 0) {
+        errors.push(`${field.replace('_', ' ')} tidak boleh negatif`);
+      }
+      if (value > 999999999) {
+        errors.push(`${field.replace('_', ' ')} terlalu besar`);
       }
     });
 
@@ -129,16 +164,16 @@ const KeuanganFormScreen = () => {
       setSubmitting(true);
       setError(null);
 
-      // Convert numeric fields
+      // Prepare submit data - ensure all numeric fields are numbers
       const submitData = {
         ...formData,
         id_anak: parseInt(formData.id_anak),
-        bimbel: formData.bimbel ? parseFloat(formData.bimbel) : 0,
-        eskul_dan_keagamaan: formData.eskul_dan_keagamaan ? parseFloat(formData.eskul_dan_keagamaan) : 0,
-        laporan: formData.laporan ? parseFloat(formData.laporan) : 0,
-        uang_tunai: formData.uang_tunai ? parseFloat(formData.uang_tunai) : 0,
-        donasi: formData.donasi ? parseFloat(formData.donasi) : 0,
-        subsidi_infak: formData.subsidi_infak ? parseFloat(formData.subsidi_infak) : 0,
+        bimbel: parseNumber(formData.bimbel),
+        eskul_dan_keagamaan: parseNumber(formData.eskul_dan_keagamaan),
+        laporan: parseNumber(formData.laporan),
+        uang_tunai: parseNumber(formData.uang_tunai),
+        donasi: parseNumber(formData.donasi),
+        subsidi_infak: parseNumber(formData.subsidi_infak),
       };
 
       if (isEdit) {
@@ -167,26 +202,34 @@ const KeuanganFormScreen = () => {
     }
   };
 
-  const formatCurrency = (value) => {
-    return value.replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  };
-
   const renderCurrencyInput = (label, field, placeholder) => (
     <TextInput
       label={label}
-      value={formData[field]}
-      onChangeText={(value) => handleInputChange(field, value.replace(/\./g, ''))}
+      value={formatCurrency(formData[field])}
+      onChangeText={(value) => handleCurrencyInputChange(field, value)}
       placeholder={placeholder}
       keyboardType="numeric"
-      inputProps={{
-        value: formatCurrency(formData[field]),
-      }}
     />
   );
+
+  // Calculate totals for preview
+  const calculateTotals = () => {
+    const totalKebutuhan = parseNumber(formData.bimbel) + 
+                          parseNumber(formData.eskul_dan_keagamaan) + 
+                          parseNumber(formData.laporan) + 
+                          parseNumber(formData.uang_tunai);
+    
+    const totalBantuan = parseNumber(formData.donasi) + parseNumber(formData.subsidi_infak);
+    const sisaTagihan = Math.max(0, totalKebutuhan - totalBantuan);
+    
+    return { totalKebutuhan, totalBantuan, sisaTagihan };
+  };
 
   if (loading) {
     return <LoadingSpinner fullScreen message="Memuat data..." />;
   }
+
+  const { totalKebutuhan, totalBantuan, sisaTagihan } = calculateTotals();
 
   return (
     <KeyboardAvoidingView 
@@ -251,38 +294,21 @@ const KeuanganFormScreen = () => {
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Total Kebutuhan:</Text>
               <Text style={styles.summaryValue}>
-                {formatCurrency(
-                  (parseFloat(formData.bimbel) || 0) +
-                  (parseFloat(formData.eskul_dan_keagamaan) || 0) +
-                  (parseFloat(formData.laporan) || 0) +
-                  (parseFloat(formData.uang_tunai) || 0)
-                )}
+                Rp {formatCurrency(totalKebutuhan)}
               </Text>
             </View>
             
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Total Bantuan:</Text>
               <Text style={styles.summaryValue}>
-                {formatCurrency(
-                  (parseFloat(formData.donasi) || 0) +
-                  (parseFloat(formData.subsidi_infak) || 0)
-                )}
+                Rp {formatCurrency(totalBantuan)}
               </Text>
             </View>
             
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Sisa Tagihan:</Text>
-              <Text style={[styles.summaryValue, { color: '#e74c3c' }]}>
-                {formatCurrency(
-                  Math.max(0, 
-                    ((parseFloat(formData.bimbel) || 0) +
-                    (parseFloat(formData.eskul_dan_keagamaan) || 0) +
-                    (parseFloat(formData.laporan) || 0) +
-                    (parseFloat(formData.uang_tunai) || 0)) -
-                    ((parseFloat(formData.donasi) || 0) +
-                    (parseFloat(formData.subsidi_infak) || 0))
-                  )
-                )}
+              <Text style={[styles.summaryValue, { color: sisaTagihan > 0 ? '#e74c3c' : '#27ae60' }]}>
+                Rp {formatCurrency(sisaTagihan)}
               </Text>
             </View>
           </View>

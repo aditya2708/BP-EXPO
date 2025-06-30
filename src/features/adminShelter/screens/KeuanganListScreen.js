@@ -128,25 +128,44 @@ const KeuanganListScreen = () => {
   };
 
   const formatCurrency = (amount) => {
+    const numValue = typeof amount === 'string' ? parseFloat(amount) : amount;
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
-    }).format(amount || 0);
+      maximumFractionDigits: 0,
+    }).format(numValue || 0);
   };
 
-  const calculateTotals = (item) => {
-    const totalKebutuhan = (item.bimbel || 0) + (item.eskul_dan_keagamaan || 0) + 
-                          (item.laporan || 0) + (item.uang_tunai || 0);
-    const totalBantuan = (item.donasi || 0) + (item.subsidi_infak || 0);
+  // Use calculated totals from API response or calculate if not available
+  const getTotals = (item) => {
+    // Use totals from API if available
+    if (item.total_kebutuhan !== undefined && item.total_bantuan !== undefined) {
+      return {
+        totalKebutuhan: parseFloat(item.total_kebutuhan) || 0,
+        totalBantuan: parseFloat(item.total_bantuan) || 0,
+        sisaTagihan: parseFloat(item.sisa_tagihan) || 0,
+      };
+    }
+    
+    // Fallback calculation if API doesn't provide totals
+    const bimbel = parseFloat(item.bimbel) || 0;
+    const eskulDanKeagamaan = parseFloat(item.eskul_dan_keagamaan) || 0;
+    const laporan = parseFloat(item.laporan) || 0;
+    const uangTunai = parseFloat(item.uang_tunai) || 0;
+    const donasi = parseFloat(item.donasi) || 0;
+    const subsidiInfak = parseFloat(item.subsidi_infak) || 0;
+    
+    const totalKebutuhan = bimbel + eskulDanKeagamaan + laporan + uangTunai;
+    const totalBantuan = donasi + subsidiInfak;
     const sisaTagihan = Math.max(0, totalKebutuhan - totalBantuan);
     
     return { totalKebutuhan, totalBantuan, sisaTagihan };
   };
 
   const renderKeuanganItem = ({ item }) => {
-    const { totalKebutuhan, totalBantuan, sisaTagihan } = calculateTotals(item);
-    const statusPaid = totalKebutuhan <= totalBantuan;
+    const { totalKebutuhan, totalBantuan, sisaTagihan } = getTotals(item);
+    const statusPaid = item.is_lunas !== undefined ? item.is_lunas : (totalKebutuhan <= totalBantuan);
 
     return (
       <TouchableOpacity 

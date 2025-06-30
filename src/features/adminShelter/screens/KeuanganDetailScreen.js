@@ -69,19 +69,38 @@ const KeuanganDetailScreen = () => {
   };
 
   const formatCurrency = (amount) => {
+    const numValue = typeof amount === 'string' ? parseFloat(amount) : amount;
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       minimumFractionDigits: 0,
-    }).format(amount || 0);
+      maximumFractionDigits: 0,
+    }).format(numValue || 0);
   };
 
-  const calculateTotals = () => {
+  // Use calculated totals from API or calculate as fallback
+  const getTotals = () => {
     if (!keuangan) return { totalKebutuhan: 0, totalBantuan: 0, sisaTagihan: 0 };
     
-    const totalKebutuhan = (keuangan.bimbel || 0) + (keuangan.eskul_dan_keagamaan || 0) + 
-                          (keuangan.laporan || 0) + (keuangan.uang_tunai || 0);
-    const totalBantuan = (keuangan.donasi || 0) + (keuangan.subsidi_infak || 0);
+    // Use totals from API if available
+    if (keuangan.total_kebutuhan !== undefined && keuangan.total_bantuan !== undefined) {
+      return {
+        totalKebutuhan: parseFloat(keuangan.total_kebutuhan) || 0,
+        totalBantuan: parseFloat(keuangan.total_bantuan) || 0,
+        sisaTagihan: parseFloat(keuangan.sisa_tagihan) || 0,
+      };
+    }
+    
+    // Fallback calculation
+    const bimbel = parseFloat(keuangan.bimbel) || 0;
+    const eskulDanKeagamaan = parseFloat(keuangan.eskul_dan_keagamaan) || 0;
+    const laporan = parseFloat(keuangan.laporan) || 0;
+    const uangTunai = parseFloat(keuangan.uang_tunai) || 0;
+    const donasi = parseFloat(keuangan.donasi) || 0;
+    const subsidiInfak = parseFloat(keuangan.subsidi_infak) || 0;
+    
+    const totalKebutuhan = bimbel + eskulDanKeagamaan + laporan + uangTunai;
+    const totalBantuan = donasi + subsidiInfak;
     const sisaTagihan = Math.max(0, totalKebutuhan - totalBantuan);
     
     return { totalKebutuhan, totalBantuan, sisaTagihan };
@@ -107,8 +126,8 @@ const KeuanganDetailScreen = () => {
     );
   }
 
-  const { totalKebutuhan, totalBantuan, sisaTagihan } = calculateTotals();
-  const statusPaid = totalKebutuhan <= totalBantuan;
+  const { totalKebutuhan, totalBantuan, sisaTagihan } = getTotals();
+  const statusPaid = keuangan.is_lunas !== undefined ? keuangan.is_lunas : (totalKebutuhan <= totalBantuan);
 
   return (
     <ScrollView style={styles.container}>
