@@ -60,7 +60,7 @@ const AdminPusatDashboardScreen = () => {
   const navigateToKacab = () => navigation.navigate('Management', { screen: 'KacabManagement' });
   const navigateToKeluarga = () => navigation.navigate('Management', { screen: 'KeluargaManagement' });
   const navigateToAnak = () => navigation.navigate('Management', { screen: 'AnakManagement' });
-  //const navigateToAddKeluarga = () => navigation.navigate('Management', { screen: 'KeluargaForm', params: { isNew: true } });
+  const navigateToTutorHonorSettings = () => navigation.navigate('Management', { screen: 'TutorHonorSettings' });
   const navigateToProfile = () => navigation.navigate('ProfileTab');
 
   // Show loading indicator
@@ -190,7 +190,15 @@ const AdminPusatDashboardScreen = () => {
             <Text style={styles.quickAccessText}>Anak</Text>
           </TouchableOpacity>
           
-      
+          <TouchableOpacity 
+            style={styles.quickAccessItem}
+            onPress={navigateToTutorHonorSettings}
+          >
+            <View style={[styles.iconContainer, { backgroundColor: '#e67e22' }]}>
+              <Ionicons name="calculator" size={24} color="#fff" />
+            </View>
+            <Text style={styles.quickAccessText}>Honor Tutor</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity 
             style={styles.quickAccessItem}
