@@ -28,7 +28,8 @@ import {
   selectLoading,
   selectError,
   selectPagination,
-  selectActionStatus
+  selectActionStatus,
+  selectPaymentSystems
 } from '../redux/tutorHonorSettingsSlice';
 
 const TutorHonorSettingsScreen = () => {
@@ -40,6 +41,7 @@ const TutorHonorSettingsScreen = () => {
   const loading = useSelector(selectLoading);
   const error = useSelector(selectError);
   const pagination = useSelector(selectPagination);
+  const paymentSystems = useSelector(selectPaymentSystems);
   const setActiveStatus = useSelector(state => selectActionStatus(state, 'setActive'));
   const deleteStatus = useSelector(state => selectActionStatus(state, 'delete'));
 
@@ -78,7 +80,7 @@ const TutorHonorSettingsScreen = () => {
 
     Alert.alert(
       'Aktifkan Setting',
-      `Yakin akan mengaktifkan setting ini?\n\nCPB: Rp ${setting.cpb_rate?.toLocaleString('id-ID')}\nPB: Rp ${setting.pb_rate?.toLocaleString('id-ID')}\nNPB: Rp ${setting.npb_rate?.toLocaleString('id-ID')}`,
+      `Yakin akan mengaktifkan setting ${getPaymentSystemName(setting.payment_system)}?`,
       [
         { text: 'Batal', style: 'cancel' },
         {
@@ -127,6 +129,162 @@ const TutorHonorSettingsScreen = () => {
     );
   };
 
+  const getPaymentSystemName = (paymentSystem) => {
+    const system = paymentSystems.find(s => s.value === paymentSystem);
+    return system ? system.label : paymentSystem;
+  };
+
+  const renderRateInfo = (setting) => {
+    const { payment_system } = setting;
+
+    switch (payment_system) {
+      case 'flat_monthly':
+        return (
+          <View style={styles.rateItem}>
+            <Text style={styles.rateLabel}>Bulanan</Text>
+            <Text style={styles.rateValue}>
+              Rp {setting.flat_monthly_rate?.toLocaleString('id-ID')}
+            </Text>
+          </View>
+        );
+
+      case 'per_session':
+        return (
+          <View style={styles.rateItem}>
+            <Text style={styles.rateLabel}>Per Sesi</Text>
+            <Text style={styles.rateValue}>
+              Rp {setting.session_rate?.toLocaleString('id-ID')}
+            </Text>
+          </View>
+        );
+
+      case 'per_student_category':
+        return (
+          <View style={styles.ratesContainer}>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>CPB</Text>
+              <Text style={styles.rateValue}>
+                Rp {setting.cpb_rate?.toLocaleString('id-ID')}
+              </Text>
+            </View>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>PB</Text>
+              <Text style={styles.rateValue}>
+                Rp {setting.pb_rate?.toLocaleString('id-ID')}
+              </Text>
+            </View>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>NPB</Text>
+              <Text style={styles.rateValue}>
+                Rp {setting.npb_rate?.toLocaleString('id-ID')}
+              </Text>
+            </View>
+          </View>
+        );
+
+      case 'per_hour':
+        return (
+          <View style={styles.rateItem}>
+            <Text style={styles.rateLabel}>Per Jam</Text>
+            <Text style={styles.rateValue}>
+              Rp {setting.hourly_rate?.toLocaleString('id-ID')}
+            </Text>
+          </View>
+        );
+
+      case 'base_per_session':
+        return (
+          <View style={styles.ratesContainer}>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Dasar</Text>
+              <Text style={styles.rateValue}>
+                Rp {setting.base_rate?.toLocaleString('id-ID')}
+              </Text>
+            </View>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Per Sesi</Text>
+              <Text style={styles.rateValue}>
+                Rp {setting.session_rate?.toLocaleString('id-ID')}
+              </Text>
+            </View>
+          </View>
+        );
+
+      case 'base_per_student':
+        return (
+          <View style={styles.ratesContainer}>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Dasar</Text>
+              <Text style={styles.rateValue}>
+                Rp {setting.base_rate?.toLocaleString('id-ID')}
+              </Text>
+            </View>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Per Siswa</Text>
+              <Text style={styles.rateValue}>
+                Rp {setting.per_student_rate?.toLocaleString('id-ID')}
+              </Text>
+            </View>
+          </View>
+        );
+
+      case 'base_per_hour':
+        return (
+          <View style={styles.ratesContainer}>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Dasar</Text>
+              <Text style={styles.rateValue}>
+                Rp {setting.base_rate?.toLocaleString('id-ID')}
+              </Text>
+            </View>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Per Jam</Text>
+              <Text style={styles.rateValue}>
+                Rp {setting.hourly_rate?.toLocaleString('id-ID')}
+              </Text>
+            </View>
+          </View>
+        );
+
+      case 'session_per_student':
+        return (
+          <View style={styles.ratesContainer}>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Per Sesi</Text>
+              <Text style={styles.rateValue}>
+                Rp {setting.session_rate?.toLocaleString('id-ID')}
+              </Text>
+            </View>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Per Siswa</Text>
+              <Text style={styles.rateValue}>
+                Rp {setting.per_student_rate?.toLocaleString('id-ID')}
+              </Text>
+            </View>
+          </View>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const renderActiveSummary = () => {
+    if (!activeSetting) return null;
+
+    return (
+      <View style={styles.activeSettingSummary}>
+        <Text style={styles.activeSummaryTitle}>Setting Aktif Saat Ini</Text>
+        <Text style={styles.activeSummarySystem}>
+          {getPaymentSystemName(activeSetting.payment_system)}
+        </Text>
+        <View style={styles.activeSummaryContent}>
+          {renderRateInfo(activeSetting)}
+        </View>
+      </View>
+    );
+  };
+
   const renderSettingItem = ({ item }) => (
     <View style={[styles.settingItem, item.is_active && styles.activeSettingItem]}>
       <View style={styles.settingHeader}>
@@ -141,6 +299,9 @@ const TutorHonorSettingsScreen = () => {
               </View>
             )}
           </View>
+          <Text style={styles.settingSystem}>
+            {getPaymentSystemName(item.payment_system)}
+          </Text>
           <Text style={styles.settingDate}>
             Dibuat: {new Date(item.created_at).toLocaleDateString('id-ID')}
           </Text>
@@ -163,26 +324,7 @@ const TutorHonorSettingsScreen = () => {
         </View>
       </View>
 
-      <View style={styles.ratesContainer}>
-        <View style={styles.rateItem}>
-          <Text style={styles.rateLabel}>CPB</Text>
-          <Text style={styles.rateValue}>
-            Rp {item.cpb_rate?.toLocaleString('id-ID')}
-          </Text>
-        </View>
-        <View style={styles.rateItem}>
-          <Text style={styles.rateLabel}>PB</Text>
-          <Text style={styles.rateValue}>
-            Rp {item.pb_rate?.toLocaleString('id-ID')}
-          </Text>
-        </View>
-        <View style={styles.rateItem}>
-          <Text style={styles.rateLabel}>NPB</Text>
-          <Text style={styles.rateValue}>
-            Rp {item.npb_rate?.toLocaleString('id-ID')}
-          </Text>
-        </View>
-      </View>
+      {renderRateInfo(item)}
 
       {!item.is_active && (
         <TouchableOpacity
@@ -237,31 +379,7 @@ const TutorHonorSettingsScreen = () => {
       </View>
 
       {/* Active Setting Summary */}
-      {activeSetting && (
-        <View style={styles.activeSettingSummary}>
-          <Text style={styles.activeSummaryTitle}>Setting Aktif Saat Ini</Text>
-          <View style={styles.activeSummaryRates}>
-            <View style={styles.activeSummaryItem}>
-              <Text style={styles.activeSummaryLabel}>CPB</Text>
-              <Text style={styles.activeSummaryValue}>
-                Rp {activeSetting.cpb_rate?.toLocaleString('id-ID')}
-              </Text>
-            </View>
-            <View style={styles.activeSummaryItem}>
-              <Text style={styles.activeSummaryLabel}>PB</Text>
-              <Text style={styles.activeSummaryValue}>
-                Rp {activeSetting.pb_rate?.toLocaleString('id-ID')}
-              </Text>
-            </View>
-            <View style={styles.activeSummaryItem}>
-              <Text style={styles.activeSummaryLabel}>NPB</Text>
-              <Text style={styles.activeSummaryValue}>
-                Rp {activeSetting.npb_rate?.toLocaleString('id-ID')}
-              </Text>
-            </View>
-          </View>
-        </View>
-      )}
+      {renderActiveSummary()}
 
       {error && (
         <ErrorMessage
@@ -330,24 +448,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#2ecc71',
+    marginBottom: 8
+  },
+  activeSummarySystem: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2ecc71',
     marginBottom: 12
   },
-  activeSummaryRates: {
+  activeSummaryContent: {
     flexDirection: 'row',
-    justifyContent: 'space-around'
-  },
-  activeSummaryItem: {
-    alignItems: 'center'
-  },
-  activeSummaryLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4
-  },
-  activeSummaryValue: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#2ecc71'
+    flexWrap: 'wrap'
   },
   listContainer: {
     padding: 16
@@ -398,6 +509,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold'
   },
+  settingSystem: {
+    fontSize: 14,
+    color: '#3498db',
+    fontWeight: '500',
+    marginBottom: 4
+  },
   settingDate: {
     fontSize: 12,
     color: '#666'
@@ -411,11 +528,13 @@ const styles = StyleSheet.create({
   },
   ratesContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 16
+    flexWrap: 'wrap',
+    marginBottom: 16,
+    gap: 12
   },
   rateItem: {
-    alignItems: 'center'
+    alignItems: 'center',
+    minWidth: 80
   },
   rateLabel: {
     fontSize: 12,

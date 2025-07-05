@@ -26,7 +26,17 @@ const initialState = {
     update: null,
     delete: null,
     setActive: null
-  }
+  },
+  paymentSystems: [
+    { value: 'flat_monthly', label: 'Honor Bulanan Tetap' },
+    { value: 'per_session', label: 'Per Sesi/Pertemuan' },
+    { value: 'per_student_category', label: 'Per Kategori Siswa' },
+    { value: 'per_hour', label: 'Per Jam' },
+    { value: 'base_per_session', label: 'Dasar + Per Sesi' },
+    { value: 'base_per_student', label: 'Dasar + Per Siswa' },
+    { value: 'base_per_hour', label: 'Dasar + Per Jam' },
+    { value: 'session_per_student', label: 'Per Sesi + Per Siswa' }
+  ]
 };
 
 export const fetchSettings = createAsyncThunk(
@@ -306,5 +316,6 @@ export const selectError = state => state.tutorHonorSettings.error;
 export const selectPagination = state => state.tutorHonorSettings.pagination;
 export const selectActionStatus = (state, action) => state.tutorHonorSettings.actionStatus[action];
 export const selectActionError = (state, action) => state.tutorHonorSettings.actionError[action];
+export const selectPaymentSystems = state => state.tutorHonorSettings.paymentSystems;
 
 export default tutorHonorSettingsSlice.reducer;
