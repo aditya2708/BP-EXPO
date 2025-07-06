@@ -259,7 +259,24 @@ const tutorHonorSlice = createSlice({
       })
       .addCase(fetchMonthlyDetail.fulfilled, (state, action) => {
         state.loading = false;
-        state.monthlyDetail = action.payload.data;
+        // Ensure details array exists and has proper structure
+        const monthlyDetail = action.payload.data;
+        if (monthlyDetail && monthlyDetail.details) {
+          // Normalize detail data to ensure breakdown fields exist
+          monthlyDetail.details = monthlyDetail.details.map(detail => ({
+            ...detail,
+            cpb_count: detail.cpb_count || 0,
+            pb_count: detail.pb_count || 0,
+            npb_count: detail.npb_count || 0,
+            cpb_amount: detail.cpb_amount || 0,
+            pb_amount: detail.pb_amount || 0,
+            npb_amount: detail.npb_amount || 0,
+            cpb_rate: detail.cpb_rate || 0,
+            pb_rate: detail.pb_rate || 0,
+            npb_rate: detail.npb_rate || 0
+          }));
+        }
+        state.monthlyDetail = monthlyDetail;
         state.stats = action.payload.stats;
         if (action.payload.current_settings) {
           state.currentSettings = action.payload.current_settings;
@@ -321,11 +338,11 @@ const tutorHonorSlice = createSlice({
         
         const index = state.honorList.findIndex(h => h.id_honor === approvedHonor.id_honor);
         if (index !== -1) {
-          state.honorList[index] = approvedHonor;
+          state.honorList[index] = { ...state.honorList[index], status: approvedHonor.status };
         }
         
         if (state.monthlyDetail && state.monthlyDetail.id_honor === approvedHonor.id_honor) {
-          state.monthlyDetail = approvedHonor;
+          state.monthlyDetail = { ...state.monthlyDetail, status: approvedHonor.status };
         }
       })
       .addCase(approveHonor.rejected, (state, action) => {
@@ -343,11 +360,11 @@ const tutorHonorSlice = createSlice({
         
         const index = state.honorList.findIndex(h => h.id_honor === paidHonor.id_honor);
         if (index !== -1) {
-          state.honorList[index] = paidHonor;
+          state.honorList[index] = { ...state.honorList[index], status: paidHonor.status };
         }
         
         if (state.monthlyDetail && state.monthlyDetail.id_honor === paidHonor.id_honor) {
-          state.monthlyDetail = paidHonor;
+          state.monthlyDetail = { ...state.monthlyDetail, status: paidHonor.status };
         }
       })
       .addCase(markAsPaid.rejected, (state, action) => {
@@ -392,7 +409,13 @@ const tutorHonorSlice = createSlice({
       })
       .addCase(fetchHonorHistory.fulfilled, (state, action) => {
         state.historyLoading = false;
-        state.honorHistory = action.payload.data || [];
+        // Handle pagination properly
+        const newData = action.payload.data || [];
+        if (action.payload.pagination?.current_page === 1) {
+          state.honorHistory = newData;
+        } else {
+          state.honorHistory = [...state.honorHistory, ...newData];
+        }
         
         if (action.payload.pagination) {
           state.historyPagination = {
