@@ -31,5 +31,21 @@ export const tutorHonorApi = {
 
   getHonorStats: async (params = {}) => {
     return await api.get('/admin-shelter/tutor-honor/stats', { params });
+  },
+
+  getCurrentSettings: async () => {
+    return await api.get('/admin-shelter/tutor-honor/current-settings');
+  },
+
+  calculatePreview: async (data) => {
+    return await api.post('/admin-shelter/tutor-honor/calculate-preview', data);
+  },
+
+  getTutorPreview: async (tutorId, params = {}) => {
+    return await api.get(`/admin-shelter/tutor-honor/tutor/${tutorId}/preview`, { params });
+  },
+
+  getYearRange: async (tutorId) => {
+    return await api.get(`/admin-shelter/tutor-honor/tutor/${tutorId}/year-range`);
   }
 };
