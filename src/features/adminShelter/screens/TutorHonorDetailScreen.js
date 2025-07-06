@@ -98,6 +98,62 @@ const TutorHonorDetailScreen = () => {
     );
   };
 
+  const statusConfig = {
+    CPB: { color: '#e74c3c', label: 'CPB' },
+    PB: { color: '#2ecc71', label: 'PB' },
+    NPB: { color: '#f39c12', label: 'NPB' }
+  };
+
+  const renderBreakdownCard = (type, count, rate, amount) => {
+    if (!count) return null;
+    const config = statusConfig[type];
+    
+    return (
+      <View style={styles.breakdownCard} key={type}>
+        <View style={[styles.statusDot, { backgroundColor: config.color }]} />
+        <View style={styles.cardContent}>
+          <Text style={styles.statusType}>{config.label}</Text>
+          <Text style={styles.studentCount}>{count} siswa</Text>
+        </View>
+        <View style={styles.cardAmount}>
+          <Text style={styles.rateText}>Rp.{rate?.toLocaleString('id-ID')}</Text>
+          <Text style={[styles.amountText, { color: config.color }]}>
+            {amount?.toLocaleString('id-ID')}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
+  const renderStudentBreakdown = (item) => {
+    const hasBreakdown = item.cpb_count || item.pb_count || item.npb_count;
+    
+    if (!hasBreakdown) {
+      return (
+        <View style={styles.simpleAttendance}>
+          <Ionicons name="people" size={16} color="#666" />
+          <Text style={styles.attendanceText}>{item.jumlah_siswa_hadir} siswa hadir</Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.breakdownContainer}>
+        <Text style={styles.breakdownTitle}>Detail Kehadiran</Text>
+        <View style={styles.breakdownList}>
+          {renderBreakdownCard('CPB', item.cpb_count, item.cpb_rate, item.cpb_amount)}
+          {renderBreakdownCard('PB', item.pb_count, item.pb_rate, item.pb_amount)}
+          {renderBreakdownCard('NPB', item.npb_count, item.npb_rate, item.npb_amount)}
+        </View>
+        <View style={styles.breakdownTotal}>
+          <Text style={styles.totalText}>
+            {item.jumlah_siswa_hadir} siswa • Rp {item.honor_per_aktivitas?.toLocaleString('id-ID')}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
   const renderActivityItem = ({ item }) => (
     <View style={styles.activityItem}>
       <View style={styles.activityHeader}>
@@ -114,20 +170,7 @@ const TutorHonorDetailScreen = () => {
       
       <Text style={styles.activityMaterial}>{item.aktivitas?.materi}</Text>
       
-      <View style={styles.attendanceInfo}>
-        <View style={styles.attendanceItem}>
-          <Ionicons name="people" size={16} color="#2ecc71" />
-          <Text style={styles.attendanceText}>
-            {item.jumlah_siswa_hadir} siswa hadir
-          </Text>
-        </View>
-        <View style={styles.attendanceItem}>
-          <Ionicons name="calculator" size={16} color="#3498db" />
-          <Text style={styles.attendanceText}>
-            {item.jumlah_siswa_hadir} × Rp 10.000
-          </Text>
-        </View>
-      </View>
+      {renderStudentBreakdown(item)}
     </View>
   );
 
@@ -360,13 +403,80 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 12
   },
-  attendanceInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between'
+  breakdownContainer: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8
   },
-  attendanceItem: {
+  breakdownTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8
+  },
+  breakdownList: {
+    gap: 6
+  },
+  breakdownCard: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
     flexDirection: 'row',
+    alignItems: 'center',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 12
+  },
+  cardContent: {
+    flex: 1
+  },
+  statusType: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 2
+  },
+  studentCount: {
+    fontSize: 14,
+    color: '#666'
+  },
+  cardAmount: {
+    alignItems: 'flex-end'
+  },
+  rateText: {
+    fontSize: 10,
+    color: '#999',
+    marginBottom: 2
+  },
+  amountText: {
+    fontSize: 14,
+    fontWeight: 'bold'
+  },
+  breakdownTotal: {
+    borderTopWidth: 1,
+    borderTopColor: '#e1e8ed',
+    paddingTop: 8,
+    marginTop: 8,
     alignItems: 'center'
+  },
+  totalText: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500'
+  },
+  simpleAttendance: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4
   },
   attendanceText: {
     marginLeft: 6,
@@ -423,5 +533,4 @@ const styles = StyleSheet.create({
     color: '#666'
   }
 });
-
 export default TutorHonorDetailScreen;
