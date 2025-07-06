@@ -213,36 +213,52 @@ const TutorHonorSettingsFormScreen = () => {
 
     const submitData = {
       payment_system: formData.payment_system,
-      is_active: formData.is_active
+      is_active: formData.is_active,
+      // Send all rate fields, set to null if not used
+      cpb_rate: null,
+      pb_rate: null,
+      npb_rate: null,
+      flat_monthly_rate: null,
+      session_rate: null,
+      hourly_rate: null,
+      base_rate: null,
+      per_student_rate: null
     };
 
-    // Add relevant rates based on payment system
+    // Set rates based on payment system
     const { payment_system } = formData;
     
-    if (['per_student_category'].includes(payment_system)) {
-      submitData.cpb_rate = parseFloat(formData.cpb_rate);
-      submitData.pb_rate = parseFloat(formData.pb_rate);
-      submitData.npb_rate = parseFloat(formData.npb_rate);
-    }
-    
-    if (['flat_monthly'].includes(payment_system)) {
-      submitData.flat_monthly_rate = parseFloat(formData.flat_monthly_rate);
-    }
-    
-    if (['per_session', 'base_per_session', 'session_per_student'].includes(payment_system)) {
-      submitData.session_rate = parseFloat(formData.session_rate);
-    }
-    
-    if (['per_hour', 'base_per_hour'].includes(payment_system)) {
-      submitData.hourly_rate = parseFloat(formData.hourly_rate);
-    }
-    
-    if (['base_per_session', 'base_per_student', 'base_per_hour'].includes(payment_system)) {
-      submitData.base_rate = parseFloat(formData.base_rate);
-    }
-    
-    if (['base_per_student', 'session_per_student'].includes(payment_system)) {
-      submitData.per_student_rate = parseFloat(formData.per_student_rate);
+    switch (payment_system) {
+      case 'flat_monthly':
+        submitData.flat_monthly_rate = parseFloat(formData.flat_monthly_rate);
+        break;
+      case 'per_session':
+        submitData.session_rate = parseFloat(formData.session_rate);
+        break;
+      case 'per_student_category':
+        submitData.cpb_rate = parseFloat(formData.cpb_rate);
+        submitData.pb_rate = parseFloat(formData.pb_rate);
+        submitData.npb_rate = parseFloat(formData.npb_rate);
+        break;
+      case 'per_hour':
+        submitData.hourly_rate = parseFloat(formData.hourly_rate);
+        break;
+      case 'base_per_session':
+        submitData.base_rate = parseFloat(formData.base_rate);
+        submitData.session_rate = parseFloat(formData.session_rate);
+        break;
+      case 'base_per_student':
+        submitData.base_rate = parseFloat(formData.base_rate);
+        submitData.per_student_rate = parseFloat(formData.per_student_rate);
+        break;
+      case 'base_per_hour':
+        submitData.base_rate = parseFloat(formData.base_rate);
+        submitData.hourly_rate = parseFloat(formData.hourly_rate);
+        break;
+      case 'session_per_student':
+        submitData.session_rate = parseFloat(formData.session_rate);
+        submitData.per_student_rate = parseFloat(formData.per_student_rate);
+        break;
     }
 
     const action = isEdit 
