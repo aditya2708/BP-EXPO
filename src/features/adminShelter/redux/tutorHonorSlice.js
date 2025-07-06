@@ -47,7 +47,14 @@ const initialState = {
   historyLoading: false,
   statisticsLoading: false,
   historyError: null,
-  statisticsError: null
+  statisticsError: null,
+  previewInputs: {
+    cpb_count: 0,
+    pb_count: 0,
+    npb_count: 0,
+    session_count: 1,
+    hour_count: 2
+  }
 };
 
 export const fetchTutorHonor = createAsyncThunk(
@@ -136,10 +143,18 @@ export const fetchCurrentSettings = createAsyncThunk(
 
 export const calculatePreview = createAsyncThunk(
   'tutorHonor/calculatePreview',
-  async (data, { rejectWithValue }) => {
+  async (data, { rejectWithValue, getState }) => {
     try {
-      const response = await tutorHonorApi.calculatePreview(data);
-      return response.data;
+      const state = getState();
+      const paymentSystem = state.tutorHonor.currentSettings?.payment_system;
+      
+      if (paymentSystem) {
+        const response = await tutorHonorApi.calculateDynamicPreview(paymentSystem, data);
+        return response.data;
+      } else {
+        const response = await tutorHonorApi.calculatePreview(data);
+        return response.data;
+      }
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to calculate preview');
     }
@@ -227,6 +242,69 @@ const tutorHonorSlice = createSlice({
     },
     clearCurrentSettings: (state) => {
       state.currentSettings = null;
+    },
+    setPreviewInputs: (state, action) => {
+      state.previewInputs = { ...state.previewInputs, ...action.payload };
+    },
+    resetPreviewInputs: (state) => {
+      const paymentSystem = state.currentSettings?.payment_system;
+      
+      switch (paymentSystem) {
+        case 'per_student_category':
+        case 'base_per_student':
+        case 'session_per_student':
+          state.previewInputs = {
+            cpb_count: 5,
+            pb_count: 3,
+            npb_count: 2,
+            session_count: 1,
+            hour_count: 2
+          };
+          break;
+        case 'per_session':
+        case 'base_per_session':
+          state.previewInputs = {
+            cpb_count: 0,
+            pb_count: 0,
+            npb_count: 0,
+            session_count: 1,
+            hour_count: 2
+          };
+          break;
+        case 'per_hour':
+        case 'base_per_hour':
+          state.previewInputs = {
+            cpb_count: 0,
+            pb_count: 0,
+            npb_count: 0,
+            session_count: 1,
+            hour_count: 2
+          };
+          break;
+        case 'flat_monthly':
+          state.previewInputs = {
+            cpb_count: 0,
+            pb_count: 0,
+            npb_count: 0,
+            session_count: 0,
+            hour_count: 0
+          };
+          break;
+        default:
+          state.previewInputs = {
+            cpb_count: 5,
+            pb_count: 3,
+            npb_count: 2,
+            session_count: 1,
+            hour_count: 2
+          };
+      }
+    },
+    updatePaymentSystemContext: (state, action) => {
+      const paymentSystem = action.payload;
+      state.currentSettings = state.currentSettings ? 
+        { ...state.currentSettings, payment_system: paymentSystem } : 
+        { payment_system: paymentSystem };
     }
   },
   extraReducers: (builder) => {
@@ -259,24 +337,7 @@ const tutorHonorSlice = createSlice({
       })
       .addCase(fetchMonthlyDetail.fulfilled, (state, action) => {
         state.loading = false;
-        // Ensure details array exists and has proper structure
-        const monthlyDetail = action.payload.data;
-        if (monthlyDetail && monthlyDetail.details) {
-          // Normalize detail data to ensure breakdown fields exist
-          monthlyDetail.details = monthlyDetail.details.map(detail => ({
-            ...detail,
-            cpb_count: detail.cpb_count || 0,
-            pb_count: detail.pb_count || 0,
-            npb_count: detail.npb_count || 0,
-            cpb_amount: detail.cpb_amount || 0,
-            pb_amount: detail.pb_amount || 0,
-            npb_amount: detail.npb_amount || 0,
-            cpb_rate: detail.cpb_rate || 0,
-            pb_rate: detail.pb_rate || 0,
-            npb_rate: detail.npb_rate || 0
-          }));
-        }
-        state.monthlyDetail = monthlyDetail;
+        state.monthlyDetail = action.payload.data;
         state.stats = action.payload.stats;
         if (action.payload.current_settings) {
           state.currentSettings = action.payload.current_settings;
@@ -338,11 +399,11 @@ const tutorHonorSlice = createSlice({
         
         const index = state.honorList.findIndex(h => h.id_honor === approvedHonor.id_honor);
         if (index !== -1) {
-          state.honorList[index] = { ...state.honorList[index], status: approvedHonor.status };
+          state.honorList[index] = approvedHonor;
         }
         
         if (state.monthlyDetail && state.monthlyDetail.id_honor === approvedHonor.id_honor) {
-          state.monthlyDetail = { ...state.monthlyDetail, status: approvedHonor.status };
+          state.monthlyDetail = approvedHonor;
         }
       })
       .addCase(approveHonor.rejected, (state, action) => {
@@ -360,11 +421,11 @@ const tutorHonorSlice = createSlice({
         
         const index = state.honorList.findIndex(h => h.id_honor === paidHonor.id_honor);
         if (index !== -1) {
-          state.honorList[index] = { ...state.honorList[index], status: paidHonor.status };
+          state.honorList[index] = paidHonor;
         }
         
         if (state.monthlyDetail && state.monthlyDetail.id_honor === paidHonor.id_honor) {
-          state.monthlyDetail = { ...state.monthlyDetail, status: paidHonor.status };
+          state.monthlyDetail = paidHonor;
         }
       })
       .addCase(markAsPaid.rejected, (state, action) => {
@@ -409,13 +470,7 @@ const tutorHonorSlice = createSlice({
       })
       .addCase(fetchHonorHistory.fulfilled, (state, action) => {
         state.historyLoading = false;
-        // Handle pagination properly
-        const newData = action.payload.data || [];
-        if (action.payload.pagination?.current_page === 1) {
-          state.honorHistory = newData;
-        } else {
-          state.honorHistory = [...state.honorHistory, ...newData];
-        }
+        state.honorHistory = action.payload.data || [];
         
         if (action.payload.pagination) {
           state.historyPagination = {
@@ -457,9 +512,13 @@ export const {
   resetStatisticsError,
   clearHonorHistory,
   resetPreview,
-  clearCurrentSettings
+  clearCurrentSettings,
+  setPreviewInputs,
+  resetPreviewInputs,
+  updatePaymentSystemContext
 } = tutorHonorSlice.actions;
 
+// Selectors
 export const selectHonorList = state => state.tutorHonor.honorList;
 export const selectSelectedHonor = state => state.tutorHonor.selectedHonor;
 export const selectMonthlyDetail = state => state.tutorHonor.monthlyDetail;
@@ -479,5 +538,73 @@ export const selectHistoryLoading = state => state.tutorHonor.historyLoading;
 export const selectStatisticsLoading = state => state.tutorHonor.statisticsLoading;
 export const selectHistoryError = state => state.tutorHonor.historyError;
 export const selectStatisticsError = state => state.tutorHonor.statisticsError;
+export const selectPreviewInputs = state => state.tutorHonor.previewInputs;
+
+// Dynamic selectors based on payment system
+export const selectPaymentSystem = state => state.tutorHonor.currentSettings?.payment_system;
+export const selectPaymentSystemName = state => {
+  const systems = {
+    'flat_monthly': 'Honor Bulanan Tetap',
+    'per_session': 'Per Sesi/Pertemuan',
+    'per_student_category': 'Per Kategori Siswa',
+    'per_hour': 'Per Jam',
+    'base_per_session': 'Dasar + Per Sesi',
+    'base_per_student': 'Dasar + Per Siswa',
+    'base_per_hour': 'Dasar + Per Jam',
+    'session_per_student': 'Per Sesi + Per Siswa'
+  };
+  const paymentSystem = state.tutorHonor.currentSettings?.payment_system;
+  return systems[paymentSystem] || paymentSystem || 'Unknown';
+};
+
+export const selectRequiredInputFields = state => {
+  const paymentSystem = state.tutorHonor.currentSettings?.payment_system;
+  
+  switch (paymentSystem) {
+    case 'flat_monthly':
+      return [];
+    case 'per_session':
+      return ['session_count'];
+    case 'per_student_category':
+      return ['cpb_count', 'pb_count', 'npb_count'];
+    case 'per_hour':
+      return ['hour_count'];
+    case 'base_per_session':
+      return ['session_count'];
+    case 'base_per_student':
+      return ['cpb_count', 'pb_count', 'npb_count'];
+    case 'base_per_hour':
+      return ['hour_count'];
+    case 'session_per_student':
+      return ['session_count', 'cpb_count', 'pb_count', 'npb_count'];
+    default:
+      return ['cpb_count', 'pb_count', 'npb_count'];
+  }
+};
+
+export const selectHasStudentBreakdown = state => {
+  const paymentSystem = state.tutorHonor.currentSettings?.payment_system;
+  return ['per_student_category', 'base_per_student', 'session_per_student'].includes(paymentSystem);
+};
+
+export const selectHasSessionBreakdown = state => {
+  const paymentSystem = state.tutorHonor.currentSettings?.payment_system;
+  return ['per_session', 'base_per_session', 'session_per_student'].includes(paymentSystem);
+};
+
+export const selectHasHourBreakdown = state => {
+  const paymentSystem = state.tutorHonor.currentSettings?.payment_system;
+  return ['per_hour', 'base_per_hour'].includes(paymentSystem);
+};
+
+export const selectHasBaseAmount = state => {
+  const paymentSystem = state.tutorHonor.currentSettings?.payment_system;
+  return ['base_per_session', 'base_per_student', 'base_per_hour'].includes(paymentSystem);
+};
+
+export const selectIsFlatMonthly = state => {
+  const paymentSystem = state.tutorHonor.currentSettings?.payment_system;
+  return paymentSystem === 'flat_monthly';
+};
 
 export default tutorHonorSlice.reducer;
