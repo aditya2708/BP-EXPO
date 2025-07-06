@@ -3,6 +3,7 @@ import authReducer from '../features/auth/redux/authSlice';
 import tutorReducer from '../features/adminShelter/redux/tutorSlice';
 import tutorCompetencyReducer from '../features/adminShelter/redux/tutorCompetencySlice';
 import tutorHonorReducer from '../features/adminShelter/redux/tutorHonorSlice';
+import tutorHonorSettingsReducer from '../features/adminPusat/redux/tutorHonorSettingsSlice';
 import qrTokenReducer from '../features/adminShelter/redux/qrTokenSlice';
 import attendanceReducer from '../features/adminShelter/redux/attendanceSlice';
 import aktivitasReducer from '../features/adminShelter/redux/aktivitasSlice';
@@ -23,6 +24,7 @@ const appReducer = combineReducers({
   tutor: tutorReducer,
   tutorCompetency: tutorCompetencyReducer,
   tutorHonor: tutorHonorReducer,
+  tutorHonorSettings: tutorHonorSettingsReducer,
   qrToken: qrTokenReducer,
   attendance: attendanceReducer,
    aktivitas: aktivitasReducer,
