@@ -16,10 +16,12 @@ import ErrorMessage from '../../../common/components/ErrorMessage';
 import HonorHistoryItem from '../components/HonorHistoryItem';
 import HonorPeriodFilter from '../components/HonorPeriodFilter';
 import HonorStatisticsSummary from '../components/HonorStatisticsSummary';
+import PaymentSystemIndicator from '../components/PaymentSystemIndicator';
 
 import {
   fetchHonorHistory,
   fetchHonorStatistics,
+  fetchCurrentSettings,
   resetHistoryError,
   resetStatisticsError,
   clearHonorHistory,
@@ -31,7 +33,8 @@ import {
   selectHistoryError,
   selectStatisticsError,
   selectHistoryPagination,
-  selectHistoryFilters
+  selectHistoryFilters,
+  selectCurrentSettings
 } from '../redux/tutorHonorSlice';
 
 const TutorHonorHistoryScreen = () => {
@@ -49,6 +52,7 @@ const TutorHonorHistoryScreen = () => {
   const statisticsError = useSelector(selectStatisticsError);
   const pagination = useSelector(selectHistoryPagination);
   const filters = useSelector(selectHistoryFilters);
+  const currentSettings = useSelector(selectCurrentSettings);
 
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -57,6 +61,7 @@ const TutorHonorHistoryScreen = () => {
   useEffect(() => {
     loadData();
     loadStatistics();
+    dispatch(fetchCurrentSettings());
   }, [dispatch, tutorId, filters]);
 
   const loadData = (page = 1, shouldRefresh = false) => {
@@ -159,11 +164,62 @@ const TutorHonorHistoryScreen = () => {
   };
 
   const renderHonorItem = ({ item }) => (
-    <HonorHistoryItem
-      honor={item}
+    <TouchableOpacity
+      style={styles.honorItem}
       onPress={() => handleHonorItemPress(item)}
-    />
+    >
+      <View style={styles.honorHeader}>
+        <Text style={styles.monthText}>{item.bulan_nama} {item.tahun}</Text>
+        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+          <Text style={styles.statusText}>{getStatusText(item.status)}</Text>
+        </View>
+      </View>
+      
+      <View style={styles.honorDetails}>
+        <View style={styles.detailRow}>
+          <Ionicons name="calendar-outline" size={16} color="#666" />
+          <Text style={styles.detailText}>{item.total_aktivitas} aktivitas</Text>
+        </View>
+        <View style={styles.detailRow}>
+          <Ionicons name="people-outline" size={16} color="#666" />
+          <Text style={styles.detailText}>{item.total_siswa_hadir} siswa hadir</Text>
+        </View>
+        {item.payment_system_used && (
+          <View style={styles.detailRow}>
+            <Ionicons name="settings-outline" size={16} color="#666" />
+            <Text style={styles.detailText}>{item.payment_system_display || item.payment_system_used}</Text>
+          </View>
+        )}
+      </View>
+      
+      <Text style={styles.honorAmount}>Rp {item.total_honor?.toLocaleString('id-ID')}</Text>
+      
+      <View style={styles.actionRow}>
+        <TouchableOpacity style={styles.viewButton}>
+          <Ionicons name="eye-outline" size={16} color="#666" />
+          <Text style={styles.viewButtonText}>Lihat Detail</Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
   );
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'draft': return '#f39c12';
+      case 'approved': return '#27ae60';
+      case 'paid': return '#2ecc71';
+      default: return '#95a5a6';
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'draft': return 'Draft';
+      case 'approved': return 'Disetujui';
+      case 'paid': return 'Dibayar';
+      default: return 'Unknown';
+    }
+  };
 
   const renderFooter = () => {
     if (!isLoadingMore) return null;
@@ -221,6 +277,12 @@ const TutorHonorHistoryScreen = () => {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Payment System Context */}
+      <PaymentSystemIndicator 
+        settings={currentSettings}
+        style={styles.paymentSystemIndicator}
+      />
 
       {/* View Toggle */}
       <View style={styles.viewToggle}>
@@ -359,6 +421,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center'
   },
+  paymentSystemIndicator: {
+    margin: 0,
+    marginBottom: 8,
+    borderRadius: 0
+  },
   viewToggle: {
     flexDirection: 'row',
     backgroundColor: '#f8f9fa',
@@ -445,6 +512,72 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 16
+  },
+  honorItem: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2
+  },
+  honorHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12
+  },
+  monthText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333'
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12
+  },
+  statusText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '500'
+  },
+  honorDetails: {
+    marginBottom: 12
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4
+  },
+  detailText: {
+    marginLeft: 8,
+    fontSize: 12,
+    color: '#666'
+  },
+  honorAmount: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2ecc71',
+    marginBottom: 12
+  },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end'
+  },
+  viewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12
+  },
+  viewButtonText: {
+    marginLeft: 4,
+    fontSize: 12,
+    color: '#666'
   },
   loadingFooter: {
     padding: 20,

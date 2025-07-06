@@ -15,6 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../common/components/ErrorMessage';
 import Button from '../../../common/components/Button';
+import HonorBreakdownDisplay from '../components/HonorBreakdownDisplay';
+import PaymentSystemIndicator from '../components/PaymentSystemIndicator';
 
 import {
   fetchMonthlyDetail,
@@ -24,7 +26,8 @@ import {
   selectHonorStats,
   selectHonorLoading,
   selectHonorError,
-  selectHonorActionStatus
+  selectHonorActionStatus,
+  selectCurrentSettings
 } from '../redux/tutorHonorSlice';
 
 const TutorHonorDetailScreen = () => {
@@ -39,6 +42,7 @@ const TutorHonorDetailScreen = () => {
   const error = useSelector(selectHonorError);
   const approveStatus = useSelector(state => selectHonorActionStatus(state, 'approve'));
   const paidStatus = useSelector(state => selectHonorActionStatus(state, 'markPaid'));
+  const currentSettings = useSelector(selectCurrentSettings);
 
   useEffect(() => {
     dispatch(fetchMonthlyDetail({ tutorId, month, year }));
@@ -98,81 +102,82 @@ const TutorHonorDetailScreen = () => {
     );
   };
 
-  const statusConfig = {
-    CPB: { color: '#e74c3c', label: 'CPB' },
-    PB: { color: '#2ecc71', label: 'PB' },
-    NPB: { color: '#f39c12', label: 'NPB' }
-  };
-
-  const renderBreakdownCard = (type, count, rate, amount) => {
-    if (!count) return null;
-    const config = statusConfig[type];
+  const renderActivityItem = ({ item }) => {
+    const paymentSystem = monthlyDetail?.payment_system_used;
     
     return (
-      <View style={styles.breakdownCard} key={type}>
-        <View style={[styles.statusDot, { backgroundColor: config.color }]} />
-        <View style={styles.cardContent}>
-          <Text style={styles.statusType}>{config.label}</Text>
-          <Text style={styles.studentCount}>{count} siswa</Text>
-        </View>
-        <View style={styles.cardAmount}>
-          <Text style={styles.rateText}>Rp.{rate?.toLocaleString('id-ID')}</Text>
-          <Text style={[styles.amountText, { color: config.color }]}>
-            {amount?.toLocaleString('id-ID')}
+      <View style={styles.activityItem}>
+        <View style={styles.activityHeader}>
+          <View style={styles.activityInfo}>
+            <Text style={styles.activityType}>{item.aktivitas?.jenis_kegiatan}</Text>
+            <Text style={styles.activityDate}>
+              {new Date(item.tanggal_aktivitas).toLocaleDateString('id-ID')}
+            </Text>
+          </View>
+          <Text style={styles.honorAmount}>
+            Rp {item.honor_per_aktivitas?.toLocaleString('id-ID')}
           </Text>
         </View>
+        
+        <Text style={styles.activityMaterial}>{item.aktivitas?.materi}</Text>
+        
+        {/* Dynamic breakdown based on payment system */}
+        {item.dynamic_breakdown && (
+          <HonorBreakdownDisplay 
+            breakdown={item.dynamic_breakdown}
+            paymentSystem={paymentSystem}
+            compact={true}
+          />
+        )}
+
+        {/* Attendance info - show if relevant to payment system */}
+        {(paymentSystem === 'per_student_category' || 
+          paymentSystem === 'base_per_student' || 
+          paymentSystem === 'session_per_student') && (
+          <View style={styles.attendanceInfo}>
+            <View style={styles.attendanceItem}>
+              <Ionicons name="people" size={16} color="#e74c3c" />
+              <Text style={styles.attendanceText}>CPB: {item.cpb_count}</Text>
+            </View>
+            <View style={styles.attendanceItem}>
+              <Ionicons name="people" size={16} color="#f39c12" />
+              <Text style={styles.attendanceText}>PB: {item.pb_count}</Text>
+            </View>
+            <View style={styles.attendanceItem}>
+              <Ionicons name="people" size={16} color="#2ecc71" />
+              <Text style={styles.attendanceText}>NPB: {item.npb_count}</Text>
+            </View>
+          </View>
+        )}
+
+        {/* Session info - show if relevant */}
+        {(paymentSystem === 'per_session' || 
+          paymentSystem === 'base_per_session' || 
+          paymentSystem === 'session_per_student') && (
+          <View style={styles.sessionInfo}>
+            <View style={styles.attendanceItem}>
+              <Ionicons name="calendar" size={16} color="#3498db" />
+              <Text style={styles.attendanceText}>
+                {item.session_count || 1} sesi
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Hour info - show if relevant */}
+        {(paymentSystem === 'per_hour' || paymentSystem === 'base_per_hour') && (
+          <View style={styles.hourInfo}>
+            <View style={styles.attendanceItem}>
+              <Ionicons name="time" size={16} color="#9b59b6" />
+              <Text style={styles.attendanceText}>
+                {item.hour_count || 0} jam
+              </Text>
+            </View>
+          </View>
+        )}
       </View>
     );
   };
-
-  const renderStudentBreakdown = (item) => {
-    const hasBreakdown = item.cpb_count || item.pb_count || item.npb_count;
-    
-    if (!hasBreakdown) {
-      return (
-        <View style={styles.simpleAttendance}>
-          <Ionicons name="people" size={16} color="#666" />
-          <Text style={styles.attendanceText}>{item.jumlah_siswa_hadir} siswa hadir</Text>
-        </View>
-      );
-    }
-
-    return (
-      <View style={styles.breakdownContainer}>
-        <Text style={styles.breakdownTitle}>Detail Kehadiran</Text>
-        <View style={styles.breakdownList}>
-          {renderBreakdownCard('CPB', item.cpb_count, item.cpb_rate, item.cpb_amount)}
-          {renderBreakdownCard('PB', item.pb_count, item.pb_rate, item.pb_amount)}
-          {renderBreakdownCard('NPB', item.npb_count, item.npb_rate, item.npb_amount)}
-        </View>
-        <View style={styles.breakdownTotal}>
-          <Text style={styles.totalText}>
-            {item.jumlah_siswa_hadir} siswa • Rp {item.honor_per_aktivitas?.toLocaleString('id-ID')}
-          </Text>
-        </View>
-      </View>
-    );
-  };
-
-  const renderActivityItem = ({ item }) => (
-    <View style={styles.activityItem}>
-      <View style={styles.activityHeader}>
-        <View style={styles.activityInfo}>
-          <Text style={styles.activityType}>{item.aktivitas?.jenis_kegiatan}</Text>
-          <Text style={styles.activityDate}>
-            {new Date(item.tanggal_aktivitas).toLocaleDateString('id-ID')}
-          </Text>
-        </View>
-        <Text style={styles.honorAmount}>
-          Rp {item.honor_per_aktivitas?.toLocaleString('id-ID')}
-        </Text>
-      </View>
-      
-      <Text style={styles.activityMaterial}>{item.aktivitas?.materi}</Text>
-      
-      {renderStudentBreakdown(item)}
-    </View>
-  );
 
   if (loading) {
     return <LoadingSpinner fullScreen message="Memuat detail honor..." />;
@@ -231,6 +236,11 @@ const TutorHonorDetailScreen = () => {
         </View>
       </View>
 
+      {/* Payment System Indicator */}
+      <PaymentSystemIndicator 
+        settings={currentSettings || { payment_system: monthlyDetail.payment_system_used }}
+      />
+
       <View style={styles.statusSection}>
         <Text style={styles.sectionTitle}>Status Honor</Text>
         <View style={styles.statusCard}>
@@ -246,6 +256,22 @@ const TutorHonorDetailScreen = () => {
           </Text>
         </View>
       </View>
+
+      {/* Monthly Summary Breakdown */}
+      {monthlyDetail.dynamic_summary && (
+        <View style={styles.summarySection}>
+          <Text style={styles.sectionTitle}>Ringkasan Honor</Text>
+          <HonorBreakdownDisplay 
+            breakdown={{
+              ...monthlyDetail.dynamic_summary.breakdown,
+              total_amount: monthlyDetail.total_honor,
+              formatted_total: `Rp ${monthlyDetail.total_honor?.toLocaleString('id-ID')}`
+            }}
+            paymentSystem={monthlyDetail.payment_system_used}
+            showTitle={false}
+          />
+        </View>
+      )}
 
       <View style={styles.activitiesSection}>
         <Text style={styles.sectionTitle}>Detail Aktivitas</Text>
@@ -340,6 +366,9 @@ const styles = StyleSheet.create({
   statusSection: {
     padding: 16
   },
+  summarySection: {
+    padding: 16
+  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -403,80 +432,22 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 12
   },
-  breakdownContainer: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    padding: 12,
+  attendanceInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginTop: 8
   },
-  breakdownTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8
-  },
-  breakdownList: {
-    gap: 6
-  },
-  breakdownCard: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
+  sessionInfo: {
     flexDirection: 'row',
-    alignItems: 'center',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2
+    marginTop: 8
   },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 12
+  hourInfo: {
+    flexDirection: 'row',
+    marginTop: 8
   },
-  cardContent: {
-    flex: 1
-  },
-  statusType: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 2
-  },
-  studentCount: {
-    fontSize: 14,
-    color: '#666'
-  },
-  cardAmount: {
-    alignItems: 'flex-end'
-  },
-  rateText: {
-    fontSize: 10,
-    color: '#999',
-    marginBottom: 2
-  },
-  amountText: {
-    fontSize: 14,
-    fontWeight: 'bold'
-  },
-  breakdownTotal: {
-    borderTopWidth: 1,
-    borderTopColor: '#e1e8ed',
-    paddingTop: 8,
-    marginTop: 8,
+  attendanceItem: {
+    flexDirection: 'row',
     alignItems: 'center'
-  },
-  totalText: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500'
-  },
-  simpleAttendance: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 4
   },
   attendanceText: {
     marginLeft: 6,
@@ -533,4 +504,5 @@ const styles = StyleSheet.create({
     color: '#666'
   }
 });
+
 export default TutorHonorDetailScreen;
