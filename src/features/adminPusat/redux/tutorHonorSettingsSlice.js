@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { tutorHonorSettingsApi } from '../api/tutorHonorSettingsApi';
+import { formatRupiah } from '../../../utils/currencyFormatter';
 
 const initialState = {
   settings: [],
@@ -31,7 +32,11 @@ const initialState = {
     { value: 'flat_monthly', label: 'Honor Bulanan Tetap' },
     { value: 'per_session', label: 'Per Sesi/Pertemuan' },
     { value: 'per_student_category', label: 'Per Kategori Siswa' },
-    { value: 'session_per_student_category', label: 'Per Sesi + Per Kategori Siswa' }
+    { value: 'per_hour', label: 'Per Jam' },
+    { value: 'base_per_session', label: 'Dasar + Per Sesi' },
+    { value: 'base_per_student', label: 'Dasar + Per Siswa' },
+    { value: 'base_per_hour', label: 'Dasar + Per Jam' },
+    { value: 'session_per_student', label: 'Per Sesi + Per Siswa' }
   ]
 };
 
@@ -143,6 +148,76 @@ export const fetchStatistics = createAsyncThunk(
   }
 );
 
+const addFormattedRates = (setting) => {
+  if (!setting) return setting;
+  
+  const formatted = { ...setting };
+  
+  // Add formatted rates based on payment system
+  switch (setting.payment_system) {
+    case 'flat_monthly':
+      if (setting.flat_monthly_rate !== null && setting.flat_monthly_rate !== undefined) {
+        formatted.formatted_flat_monthly_rate = formatRupiah(setting.flat_monthly_rate);
+      }
+      break;
+    case 'per_session':
+      if (setting.session_rate !== null && setting.session_rate !== undefined) {
+        formatted.formatted_session_rate = formatRupiah(setting.session_rate);
+      }
+      break;
+    case 'per_student_category':
+      if (setting.cpb_rate !== null && setting.cpb_rate !== undefined) {
+        formatted.formatted_cpb_rate = formatRupiah(setting.cpb_rate);
+      }
+      if (setting.pb_rate !== null && setting.pb_rate !== undefined) {
+        formatted.formatted_pb_rate = formatRupiah(setting.pb_rate);
+      }
+      if (setting.npb_rate !== null && setting.npb_rate !== undefined) {
+        formatted.formatted_npb_rate = formatRupiah(setting.npb_rate);
+      }
+      break;
+    case 'per_hour':
+      if (setting.hourly_rate !== null && setting.hourly_rate !== undefined) {
+        formatted.formatted_hourly_rate = formatRupiah(setting.hourly_rate);
+      }
+      break;
+    case 'base_per_session':
+      if (setting.base_rate !== null && setting.base_rate !== undefined) {
+        formatted.formatted_base_rate = formatRupiah(setting.base_rate);
+      }
+      if (setting.session_rate !== null && setting.session_rate !== undefined) {
+        formatted.formatted_session_rate = formatRupiah(setting.session_rate);
+      }
+      break;
+    case 'base_per_student':
+      if (setting.base_rate !== null && setting.base_rate !== undefined) {
+        formatted.formatted_base_rate = formatRupiah(setting.base_rate);
+      }
+      if (setting.per_student_rate !== null && setting.per_student_rate !== undefined) {
+        formatted.formatted_per_student_rate = formatRupiah(setting.per_student_rate);
+      }
+      break;
+    case 'base_per_hour':
+      if (setting.base_rate !== null && setting.base_rate !== undefined) {
+        formatted.formatted_base_rate = formatRupiah(setting.base_rate);
+      }
+      if (setting.hourly_rate !== null && setting.hourly_rate !== undefined) {
+        formatted.formatted_hourly_rate = formatRupiah(setting.hourly_rate);
+      }
+      break;
+    case 'session_per_student':
+      if (setting.session_rate !== null && setting.session_rate !== undefined) {
+        formatted.formatted_session_rate = formatRupiah(setting.session_rate);
+      }
+      if (setting.per_student_rate !== null && setting.per_student_rate !== undefined) {
+        formatted.formatted_per_student_rate = formatRupiah(setting.per_student_rate);
+      }
+      break;
+  }
+  
+  return formatted;
+};
+
 const tutorHonorSettingsSlice = createSlice({
   name: 'tutorHonorSettings',
   initialState,
@@ -177,7 +252,11 @@ const tutorHonorSettingsSlice = createSlice({
       })
       .addCase(fetchSettings.fulfilled, (state, action) => {
         state.loading = false;
-        state.settings = action.payload.data || [];
+        const settingsData = action.payload.data || [];
+        
+        // Add formatted rates to each setting
+        state.settings = settingsData.map(setting => addFormattedRates(setting));
+        
         if (action.payload.pagination) {
           state.pagination = action.payload.pagination;
         }
@@ -193,7 +272,7 @@ const tutorHonorSettingsSlice = createSlice({
       })
       .addCase(fetchActiveSetting.fulfilled, (state, action) => {
         state.loading = false;
-        state.activeSetting = action.payload.data;
+        state.activeSetting = addFormattedRates(action.payload.data);
       })
       .addCase(fetchActiveSetting.rejected, (state, action) => {
         state.loading = false;
@@ -206,7 +285,7 @@ const tutorHonorSettingsSlice = createSlice({
       })
       .addCase(fetchSetting.fulfilled, (state, action) => {
         state.loading = false;
-        state.selectedSetting = action.payload.data;
+        state.selectedSetting = addFormattedRates(action.payload.data);
       })
       .addCase(fetchSetting.rejected, (state, action) => {
         state.loading = false;
@@ -219,9 +298,11 @@ const tutorHonorSettingsSlice = createSlice({
       })
       .addCase(createSetting.fulfilled, (state, action) => {
         state.actionStatus.create = 'succeeded';
-        state.settings.unshift(action.payload.data);
-        if (action.payload.data.is_active) {
-          state.activeSetting = action.payload.data;
+        const newSetting = addFormattedRates(action.payload.data);
+        state.settings.unshift(newSetting);
+        
+        if (newSetting.is_active) {
+          state.activeSetting = newSetting;
         }
       })
       .addCase(createSetting.rejected, (state, action) => {
@@ -235,15 +316,19 @@ const tutorHonorSettingsSlice = createSlice({
       })
       .addCase(updateSetting.fulfilled, (state, action) => {
         state.actionStatus.update = 'succeeded';
-        const index = state.settings.findIndex(s => s.id_setting === action.payload.data.id_setting);
+        const updatedSetting = addFormattedRates(action.payload.data);
+        
+        const index = state.settings.findIndex(s => s.id_setting === updatedSetting.id_setting);
         if (index !== -1) {
-          state.settings[index] = action.payload.data;
+          state.settings[index] = updatedSetting;
         }
-        if (action.payload.data.is_active) {
-          state.activeSetting = action.payload.data;
+        
+        if (updatedSetting.is_active) {
+          state.activeSetting = updatedSetting;
         }
-        if (state.selectedSetting && state.selectedSetting.id_setting === action.payload.data.id_setting) {
-          state.selectedSetting = action.payload.data;
+        
+        if (state.selectedSetting && state.selectedSetting.id_setting === updatedSetting.id_setting) {
+          state.selectedSetting = updatedSetting;
         }
       })
       .addCase(updateSetting.rejected, (state, action) => {
@@ -257,11 +342,14 @@ const tutorHonorSettingsSlice = createSlice({
       })
       .addCase(setActiveSetting.fulfilled, (state, action) => {
         state.actionStatus.setActive = 'succeeded';
+        const activatedSetting = addFormattedRates(action.payload.data);
+        
         // Update active status in settings list
         state.settings.forEach(setting => {
-          setting.is_active = setting.id_setting === action.payload.data.id_setting;
+          setting.is_active = setting.id_setting === activatedSetting.id_setting;
         });
-        state.activeSetting = action.payload.data;
+        
+        state.activeSetting = activatedSetting;
       })
       .addCase(setActiveSetting.rejected, (state, action) => {
         state.actionStatus.setActive = 'failed';
@@ -275,6 +363,7 @@ const tutorHonorSettingsSlice = createSlice({
       .addCase(deleteSetting.fulfilled, (state, action) => {
         state.actionStatus.delete = 'succeeded';
         state.settings = state.settings.filter(s => s.id_setting !== action.payload);
+        
         if (state.selectedSetting && state.selectedSetting.id_setting === action.payload) {
           state.selectedSetting = null;
         }
@@ -285,11 +374,42 @@ const tutorHonorSettingsSlice = createSlice({
       })
       
       .addCase(calculatePreview.fulfilled, (state, action) => {
-        state.preview = action.payload.data;
+        const previewData = action.payload.data;
+        
+        // Add formatted total if not already present
+        if (previewData && previewData.calculation && !previewData.formatted_total) {
+          previewData.formatted_total = formatRupiah(previewData.calculation.total_amount || 0);
+        }
+        
+        // Add formatted amounts to breakdown
+        if (previewData && previewData.calculation && previewData.calculation.breakdown) {
+          Object.keys(previewData.calculation.breakdown).forEach(key => {
+            const item = previewData.calculation.breakdown[key];
+            if (item && typeof item === 'object') {
+              if (item.amount !== undefined) {
+                item.formatted_amount = formatRupiah(item.amount);
+              }
+              if (item.rate !== undefined) {
+                item.formatted_rate = formatRupiah(item.rate);
+              }
+            }
+          });
+        }
+        
+        state.preview = previewData;
       })
       
       .addCase(fetchStatistics.fulfilled, (state, action) => {
-        state.statistics = action.payload.data;
+        const statistics = action.payload.data;
+        
+        // Add formatted amounts to statistics
+        if (statistics) {
+          if (statistics.current_active_setting) {
+            statistics.current_active_setting = addFormattedRates(statistics.current_active_setting);
+          }
+        }
+        
+        state.statistics = statistics;
       });
   }
 });

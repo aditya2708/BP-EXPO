@@ -16,6 +16,7 @@ import { Picker } from '@react-native-picker/picker';
 
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import Button from '../../../common/components/Button';
+import { formatRupiah, formatCurrencyInput, parseCurrency } from '../../../utils/currencyFormatter';
 
 import {
   createSetting,
@@ -50,6 +51,9 @@ const TutorHonorSettingsFormScreen = () => {
     npb_rate: '',
     flat_monthly_rate: '',
     session_rate: '',
+    hourly_rate: '',
+    base_rate: '',
+    per_student_rate: '',
     is_active: true
   });
 
@@ -57,7 +61,8 @@ const TutorHonorSettingsFormScreen = () => {
     cpb_count: 5,
     pb_count: 3,
     npb_count: 2,
-    session_count: 8
+    session_count: 8,
+    hour_count: 16
   });
 
   useEffect(() => {
@@ -69,6 +74,9 @@ const TutorHonorSettingsFormScreen = () => {
         npb_rate: setting.npb_rate?.toString() || '',
         flat_monthly_rate: setting.flat_monthly_rate?.toString() || '',
         session_rate: setting.session_rate?.toString() || '',
+        hourly_rate: setting.hourly_rate?.toString() || '',
+        base_rate: setting.base_rate?.toString() || '',
+        per_student_rate: setting.per_student_rate?.toString() || '',
         is_active: setting.is_active || false
       });
     }
@@ -97,8 +105,16 @@ const TutorHonorSettingsFormScreen = () => {
         return formData.session_rate;
       case 'per_student_category':
         return formData.cpb_rate && formData.pb_rate && formData.npb_rate;
-      case 'session_per_student_category':
-        return formData.session_rate && formData.cpb_rate && formData.pb_rate && formData.npb_rate;
+      case 'per_hour':
+        return formData.hourly_rate;
+      case 'base_per_session':
+        return formData.base_rate && formData.session_rate;
+      case 'base_per_student':
+        return formData.base_rate && formData.per_student_rate;
+      case 'base_per_hour':
+        return formData.base_rate && formData.hourly_rate;
+      case 'session_per_student':
+        return formData.session_rate && formData.per_student_rate;
       default:
         return false;
     }
@@ -146,18 +162,41 @@ const TutorHonorSettingsFormScreen = () => {
           errors.push('Rate NPB harus diisi dan lebih dari 0');
         }
         break;
-      case 'session_per_student_category':
+      case 'per_hour':
+        if (!formData.hourly_rate || parseFloat(formData.hourly_rate) <= 0) {
+          errors.push('Rate per jam harus diisi dan lebih dari 0');
+        }
+        break;
+      case 'base_per_session':
+        if (!formData.base_rate || parseFloat(formData.base_rate) <= 0) {
+          errors.push('Honor dasar harus diisi dan lebih dari 0');
+        }
         if (!formData.session_rate || parseFloat(formData.session_rate) <= 0) {
           errors.push('Rate per sesi harus diisi dan lebih dari 0');
         }
-        if (!formData.cpb_rate || parseFloat(formData.cpb_rate) <= 0) {
-          errors.push('Rate CPB harus diisi dan lebih dari 0');
+        break;
+      case 'base_per_student':
+        if (!formData.base_rate || parseFloat(formData.base_rate) <= 0) {
+          errors.push('Honor dasar harus diisi dan lebih dari 0');
         }
-        if (!formData.pb_rate || parseFloat(formData.pb_rate) <= 0) {
-          errors.push('Rate PB harus diisi dan lebih dari 0');
+        if (!formData.per_student_rate || parseFloat(formData.per_student_rate) <= 0) {
+          errors.push('Rate per siswa harus diisi dan lebih dari 0');
         }
-        if (!formData.npb_rate || parseFloat(formData.npb_rate) <= 0) {
-          errors.push('Rate NPB harus diisi dan lebih dari 0');
+        break;
+      case 'base_per_hour':
+        if (!formData.base_rate || parseFloat(formData.base_rate) <= 0) {
+          errors.push('Honor dasar harus diisi dan lebih dari 0');
+        }
+        if (!formData.hourly_rate || parseFloat(formData.hourly_rate) <= 0) {
+          errors.push('Rate per jam harus diisi dan lebih dari 0');
+        }
+        break;
+      case 'session_per_student':
+        if (!formData.session_rate || parseFloat(formData.session_rate) <= 0) {
+          errors.push('Rate per sesi harus diisi dan lebih dari 0');
+        }
+        if (!formData.per_student_rate || parseFloat(formData.per_student_rate) <= 0) {
+          errors.push('Rate per siswa harus diisi dan lebih dari 0');
         }
         break;
     }
@@ -176,11 +215,15 @@ const TutorHonorSettingsFormScreen = () => {
     const submitData = {
       payment_system: formData.payment_system,
       is_active: formData.is_active,
+      // Send all rate fields, set to null if not used
       cpb_rate: null,
       pb_rate: null,
       npb_rate: null,
       flat_monthly_rate: null,
-      session_rate: null
+      session_rate: null,
+      hourly_rate: null,
+      base_rate: null,
+      per_student_rate: null
     };
 
     // Set rates based on payment system
@@ -198,11 +241,24 @@ const TutorHonorSettingsFormScreen = () => {
         submitData.pb_rate = parseFloat(formData.pb_rate);
         submitData.npb_rate = parseFloat(formData.npb_rate);
         break;
-      case 'session_per_student_category':
+      case 'per_hour':
+        submitData.hourly_rate = parseFloat(formData.hourly_rate);
+        break;
+      case 'base_per_session':
+        submitData.base_rate = parseFloat(formData.base_rate);
         submitData.session_rate = parseFloat(formData.session_rate);
-        submitData.cpb_rate = parseFloat(formData.cpb_rate);
-        submitData.pb_rate = parseFloat(formData.pb_rate);
-        submitData.npb_rate = parseFloat(formData.npb_rate);
+        break;
+      case 'base_per_student':
+        submitData.base_rate = parseFloat(formData.base_rate);
+        submitData.per_student_rate = parseFloat(formData.per_student_rate);
+        break;
+      case 'base_per_hour':
+        submitData.base_rate = parseFloat(formData.base_rate);
+        submitData.hourly_rate = parseFloat(formData.hourly_rate);
+        break;
+      case 'session_per_student':
+        submitData.session_rate = parseFloat(formData.session_rate);
+        submitData.per_student_rate = parseFloat(formData.per_student_rate);
         break;
     }
 
@@ -312,7 +368,120 @@ const TutorHonorSettingsFormScreen = () => {
           </>
         );
 
-      case 'session_per_student_category':
+      case 'per_hour':
+        return (
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Rate Per Jam</Text>
+            <View style={styles.inputContainer}>
+              <Text style={styles.currencyPrefix}>Rp</Text>
+              <TextInput
+                style={styles.textInput}
+                value={formData.hourly_rate}
+                onChangeText={(value) => handleInputChange('hourly_rate', value)}
+                placeholder="50000"
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
+        );
+
+      case 'base_per_session':
+        return (
+          <>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Honor Dasar</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.currencyPrefix}>Rp</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={formData.base_rate}
+                  onChangeText={(value) => handleInputChange('base_rate', value)}
+                  placeholder="800000"
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Rate Per Sesi</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.currencyPrefix}>Rp</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={formData.session_rate}
+                  onChangeText={(value) => handleInputChange('session_rate', value)}
+                  placeholder="50000"
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+          </>
+        );
+
+      case 'base_per_student':
+        return (
+          <>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Honor Dasar</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.currencyPrefix}>Rp</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={formData.base_rate}
+                  onChangeText={(value) => handleInputChange('base_rate', value)}
+                  placeholder="500000"
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Rate Per Siswa</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.currencyPrefix}>Rp</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={formData.per_student_rate}
+                  onChangeText={(value) => handleInputChange('per_student_rate', value)}
+                  placeholder="25000"
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+          </>
+        );
+
+      case 'base_per_hour':
+        return (
+          <>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Honor Dasar</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.currencyPrefix}>Rp</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={formData.base_rate}
+                  onChangeText={(value) => handleInputChange('base_rate', value)}
+                  placeholder="600000"
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Rate Per Jam</Text>
+              <View style={styles.inputContainer}>
+                <Text style={styles.currencyPrefix}>Rp</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={formData.hourly_rate}
+                  onChangeText={(value) => handleInputChange('hourly_rate', value)}
+                  placeholder="40000"
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+          </>
+        );
+
+      case 'session_per_student':
         return (
           <>
             <View style={styles.inputGroup}>
@@ -329,40 +498,14 @@ const TutorHonorSettingsFormScreen = () => {
               </View>
             </View>
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Rate CPB (Calon Penerima Beasiswa)</Text>
+              <Text style={styles.inputLabel}>Rate Per Siswa</Text>
               <View style={styles.inputContainer}>
                 <Text style={styles.currencyPrefix}>Rp</Text>
                 <TextInput
                   style={styles.textInput}
-                  value={formData.cpb_rate}
-                  onChangeText={(value) => handleInputChange('cpb_rate', value)}
-                  placeholder="10000"
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Rate PB (Penerima Beasiswa)</Text>
-              <View style={styles.inputContainer}>
-                <Text style={styles.currencyPrefix}>Rp</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={formData.pb_rate}
-                  onChangeText={(value) => handleInputChange('pb_rate', value)}
+                  value={formData.per_student_rate}
+                  onChangeText={(value) => handleInputChange('per_student_rate', value)}
                   placeholder="15000"
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Rate NPB (Non Penerima Beasiswa)</Text>
-              <View style={styles.inputContainer}>
-                <Text style={styles.currencyPrefix}>Rp</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={formData.npb_rate}
-                  onChangeText={(value) => handleInputChange('npb_rate', value)}
-                  placeholder="8000"
                   keyboardType="numeric"
                 />
               </View>
@@ -380,7 +523,7 @@ const TutorHonorSettingsFormScreen = () => {
 
     return (
       <View style={styles.previewInputs}>
-        {['per_student_category', 'session_per_student_category'].includes(payment_system) && (
+        {['per_student_category', 'base_per_student', 'session_per_student'].includes(payment_system) && (
           <>
             <View style={styles.previewInputGroup}>
               <Text style={styles.previewInputLabel}>CPB</Text>
@@ -412,13 +555,25 @@ const TutorHonorSettingsFormScreen = () => {
           </>
         )}
         
-        {['per_session', 'session_per_student_category'].includes(payment_system) && (
+        {['per_session', 'base_per_session', 'session_per_student'].includes(payment_system) && (
           <View style={styles.previewInputGroup}>
             <Text style={styles.previewInputLabel}>Sesi</Text>
             <TextInput
               style={styles.previewInput}
               value={previewData.session_count.toString()}
               onChangeText={(value) => handlePreviewChange('session_count', value)}
+              keyboardType="numeric"
+            />
+          </View>
+        )}
+        
+        {['per_hour', 'base_per_hour'].includes(payment_system) && (
+          <View style={styles.previewInputGroup}>
+            <Text style={styles.previewInputLabel}>Jam</Text>
+            <TextInput
+              style={styles.previewInput}
+              value={previewData.hour_count.toString()}
+              onChangeText={(value) => handlePreviewChange('hour_count', value)}
               keyboardType="numeric"
             />
           </View>
@@ -495,10 +650,10 @@ const TutorHonorSettingsFormScreen = () => {
                 {Object.entries(preview.calculation.breakdown).map(([key, data]) => (
                   <View key={key} style={styles.previewBreakdownItem}>
                     <Text style={styles.previewBreakdownLabel}>
-                      {key.toUpperCase()} {data.count && `(${data.count} × Rp ${data.rate?.toLocaleString('id-ID')})`}
+                      {key.toUpperCase()} {data.count && `(${data.count} × ${formatRupiah(data.rate)})`}
                     </Text>
                     <Text style={styles.previewBreakdownValue}>
-                      Rp {data.amount?.toLocaleString('id-ID')}
+                      {formatRupiah(data.amount)}
                     </Text>
                   </View>
                 ))}

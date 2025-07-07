@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../common/components/ErrorMessage';
 import Button from '../../../common/components/Button';
+import { formatRupiah } from '../../../utils/currencyFormatter';
 
 import {
   fetchSettings,
@@ -143,7 +144,7 @@ const TutorHonorSettingsScreen = () => {
           <View style={styles.rateItem}>
             <Text style={styles.rateLabel}>Bulanan</Text>
             <Text style={styles.rateValue}>
-              Rp {setting.flat_monthly_rate?.toLocaleString('id-ID')}
+              {formatRupiah(setting.flat_monthly_rate)}
             </Text>
           </View>
         );
@@ -153,7 +154,7 @@ const TutorHonorSettingsScreen = () => {
           <View style={styles.rateItem}>
             <Text style={styles.rateLabel}>Per Sesi</Text>
             <Text style={styles.rateValue}>
-              Rp {setting.session_rate?.toLocaleString('id-ID')}
+              {formatRupiah(setting.session_rate)}
             </Text>
           </View>
         );
@@ -164,49 +165,101 @@ const TutorHonorSettingsScreen = () => {
             <View style={styles.rateItem}>
               <Text style={styles.rateLabel}>CPB</Text>
               <Text style={styles.rateValue}>
-                Rp {setting.cpb_rate?.toLocaleString('id-ID')}
+                {formatRupiah(setting.cpb_rate)}
               </Text>
             </View>
             <View style={styles.rateItem}>
               <Text style={styles.rateLabel}>PB</Text>
               <Text style={styles.rateValue}>
-                Rp {setting.pb_rate?.toLocaleString('id-ID')}
+                {formatRupiah(setting.pb_rate)}
               </Text>
             </View>
             <View style={styles.rateItem}>
               <Text style={styles.rateLabel}>NPB</Text>
               <Text style={styles.rateValue}>
-                Rp {setting.npb_rate?.toLocaleString('id-ID')}
+                {formatRupiah(setting.npb_rate)}
               </Text>
             </View>
           </View>
         );
 
-      case 'session_per_student_category':
+      case 'per_hour':
+        return (
+          <View style={styles.rateItem}>
+            <Text style={styles.rateLabel}>Per Jam</Text>
+            <Text style={styles.rateValue}>
+              {formatRupiah(setting.hourly_rate)}
+            </Text>
+          </View>
+        );
+
+      case 'base_per_session':
+        return (
+          <View style={styles.ratesContainer}>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Dasar</Text>
+              <Text style={styles.rateValue}>
+                {formatRupiah(setting.base_rate)}
+              </Text>
+            </View>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Per Sesi</Text>
+              <Text style={styles.rateValue}>
+                {formatRupiah(setting.session_rate)}
+              </Text>
+            </View>
+          </View>
+        );
+
+      case 'base_per_student':
+        return (
+          <View style={styles.ratesContainer}>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Dasar</Text>
+              <Text style={styles.rateValue}>
+                {formatRupiah(setting.base_rate)}
+              </Text>
+            </View>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Per Siswa</Text>
+              <Text style={styles.rateValue}>
+                {formatRupiah(setting.per_student_rate)}
+              </Text>
+            </View>
+          </View>
+        );
+
+      case 'base_per_hour':
+        return (
+          <View style={styles.ratesContainer}>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Dasar</Text>
+              <Text style={styles.rateValue}>
+                {formatRupiah(setting.base_rate)}
+              </Text>
+            </View>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Per Jam</Text>
+              <Text style={styles.rateValue}>
+                {formatRupiah(setting.hourly_rate)}
+              </Text>
+            </View>
+          </View>
+        );
+
+      case 'session_per_student':
         return (
           <View style={styles.ratesContainer}>
             <View style={styles.rateItem}>
               <Text style={styles.rateLabel}>Per Sesi</Text>
               <Text style={styles.rateValue}>
-                Rp {setting.session_rate?.toLocaleString('id-ID')}
+                {formatRupiah(setting.session_rate)}
               </Text>
             </View>
             <View style={styles.rateItem}>
-              <Text style={styles.rateLabel}>CPB</Text>
+              <Text style={styles.rateLabel}>Per Siswa</Text>
               <Text style={styles.rateValue}>
-                Rp {setting.cpb_rate?.toLocaleString('id-ID')}
-              </Text>
-            </View>
-            <View style={styles.rateItem}>
-              <Text style={styles.rateLabel}>PB</Text>
-              <Text style={styles.rateValue}>
-                Rp {setting.pb_rate?.toLocaleString('id-ID')}
-              </Text>
-            </View>
-            <View style={styles.rateItem}>
-              <Text style={styles.rateLabel}>NPB</Text>
-              <Text style={styles.rateValue}>
-                Rp {setting.npb_rate?.toLocaleString('id-ID')}
+                {formatRupiah(setting.per_student_rate)}
               </Text>
             </View>
           </View>
