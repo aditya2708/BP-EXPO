@@ -43,7 +43,6 @@ export const tutorHonorApi = {
       pb_count: data.pb_count || 0,
       npb_count: data.npb_count || 0,
       session_count: data.session_count || 0,
-      hour_count: data.hour_count || 0,
       tutor_id: data.tutor_id || null,
       month: data.month || null,
       year: data.year || null
@@ -80,25 +79,7 @@ export const tutorHonorApi = {
         payload.npb_count = data.npb_count || 0;
         break;
       
-      case 'per_hour':
-        payload.hour_count = data.hour_count || 2;
-        break;
-      
-      case 'base_per_session':
-        payload.session_count = data.session_count || 1;
-        break;
-      
-      case 'base_per_student':
-        payload.cpb_count = data.cpb_count || 0;
-        payload.pb_count = data.pb_count || 0;
-        payload.npb_count = data.npb_count || 0;
-        break;
-      
-      case 'base_per_hour':
-        payload.hour_count = data.hour_count || 2;
-        break;
-      
-      case 'session_per_student':
+      case 'session_per_student_category':
         payload.session_count = data.session_count || 1;
         payload.cpb_count = data.cpb_count || 0;
         payload.pb_count = data.pb_count || 0;

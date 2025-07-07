@@ -52,8 +52,7 @@ const initialState = {
     cpb_count: 0,
     pb_count: 0,
     npb_count: 0,
-    session_count: 1,
-    hour_count: 2
+    session_count: 1
   }
 };
 
@@ -251,34 +250,20 @@ const tutorHonorSlice = createSlice({
       
       switch (paymentSystem) {
         case 'per_student_category':
-        case 'base_per_student':
-        case 'session_per_student':
+        case 'session_per_student_category':
           state.previewInputs = {
             cpb_count: 5,
             pb_count: 3,
             npb_count: 2,
-            session_count: 1,
-            hour_count: 2
+            session_count: 1
           };
           break;
         case 'per_session':
-        case 'base_per_session':
           state.previewInputs = {
             cpb_count: 0,
             pb_count: 0,
             npb_count: 0,
-            session_count: 1,
-            hour_count: 2
-          };
-          break;
-        case 'per_hour':
-        case 'base_per_hour':
-          state.previewInputs = {
-            cpb_count: 0,
-            pb_count: 0,
-            npb_count: 0,
-            session_count: 1,
-            hour_count: 2
+            session_count: 1
           };
           break;
         case 'flat_monthly':
@@ -286,8 +271,7 @@ const tutorHonorSlice = createSlice({
             cpb_count: 0,
             pb_count: 0,
             npb_count: 0,
-            session_count: 0,
-            hour_count: 0
+            session_count: 0
           };
           break;
         default:
@@ -295,8 +279,7 @@ const tutorHonorSlice = createSlice({
             cpb_count: 5,
             pb_count: 3,
             npb_count: 2,
-            session_count: 1,
-            hour_count: 2
+            session_count: 1
           };
       }
     },
@@ -547,11 +530,7 @@ export const selectPaymentSystemName = state => {
     'flat_monthly': 'Honor Bulanan Tetap',
     'per_session': 'Per Sesi/Pertemuan',
     'per_student_category': 'Per Kategori Siswa',
-    'per_hour': 'Per Jam',
-    'base_per_session': 'Dasar + Per Sesi',
-    'base_per_student': 'Dasar + Per Siswa',
-    'base_per_hour': 'Dasar + Per Jam',
-    'session_per_student': 'Per Sesi + Per Siswa'
+    'session_per_student_category': 'Per Sesi + Per Kategori Siswa'
   };
   const paymentSystem = state.tutorHonor.currentSettings?.payment_system;
   return systems[paymentSystem] || paymentSystem || 'Unknown';
@@ -567,15 +546,7 @@ export const selectRequiredInputFields = state => {
       return ['session_count'];
     case 'per_student_category':
       return ['cpb_count', 'pb_count', 'npb_count'];
-    case 'per_hour':
-      return ['hour_count'];
-    case 'base_per_session':
-      return ['session_count'];
-    case 'base_per_student':
-      return ['cpb_count', 'pb_count', 'npb_count'];
-    case 'base_per_hour':
-      return ['hour_count'];
-    case 'session_per_student':
+    case 'session_per_student_category':
       return ['session_count', 'cpb_count', 'pb_count', 'npb_count'];
     default:
       return ['cpb_count', 'pb_count', 'npb_count'];
@@ -584,22 +555,12 @@ export const selectRequiredInputFields = state => {
 
 export const selectHasStudentBreakdown = state => {
   const paymentSystem = state.tutorHonor.currentSettings?.payment_system;
-  return ['per_student_category', 'base_per_student', 'session_per_student'].includes(paymentSystem);
+  return ['per_student_category', 'session_per_student_category'].includes(paymentSystem);
 };
 
 export const selectHasSessionBreakdown = state => {
   const paymentSystem = state.tutorHonor.currentSettings?.payment_system;
-  return ['per_session', 'base_per_session', 'session_per_student'].includes(paymentSystem);
-};
-
-export const selectHasHourBreakdown = state => {
-  const paymentSystem = state.tutorHonor.currentSettings?.payment_system;
-  return ['per_hour', 'base_per_hour'].includes(paymentSystem);
-};
-
-export const selectHasBaseAmount = state => {
-  const paymentSystem = state.tutorHonor.currentSettings?.payment_system;
-  return ['base_per_session', 'base_per_student', 'base_per_hour'].includes(paymentSystem);
+  return ['per_session', 'session_per_student_category'].includes(paymentSystem);
 };
 
 export const selectIsFlatMonthly = state => {
