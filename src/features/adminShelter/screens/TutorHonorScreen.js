@@ -20,6 +20,7 @@ import Button from '../../../common/components/Button';
 import HonorCalculatorInput from '../components/HonorCalculatorInput';
 import HonorPreviewResult from '../components/HonorPreviewResult';
 import PaymentSystemIndicator from '../components/PaymentSystemIndicator';
+import { formatRupiah } from '../../../utils/currencyFormatter';
 
 import {
   fetchTutorHonor,
@@ -174,6 +175,171 @@ const TutorHonorScreen = () => {
     }
   };
 
+  const getPaymentSystemName = (paymentSystem) => {
+    const systems = {
+      'flat_monthly': 'Honor Bulanan Tetap',
+      'per_session': 'Per Sesi/Pertemuan',
+      'per_student_category': 'Per Kategori Siswa',
+      'per_hour': 'Per Jam',
+      'base_per_session': 'Dasar + Per Sesi',
+      'base_per_student': 'Dasar + Per Siswa',
+      'base_per_hour': 'Dasar + Per Jam',
+      'session_per_student': 'Per Sesi + Per Siswa'
+    };
+    return systems[paymentSystem] || paymentSystem;
+  };
+
+  const renderRateInfo = (setting) => {
+    const { payment_system } = setting;
+
+    switch (payment_system) {
+      case 'flat_monthly':
+        return (
+          <View style={styles.rateItem}>
+            <Text style={styles.rateLabel}>Bulanan</Text>
+            <Text style={styles.rateValue}>
+              {formatRupiah(setting.flat_monthly_rate)}
+            </Text>
+          </View>
+        );
+
+      case 'per_session':
+        return (
+          <View style={styles.rateItem}>
+            <Text style={styles.rateLabel}>Per Sesi</Text>
+            <Text style={styles.rateValue}>
+              {formatRupiah(setting.session_rate)}
+            </Text>
+          </View>
+        );
+
+      case 'per_student_category':
+        return (
+          <View style={styles.ratesContainer}>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>CPB</Text>
+              <Text style={styles.rateValue}>
+                {formatRupiah(setting.cpb_rate)}
+              </Text>
+            </View>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>PB</Text>
+              <Text style={styles.rateValue}>
+                {formatRupiah(setting.pb_rate)}
+              </Text>
+            </View>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>NPB</Text>
+              <Text style={styles.rateValue}>
+                {formatRupiah(setting.npb_rate)}
+              </Text>
+            </View>
+          </View>
+        );
+
+      case 'per_hour':
+        return (
+          <View style={styles.rateItem}>
+            <Text style={styles.rateLabel}>Per Jam</Text>
+            <Text style={styles.rateValue}>
+              {formatRupiah(setting.hourly_rate)}
+            </Text>
+          </View>
+        );
+
+      case 'base_per_session':
+        return (
+          <View style={styles.ratesContainer}>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Dasar</Text>
+              <Text style={styles.rateValue}>
+                {formatRupiah(setting.base_rate)}
+              </Text>
+            </View>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Per Sesi</Text>
+              <Text style={styles.rateValue}>
+                {formatRupiah(setting.session_rate)}
+              </Text>
+            </View>
+          </View>
+        );
+
+      case 'base_per_student':
+        return (
+          <View style={styles.ratesContainer}>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Dasar</Text>
+              <Text style={styles.rateValue}>
+                {formatRupiah(setting.base_rate)}
+              </Text>
+            </View>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Per Siswa</Text>
+              <Text style={styles.rateValue}>
+                {formatRupiah(setting.per_student_rate)}
+              </Text>
+            </View>
+          </View>
+        );
+
+      case 'base_per_hour':
+        return (
+          <View style={styles.ratesContainer}>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Dasar</Text>
+              <Text style={styles.rateValue}>
+                {formatRupiah(setting.base_rate)}
+              </Text>
+            </View>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Per Jam</Text>
+              <Text style={styles.rateValue}>
+                {formatRupiah(setting.hourly_rate)}
+              </Text>
+            </View>
+          </View>
+        );
+
+      case 'session_per_student':
+        return (
+          <View style={styles.ratesContainer}>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Per Sesi</Text>
+              <Text style={styles.rateValue}>
+                {formatRupiah(setting.session_rate)}
+              </Text>
+            </View>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>Per Siswa</Text>
+              <Text style={styles.rateValue}>
+                {formatRupiah(setting.per_student_rate)}
+              </Text>
+            </View>
+          </View>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const renderActiveSummary = () => {
+    if (!currentSettings) return null;
+
+    return (
+      <View style={styles.activeSettingSummary}>
+        <Text style={styles.activeSummaryTitle}>Setting Aktif Saat Ini</Text>
+        <Text style={styles.activeSummarySystem}>
+          {getPaymentSystemName(currentSettings.payment_system)}
+        </Text>
+        <View style={styles.activeSummaryContent}>
+          {renderRateInfo(currentSettings)}
+        </View>
+      </View>
+    );
+  };
+
   const renderSettingsModal = () => (
     <Modal
       visible={showSettingsModal}
@@ -266,7 +432,7 @@ const TutorHonorScreen = () => {
         )}
       </View>
       
-      <Text style={styles.honorAmount}>Rp {item.total_honor?.toLocaleString('id-ID')}</Text>
+      <Text style={styles.honorAmount}>{formatRupiah(item.total_honor)}</Text>
       
       <View style={styles.actionRow}>
         {item.status === 'draft' && (
@@ -334,7 +500,7 @@ const TutorHonorScreen = () => {
         </View>
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>Rp {summary.yearlyTotal?.toLocaleString('id-ID')}</Text>
+            <Text style={styles.summaryValue}>{formatRupiah(summary.yearlyTotal)}</Text>
             <Text style={styles.summaryLabel}>Total Honor</Text>
           </View>
           <View style={styles.summaryItem}>
@@ -348,6 +514,8 @@ const TutorHonorScreen = () => {
         settings={currentSettings}
         onPress={() => setShowSettingsModal(true)}
       />
+
+      {renderActiveSummary()}
 
       {error && (
         <ErrorMessage
@@ -440,6 +608,47 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginTop: 4
+  },
+  activeSettingSummary: {
+    backgroundColor: '#e8f5e8',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e8ed'
+  },
+  activeSummaryTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2ecc71',
+    marginBottom: 8
+  },
+  activeSummarySystem: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2ecc71',
+    marginBottom: 12
+  },
+  activeSummaryContent: {
+    flexDirection: 'row',
+    flexWrap: 'wrap'
+  },
+  ratesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12
+  },
+  rateItem: {
+    alignItems: 'center',
+    minWidth: 80
+  },
+  rateLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4
+  },
+  rateValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333'
   },
   listContainer: {
     padding: 16

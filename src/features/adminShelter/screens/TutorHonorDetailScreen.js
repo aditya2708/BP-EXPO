@@ -17,6 +17,7 @@ import ErrorMessage from '../../../common/components/ErrorMessage';
 import Button from '../../../common/components/Button';
 import HonorBreakdownDisplay from '../components/HonorBreakdownDisplay';
 import PaymentSystemIndicator from '../components/PaymentSystemIndicator';
+import { formatRupiah } from '../../../utils/currencyFormatter';
 
 import {
   fetchMonthlyDetail,
@@ -115,7 +116,7 @@ const TutorHonorDetailScreen = () => {
             </Text>
           </View>
           <Text style={styles.honorAmount}>
-            Rp {item.honor_per_aktivitas?.toLocaleString('id-ID')}
+            {formatRupiah(item.honor_per_aktivitas)}
           </Text>
         </View>
         
@@ -132,7 +133,8 @@ const TutorHonorDetailScreen = () => {
 
         {/* Attendance info - show if relevant to payment system */}
         {(paymentSystem === 'per_student_category' || 
-          paymentSystem === 'session_per_student_category') && (
+          paymentSystem === 'base_per_student' || 
+          paymentSystem === 'session_per_student') && (
           <View style={styles.attendanceInfo}>
             <View style={styles.attendanceItem}>
               <Ionicons name="people" size={16} color="#e74c3c" />
@@ -151,12 +153,25 @@ const TutorHonorDetailScreen = () => {
 
         {/* Session info - show if relevant */}
         {(paymentSystem === 'per_session' || 
-          paymentSystem === 'session_per_student_category') && (
+          paymentSystem === 'base_per_session' || 
+          paymentSystem === 'session_per_student') && (
           <View style={styles.sessionInfo}>
             <View style={styles.attendanceItem}>
               <Ionicons name="calendar" size={16} color="#3498db" />
               <Text style={styles.attendanceText}>
                 {item.session_count || 1} sesi
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Hour info - show if relevant */}
+        {(paymentSystem === 'per_hour' || paymentSystem === 'base_per_hour') && (
+          <View style={styles.hourInfo}>
+            <View style={styles.attendanceItem}>
+              <Ionicons name="time" size={16} color="#9b59b6" />
+              <Text style={styles.attendanceText}>
+                {item.hour_count || 0} jam
               </Text>
             </View>
           </View>
@@ -201,7 +216,7 @@ const TutorHonorDetailScreen = () => {
         <View style={styles.summaryGrid}>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryValue}>
-              Rp {monthlyDetail.total_honor?.toLocaleString('id-ID')}
+              {formatRupiah(monthlyDetail.total_honor)}
             </Text>
             <Text style={styles.summaryLabel}>Total Honor</Text>
           </View>
@@ -251,7 +266,7 @@ const TutorHonorDetailScreen = () => {
             breakdown={{
               ...monthlyDetail.dynamic_summary.breakdown,
               total_amount: monthlyDetail.total_honor,
-              formatted_total: `Rp ${monthlyDetail.total_honor?.toLocaleString('id-ID')}`
+              formatted_total: formatRupiah(monthlyDetail.total_honor)
             }}
             paymentSystem={monthlyDetail.payment_system_used}
             showTitle={false}
@@ -424,6 +439,10 @@ const styles = StyleSheet.create({
     marginTop: 8
   },
   sessionInfo: {
+    flexDirection: 'row',
+    marginTop: 8
+  },
+  hourInfo: {
     flexDirection: 'row',
     marginTop: 8
   },
