@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { tutorHonorApi } from '../api/tutorHonorApi';
+import { formatRupiah } from '../../../utils/currencyFormatter';
 
 const initialState = {
   honorList: [],
@@ -250,7 +251,7 @@ const tutorHonorSlice = createSlice({
       
       switch (paymentSystem) {
         case 'per_student_category':
-        case 'session_per_student_category':
+        case 'session_per_student':
           state.previewInputs = {
             cpb_count: 5,
             pb_count: 3,
@@ -298,15 +299,25 @@ const tutorHonorSlice = createSlice({
       })
       .addCase(fetchTutorHonor.fulfilled, (state, action) => {
         state.loading = false;
-        state.honorList = action.payload.data?.honors_per_bulan || [];
+        const data = action.payload.data || action.payload;
+        
+        // Map honor list and add formatted amounts
+        state.honorList = (data.honors_per_bulan || []).map(honor => ({
+          ...honor,
+          formatted_total_honor: formatRupiah(honor.total_honor)
+        }));
+        
         state.summary = {
           totalThisMonth: 0,
-          totalActivities: action.payload.data?.total_aktivitas_tahun || 0,
-          averageStudents: action.payload.data?.rata_rata_bulanan || 0,
-          yearlyTotal: action.payload.data?.total_honor_tahun || 0
+          totalActivities: data.total_aktivitas_tahun || 0,
+          averageStudents: data.rata_rata_bulanan || 0,
+          yearlyTotal: data.total_honor_tahun || 0,
+          formatted_yearly_total: formatRupiah(data.total_honor_tahun || 0),
+          formatted_average: formatRupiah(data.rata_rata_bulanan || 0)
         };
-        if (action.payload.current_settings) {
-          state.currentSettings = action.payload.current_settings;
+        
+        if (data.current_settings || action.payload.current_settings) {
+          state.currentSettings = data.current_settings || action.payload.current_settings;
         }
       })
       .addCase(fetchTutorHonor.rejected, (state, action) => {
@@ -320,8 +331,29 @@ const tutorHonorSlice = createSlice({
       })
       .addCase(fetchMonthlyDetail.fulfilled, (state, action) => {
         state.loading = false;
-        state.monthlyDetail = action.payload.data;
+        const detail = action.payload.data;
+        
+        // Add formatted amounts to monthly detail
+        if (detail) {
+          detail.formatted_total_honor = formatRupiah(detail.total_honor);
+          
+          if (detail.details) {
+            detail.details = detail.details.map(detailItem => ({
+              ...detailItem,
+              formatted_honor_per_aktivitas: formatRupiah(detailItem.honor_per_aktivitas),
+              formatted_cpb_amount: formatRupiah(detailItem.cpb_amount || 0),
+              formatted_pb_amount: formatRupiah(detailItem.pb_amount || 0),
+              formatted_npb_amount: formatRupiah(detailItem.npb_amount || 0),
+              formatted_session_amount: formatRupiah(detailItem.session_amount || 0),
+              formatted_hour_amount: formatRupiah(detailItem.hour_amount || 0),
+              formatted_base_amount: formatRupiah(detailItem.base_amount || 0)
+            }));
+          }
+        }
+        
+        state.monthlyDetail = detail;
         state.stats = action.payload.stats;
+        
         if (action.payload.current_settings) {
           state.currentSettings = action.payload.current_settings;
         }
@@ -338,6 +370,11 @@ const tutorHonorSlice = createSlice({
       .addCase(calculateHonor.fulfilled, (state, action) => {
         state.actionStatus.calculate = 'succeeded';
         const calculatedHonor = action.payload.data;
+        
+        // Add formatted amount
+        if (calculatedHonor) {
+          calculatedHonor.formatted_total_honor = formatRupiah(calculatedHonor.total_honor);
+        }
         
         const existingIndex = state.honorList.findIndex(
           h => h.bulan === calculatedHonor.bulan && h.tahun === calculatedHonor.tahun
@@ -362,6 +399,8 @@ const tutorHonorSlice = createSlice({
         state.summary.yearlyTotal = state.honorList
           .filter(h => h.tahun === calculatedHonor.tahun)
           .reduce((sum, h) => sum + parseFloat(h.total_honor || 0), 0);
+        
+        state.summary.formatted_yearly_total = formatRupiah(state.summary.yearlyTotal);
 
         if (action.payload.settings_used) {
           state.currentSettings = action.payload.settings_used;
@@ -379,6 +418,11 @@ const tutorHonorSlice = createSlice({
       .addCase(approveHonor.fulfilled, (state, action) => {
         state.actionStatus.approve = 'succeeded';
         const approvedHonor = action.payload.data;
+        
+        // Add formatted amount
+        if (approvedHonor) {
+          approvedHonor.formatted_total_honor = formatRupiah(approvedHonor.total_honor);
+        }
         
         const index = state.honorList.findIndex(h => h.id_honor === approvedHonor.id_honor);
         if (index !== -1) {
@@ -402,6 +446,11 @@ const tutorHonorSlice = createSlice({
         state.actionStatus.markPaid = 'succeeded';
         const paidHonor = action.payload.data;
         
+        // Add formatted amount
+        if (paidHonor) {
+          paidHonor.formatted_total_honor = formatRupiah(paidHonor.total_honor);
+        }
+        
         const index = state.honorList.findIndex(h => h.id_honor === paidHonor.id_honor);
         if (index !== -1) {
           state.honorList[index] = paidHonor;
@@ -417,7 +466,35 @@ const tutorHonorSlice = createSlice({
       })
       
       .addCase(fetchHonorStats.fulfilled, (state, action) => {
-        state.stats = action.payload.data;
+        const stats = action.payload.data;
+        
+        // Add formatted amounts to stats
+        if (stats) {
+          stats.formatted_total_honor = formatRupiah(stats.total_honor || 0);
+          stats.formatted_rata_rata_honor = formatRupiah(stats.rata_rata_honor || 0);
+          
+          // Format status breakdown
+          if (stats.status_breakdown) {
+            Object.keys(stats.status_breakdown).forEach(status => {
+              if (stats.status_breakdown[status].total_honor !== undefined) {
+                stats.status_breakdown[status].formatted_total_honor = 
+                  formatRupiah(stats.status_breakdown[status].total_honor);
+              }
+            });
+          }
+          
+          // Format monthly breakdown
+          if (stats.monthly_breakdown) {
+            Object.keys(stats.monthly_breakdown).forEach(month => {
+              if (stats.monthly_breakdown[month].total_honor !== undefined) {
+                stats.monthly_breakdown[month].formatted_total_honor = 
+                  formatRupiah(stats.monthly_breakdown[month].total_honor);
+              }
+            });
+          }
+        }
+        
+        state.stats = stats;
       })
 
       .addCase(fetchCurrentSettings.pending, (state) => {
@@ -440,7 +517,14 @@ const tutorHonorSlice = createSlice({
       })
       .addCase(calculatePreview.fulfilled, (state, action) => {
         state.actionStatus.preview = 'succeeded';
-        state.preview = action.payload.data;
+        const previewData = action.payload.data;
+        
+        // Add formatted total if not already present
+        if (previewData && previewData.calculation && !previewData.formatted_total) {
+          previewData.formatted_total = formatRupiah(previewData.calculation.total_amount || 0);
+        }
+        
+        state.preview = previewData;
       })
       .addCase(calculatePreview.rejected, (state, action) => {
         state.actionStatus.preview = 'failed';
@@ -453,7 +537,13 @@ const tutorHonorSlice = createSlice({
       })
       .addCase(fetchHonorHistory.fulfilled, (state, action) => {
         state.historyLoading = false;
-        state.honorHistory = action.payload.data || [];
+        const historyData = action.payload.data || [];
+        
+        // Add formatted amounts to history
+        state.honorHistory = historyData.map(item => ({
+          ...item,
+          formatted_total_honor: formatRupiah(item.total_honor)
+        }));
         
         if (action.payload.pagination) {
           state.historyPagination = {
@@ -475,7 +565,63 @@ const tutorHonorSlice = createSlice({
       })
       .addCase(fetchHonorStatistics.fulfilled, (state, action) => {
         state.statisticsLoading = false;
-        state.honorStatistics = action.payload.data;
+        const statistics = action.payload.data;
+        
+        // Add formatted amounts to statistics
+        if (statistics) {
+          // Format summary
+          if (statistics.summary) {
+            statistics.summary.formatted_total_honor_amount = 
+              formatRupiah(statistics.summary.total_honor_amount || 0);
+            statistics.summary.formatted_avg_honor_per_month = 
+              formatRupiah(statistics.summary.avg_honor_per_month || 0);
+          }
+          
+          // Format status breakdown
+          if (statistics.status_breakdown) {
+            Object.keys(statistics.status_breakdown).forEach(status => {
+              if (statistics.status_breakdown[status].total_honor !== undefined) {
+                statistics.status_breakdown[status].formatted_total_honor = 
+                  formatRupiah(statistics.status_breakdown[status].total_honor);
+              }
+            });
+          }
+          
+          // Format payment system breakdown
+          if (statistics.payment_system_breakdown) {
+            Object.keys(statistics.payment_system_breakdown).forEach(system => {
+              const breakdown = statistics.payment_system_breakdown[system];
+              if (breakdown.total_honor !== undefined) {
+                breakdown.formatted_total_honor = formatRupiah(breakdown.total_honor);
+              }
+              if (breakdown.avg_honor !== undefined) {
+                breakdown.formatted_avg_honor = formatRupiah(breakdown.avg_honor);
+              }
+            });
+          }
+          
+          // Format monthly data
+          if (statistics.monthly_data) {
+            statistics.monthly_data = statistics.monthly_data.map(month => ({
+              ...month,
+              formatted_total_honor: formatRupiah(month.total_honor || 0)
+            }));
+          }
+          
+          // Format performance data
+          if (statistics.performance) {
+            if (statistics.performance.highest_month) {
+              statistics.performance.highest_month.formatted_total_honor = 
+                formatRupiah(statistics.performance.highest_month.total_honor || 0);
+            }
+            if (statistics.performance.lowest_month) {
+              statistics.performance.lowest_month.formatted_total_honor = 
+                formatRupiah(statistics.performance.lowest_month.total_honor || 0);
+            }
+          }
+        }
+        
+        state.honorStatistics = statistics;
       })
       .addCase(fetchHonorStatistics.rejected, (state, action) => {
         state.statisticsLoading = false;
