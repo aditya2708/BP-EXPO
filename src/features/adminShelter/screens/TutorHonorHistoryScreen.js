@@ -163,6 +163,16 @@ const TutorHonorHistoryScreen = () => {
     });
   };
 
+  const getPaymentSystemDisplay = (paymentSystem) => {
+    const systems = {
+      'flat_monthly': 'Honor Bulanan Tetap',
+      'per_session': 'Per Sesi/Pertemuan',
+      'per_student_category': 'Per Kategori Siswa',
+      'session_per_student_category': 'Per Sesi + Per Kategori Siswa'
+    };
+    return systems[paymentSystem] || paymentSystem;
+  };
+
   const renderHonorItem = ({ item }) => (
     <TouchableOpacity
       style={styles.honorItem}
@@ -187,7 +197,9 @@ const TutorHonorHistoryScreen = () => {
         {item.payment_system_used && (
           <View style={styles.detailRow}>
             <Ionicons name="settings-outline" size={16} color="#666" />
-            <Text style={styles.detailText}>{item.payment_system_display || item.payment_system_used}</Text>
+            <Text style={styles.detailText}>
+              {getPaymentSystemDisplay(item.payment_system_used)}
+            </Text>
           </View>
         )}
       </View>

@@ -132,8 +132,7 @@ const TutorHonorDetailScreen = () => {
 
         {/* Attendance info - show if relevant to payment system */}
         {(paymentSystem === 'per_student_category' || 
-          paymentSystem === 'base_per_student' || 
-          paymentSystem === 'session_per_student') && (
+          paymentSystem === 'session_per_student_category') && (
           <View style={styles.attendanceInfo}>
             <View style={styles.attendanceItem}>
               <Ionicons name="people" size={16} color="#e74c3c" />
@@ -152,25 +151,12 @@ const TutorHonorDetailScreen = () => {
 
         {/* Session info - show if relevant */}
         {(paymentSystem === 'per_session' || 
-          paymentSystem === 'base_per_session' || 
-          paymentSystem === 'session_per_student') && (
+          paymentSystem === 'session_per_student_category') && (
           <View style={styles.sessionInfo}>
             <View style={styles.attendanceItem}>
               <Ionicons name="calendar" size={16} color="#3498db" />
               <Text style={styles.attendanceText}>
                 {item.session_count || 1} sesi
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* Hour info - show if relevant */}
-        {(paymentSystem === 'per_hour' || paymentSystem === 'base_per_hour') && (
-          <View style={styles.hourInfo}>
-            <View style={styles.attendanceItem}>
-              <Ionicons name="time" size={16} color="#9b59b6" />
-              <Text style={styles.attendanceText}>
-                {item.hour_count || 0} jam
               </Text>
             </View>
           </View>
@@ -438,10 +424,6 @@ const styles = StyleSheet.create({
     marginTop: 8
   },
   sessionInfo: {
-    flexDirection: 'row',
-    marginTop: 8
-  },
-  hourInfo: {
     flexDirection: 'row',
     marginTop: 8
   },
