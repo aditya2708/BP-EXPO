@@ -251,7 +251,7 @@ const tutorHonorSlice = createSlice({
       
       switch (paymentSystem) {
         case 'per_student_category':
-        case 'session_per_student':
+        case 'session_per_student_category':
           state.previewInputs = {
             cpb_count: 5,
             pb_count: 3,
@@ -344,9 +344,7 @@ const tutorHonorSlice = createSlice({
               formatted_cpb_amount: formatRupiah(detailItem.cpb_amount || 0),
               formatted_pb_amount: formatRupiah(detailItem.pb_amount || 0),
               formatted_npb_amount: formatRupiah(detailItem.npb_amount || 0),
-              formatted_session_amount: formatRupiah(detailItem.session_amount || 0),
-              formatted_hour_amount: formatRupiah(detailItem.hour_amount || 0),
-              formatted_base_amount: formatRupiah(detailItem.base_amount || 0)
+              formatted_session_amount: formatRupiah(detailItem.session_amount || 0)
             }));
           }
         }
