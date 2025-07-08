@@ -1,11 +1,61 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { 
-  getBreakdownStructure, 
-  getPaymentSystemName, 
-  formatBreakdownComponent 
-} from '../utils/paymentSystemUtils';
+
+const getPaymentSystemName = (paymentSystem) => {
+  const systems = {
+    'flat_monthly': 'Honor Bulanan Tetap',
+    'per_session': 'Per Sesi/Pertemuan',
+    'per_student_category': 'Per Kategori Siswa',
+    'session_per_student_category': 'Per Sesi + Per Kategori Siswa'
+  };
+  return systems[paymentSystem] || paymentSystem;
+};
+
+const getBreakdownStructure = (paymentSystem) => {
+  switch (paymentSystem) {
+    case 'flat_monthly':
+      return ['monthly'];
+    case 'per_session':
+      return ['session'];
+    case 'per_student_category':
+      return ['cpb', 'pb', 'npb'];
+    case 'session_per_student_category':
+      return ['session', 'cpb', 'pb', 'npb'];
+    default:
+      return [];
+  }
+};
+
+const formatBreakdownComponent = (component, componentKey) => {
+  if (!component) return { formatted_amount: 'Rp 0', formatted_description: '' };
+
+  const amount = component.amount || 0;
+  const count = component.count || 0;
+  const rate = component.rate || 0;
+
+  let description = '';
+  switch (componentKey) {
+    case 'cpb':
+    case 'pb':
+    case 'npb':
+      description = count > 0 ? `${count} siswa × Rp ${rate.toLocaleString('id-ID')}` : '';
+      break;
+    case 'session':
+      description = count > 0 ? `${count} sesi × Rp ${rate.toLocaleString('id-ID')}` : '';
+      break;
+    case 'monthly':
+      description = 'Honor bulanan tetap';
+      break;
+    default:
+      description = '';
+  }
+
+  return {
+    formatted_amount: `Rp ${amount.toLocaleString('id-ID')}`,
+    formatted_description: description
+  };
+};
 
 const HonorBreakdownDisplay = ({ 
   breakdown, 
@@ -18,7 +68,7 @@ const HonorBreakdownDisplay = ({
   }
 
   const expectedComponents = getBreakdownStructure(paymentSystem);
-  const components = breakdown.components || {};
+  const components = breakdown.components || breakdown || {};
 
   const getComponentIcon = (componentKey) => {
     const icons = {
@@ -26,10 +76,7 @@ const HonorBreakdownDisplay = ({
       pb: 'people',
       npb: 'people',
       session: 'calendar',
-      hour: 'time',
-      base: 'card',
-      monthly: 'calendar',
-      student: 'people'
+      monthly: 'calendar'
     };
     return icons[componentKey] || 'calculator';
   };
@@ -40,10 +87,7 @@ const HonorBreakdownDisplay = ({
       pb: '#f39c12', 
       npb: '#2ecc71',
       session: '#3498db',
-      hour: '#9b59b6',
-      base: '#34495e',
-      monthly: '#27ae60',
-      student: '#3498db'
+      monthly: '#27ae60'
     };
     return colors[componentKey] || '#666';
   };
@@ -95,10 +139,7 @@ const HonorBreakdownDisplay = ({
       pb: 'Siswa PB', 
       npb: 'Siswa NPB',
       session: 'Honor Sesi',
-      hour: 'Honor Jam',
-      base: 'Honor Dasar',
-      monthly: 'Honor Bulanan',
-      student: 'Honor Siswa'
+      monthly: 'Honor Bulanan'
     };
     return labels[componentKey] || componentKey.toUpperCase();
   };
@@ -251,4 +292,5 @@ const styles = StyleSheet.create({
   }
 });
 
+export { getBreakdownStructure, formatBreakdownComponent };
 export default HonorBreakdownDisplay;

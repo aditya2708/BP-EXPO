@@ -1,7 +1,26 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { getPaymentSystemName, getSystemDescription } from '../../adminShelter/utils/paymentSystemUtils';
+
+const getPaymentSystemName = (paymentSystem) => {
+  const systems = {
+    'flat_monthly': 'Honor Bulanan Tetap',
+    'per_session': 'Per Sesi/Pertemuan',
+    'per_student_category': 'Per Kategori Siswa',
+    'session_per_student_category': 'Per Sesi + Per Kategori Siswa'
+  };
+  return systems[paymentSystem] || paymentSystem;
+};
+
+const getSystemDescription = (paymentSystem) => {
+  const descriptions = {
+    'flat_monthly': 'Honor tetap per bulan tanpa mempertimbangkan jumlah sesi atau siswa',
+    'per_session': 'Honor dihitung berdasarkan jumlah sesi/pertemuan yang dilakukan',
+    'per_student_category': 'Honor dihitung berdasarkan kategori dan jumlah siswa (CPB, PB, NPB)',
+    'session_per_student_category': 'Honor dihitung berdasarkan kombinasi sesi dan kategori siswa'
+  };
+  return descriptions[paymentSystem] || '';
+};
 
 const PaymentSystemIndicator = ({ 
   settings, 
@@ -80,79 +99,7 @@ const PaymentSystemIndicator = ({
           </View>
         );
 
-      case 'per_hour':
-        return (
-          <View style={styles.rateContainer}>
-            <View style={styles.rateItem}>
-              <Text style={styles.rateLabel}>Per Jam</Text>
-              <Text style={styles.rateValue}>
-                Rp {settings.hourly_rate?.toLocaleString('id-ID')}
-              </Text>
-            </View>
-          </View>
-        );
-
-      case 'base_per_session':
-        return (
-          <View style={styles.rateContainer}>
-            <View style={styles.rateGrid}>
-              <View style={styles.rateItem}>
-                <Text style={styles.rateLabel}>Honor Dasar</Text>
-                <Text style={styles.rateValue}>
-                  Rp {settings.base_rate?.toLocaleString('id-ID')}
-                </Text>
-              </View>
-              <View style={styles.rateItem}>
-                <Text style={styles.rateLabel}>Per Sesi</Text>
-                <Text style={styles.rateValue}>
-                  Rp {settings.session_rate?.toLocaleString('id-ID')}
-                </Text>
-              </View>
-            </View>
-          </View>
-        );
-
-      case 'base_per_student':
-        return (
-          <View style={styles.rateContainer}>
-            <View style={styles.rateGrid}>
-              <View style={styles.rateItem}>
-                <Text style={styles.rateLabel}>Honor Dasar</Text>
-                <Text style={styles.rateValue}>
-                  Rp {settings.base_rate?.toLocaleString('id-ID')}
-                </Text>
-              </View>
-              <View style={styles.rateItem}>
-                <Text style={styles.rateLabel}>Per Siswa</Text>
-                <Text style={styles.rateValue}>
-                  Rp {settings.per_student_rate?.toLocaleString('id-ID')}
-                </Text>
-              </View>
-            </View>
-          </View>
-        );
-
-      case 'base_per_hour':
-        return (
-          <View style={styles.rateContainer}>
-            <View style={styles.rateGrid}>
-              <View style={styles.rateItem}>
-                <Text style={styles.rateLabel}>Honor Dasar</Text>
-                <Text style={styles.rateValue}>
-                  Rp {settings.base_rate?.toLocaleString('id-ID')}
-                </Text>
-              </View>
-              <View style={styles.rateItem}>
-                <Text style={styles.rateLabel}>Per Jam</Text>
-                <Text style={styles.rateValue}>
-                  Rp {settings.hourly_rate?.toLocaleString('id-ID')}
-                </Text>
-              </View>
-            </View>
-          </View>
-        );
-
-      case 'session_per_student':
+      case 'session_per_student_category':
         return (
           <View style={styles.rateContainer}>
             <View style={styles.rateGrid}>
@@ -163,9 +110,21 @@ const PaymentSystemIndicator = ({
                 </Text>
               </View>
               <View style={styles.rateItem}>
-                <Text style={styles.rateLabel}>Per Siswa</Text>
+                <Text style={styles.rateLabel}>CPB</Text>
                 <Text style={styles.rateValue}>
-                  Rp {settings.per_student_rate?.toLocaleString('id-ID')}
+                  Rp {settings.cpb_rate?.toLocaleString('id-ID')}
+                </Text>
+              </View>
+              <View style={styles.rateItem}>
+                <Text style={styles.rateLabel}>PB</Text>
+                <Text style={styles.rateValue}>
+                  Rp {settings.pb_rate?.toLocaleString('id-ID')}
+                </Text>
+              </View>
+              <View style={styles.rateItem}>
+                <Text style={styles.rateLabel}>NPB</Text>
+                <Text style={styles.rateValue}>
+                  Rp {settings.npb_rate?.toLocaleString('id-ID')}
                 </Text>
               </View>
             </View>
@@ -345,4 +304,5 @@ const styles = StyleSheet.create({
   }
 });
 
+export { getPaymentSystemName, getSystemDescription };
 export default PaymentSystemIndicator;
