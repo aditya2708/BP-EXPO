@@ -180,11 +180,7 @@ const TutorHonorScreen = () => {
       'flat_monthly': 'Honor Bulanan Tetap',
       'per_session': 'Per Sesi/Pertemuan',
       'per_student_category': 'Per Kategori Siswa',
-      'per_hour': 'Per Jam',
-      'base_per_session': 'Dasar + Per Sesi',
-      'base_per_student': 'Dasar + Per Siswa',
-      'base_per_hour': 'Dasar + Per Jam',
-      'session_per_student': 'Per Sesi + Per Siswa'
+      'session_per_student_category': 'Per Sesi + Per Kategori Siswa'
     };
     return systems[paymentSystem] || paymentSystem;
   };
@@ -237,71 +233,7 @@ const TutorHonorScreen = () => {
           </View>
         );
 
-      case 'per_hour':
-        return (
-          <View style={styles.rateItem}>
-            <Text style={styles.rateLabel}>Per Jam</Text>
-            <Text style={styles.rateValue}>
-              {formatRupiah(setting.hourly_rate)}
-            </Text>
-          </View>
-        );
-
-      case 'base_per_session':
-        return (
-          <View style={styles.ratesContainer}>
-            <View style={styles.rateItem}>
-              <Text style={styles.rateLabel}>Dasar</Text>
-              <Text style={styles.rateValue}>
-                {formatRupiah(setting.base_rate)}
-              </Text>
-            </View>
-            <View style={styles.rateItem}>
-              <Text style={styles.rateLabel}>Per Sesi</Text>
-              <Text style={styles.rateValue}>
-                {formatRupiah(setting.session_rate)}
-              </Text>
-            </View>
-          </View>
-        );
-
-      case 'base_per_student':
-        return (
-          <View style={styles.ratesContainer}>
-            <View style={styles.rateItem}>
-              <Text style={styles.rateLabel}>Dasar</Text>
-              <Text style={styles.rateValue}>
-                {formatRupiah(setting.base_rate)}
-              </Text>
-            </View>
-            <View style={styles.rateItem}>
-              <Text style={styles.rateLabel}>Per Siswa</Text>
-              <Text style={styles.rateValue}>
-                {formatRupiah(setting.per_student_rate)}
-              </Text>
-            </View>
-          </View>
-        );
-
-      case 'base_per_hour':
-        return (
-          <View style={styles.ratesContainer}>
-            <View style={styles.rateItem}>
-              <Text style={styles.rateLabel}>Dasar</Text>
-              <Text style={styles.rateValue}>
-                {formatRupiah(setting.base_rate)}
-              </Text>
-            </View>
-            <View style={styles.rateItem}>
-              <Text style={styles.rateLabel}>Per Jam</Text>
-              <Text style={styles.rateValue}>
-                {formatRupiah(setting.hourly_rate)}
-              </Text>
-            </View>
-          </View>
-        );
-
-      case 'session_per_student':
+      case 'session_per_student_category':
         return (
           <View style={styles.ratesContainer}>
             <View style={styles.rateItem}>
@@ -311,9 +243,21 @@ const TutorHonorScreen = () => {
               </Text>
             </View>
             <View style={styles.rateItem}>
-              <Text style={styles.rateLabel}>Per Siswa</Text>
+              <Text style={styles.rateLabel}>CPB</Text>
               <Text style={styles.rateValue}>
-                {formatRupiah(setting.per_student_rate)}
+                {formatRupiah(setting.cpb_rate)}
+              </Text>
+            </View>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>PB</Text>
+              <Text style={styles.rateValue}>
+                {formatRupiah(setting.pb_rate)}
+              </Text>
+            </View>
+            <View style={styles.rateItem}>
+              <Text style={styles.rateLabel}>NPB</Text>
+              <Text style={styles.rateValue}>
+                {formatRupiah(setting.npb_rate)}
               </Text>
             </View>
           </View>

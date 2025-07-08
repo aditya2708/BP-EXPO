@@ -16,7 +16,7 @@ import PickerInput from '../../../common/components/PickerInput';
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../common/components/ErrorMessage';
 import { adminShelterKeuanganApi } from '../api/adminShelterKeuanganApi';
-import { adminShelterApi } from '../api/adminShelterApi';
+import { adminShelterAnakApi } from '../api/adminShelterAnakApi';
 
 const KeuanganFormScreen = () => {
   const navigation = useNavigation();
@@ -98,8 +98,8 @@ const KeuanganFormScreen = () => {
   const fetchChildren = async () => {
     try {
       setLoading(true);
-      const response = await adminShelterApi.getChildren();
-      const childrenData = response.data.data.data || [];
+      const response = await adminShelterAnakApi.getAllAnak();
+      const childrenData = response.data.data || [];
       
       const childrenOptions = childrenData.map(child => ({
         label: `${child.full_name} (${child.nick_name || 'No nickname'})`,
