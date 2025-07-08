@@ -32,11 +32,7 @@ const initialState = {
     { value: 'flat_monthly', label: 'Honor Bulanan Tetap' },
     { value: 'per_session', label: 'Per Sesi/Pertemuan' },
     { value: 'per_student_category', label: 'Per Kategori Siswa' },
-    { value: 'per_hour', label: 'Per Jam' },
-    { value: 'base_per_session', label: 'Dasar + Per Sesi' },
-    { value: 'base_per_student', label: 'Dasar + Per Siswa' },
-    { value: 'base_per_hour', label: 'Dasar + Per Jam' },
-    { value: 'session_per_student', label: 'Per Sesi + Per Siswa' }
+    { value: 'session_per_student_category', label: 'Per Sesi + Per Kategori Siswa' }
   ]
 };
 
@@ -176,41 +172,18 @@ const addFormattedRates = (setting) => {
         formatted.formatted_npb_rate = formatRupiah(setting.npb_rate);
       }
       break;
-    case 'per_hour':
-      if (setting.hourly_rate !== null && setting.hourly_rate !== undefined) {
-        formatted.formatted_hourly_rate = formatRupiah(setting.hourly_rate);
-      }
-      break;
-    case 'base_per_session':
-      if (setting.base_rate !== null && setting.base_rate !== undefined) {
-        formatted.formatted_base_rate = formatRupiah(setting.base_rate);
-      }
+    case 'session_per_student_category':
       if (setting.session_rate !== null && setting.session_rate !== undefined) {
         formatted.formatted_session_rate = formatRupiah(setting.session_rate);
       }
-      break;
-    case 'base_per_student':
-      if (setting.base_rate !== null && setting.base_rate !== undefined) {
-        formatted.formatted_base_rate = formatRupiah(setting.base_rate);
+      if (setting.cpb_rate !== null && setting.cpb_rate !== undefined) {
+        formatted.formatted_cpb_rate = formatRupiah(setting.cpb_rate);
       }
-      if (setting.per_student_rate !== null && setting.per_student_rate !== undefined) {
-        formatted.formatted_per_student_rate = formatRupiah(setting.per_student_rate);
+      if (setting.pb_rate !== null && setting.pb_rate !== undefined) {
+        formatted.formatted_pb_rate = formatRupiah(setting.pb_rate);
       }
-      break;
-    case 'base_per_hour':
-      if (setting.base_rate !== null && setting.base_rate !== undefined) {
-        formatted.formatted_base_rate = formatRupiah(setting.base_rate);
-      }
-      if (setting.hourly_rate !== null && setting.hourly_rate !== undefined) {
-        formatted.formatted_hourly_rate = formatRupiah(setting.hourly_rate);
-      }
-      break;
-    case 'session_per_student':
-      if (setting.session_rate !== null && setting.session_rate !== undefined) {
-        formatted.formatted_session_rate = formatRupiah(setting.session_rate);
-      }
-      if (setting.per_student_rate !== null && setting.per_student_rate !== undefined) {
-        formatted.formatted_per_student_rate = formatRupiah(setting.per_student_rate);
+      if (setting.npb_rate !== null && setting.npb_rate !== undefined) {
+        formatted.formatted_npb_rate = formatRupiah(setting.npb_rate);
       }
       break;
   }
