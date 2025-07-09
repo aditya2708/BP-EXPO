@@ -90,7 +90,8 @@ const semesterSlice = createSlice({
       last_page: 1,
       per_page: 20,
       total: 0
-    }
+    },
+    selectedKurikulumForSemester: null
   },
   reducers: {
     clearError: (state) => {
@@ -107,6 +108,12 @@ const semesterSlice = createSlice({
       if (index !== -1) {
         state.list[index] = action.payload;
       }
+    },
+    setSelectedKurikulumForSemester: (state, action) => {
+      state.selectedKurikulumForSemester = action.payload;
+    },
+    clearSelectedKurikulumForSemester: (state) => {
+      state.selectedKurikulumForSemester = null;
     }
   },
   extraReducers: (builder) => {
@@ -177,6 +184,8 @@ const semesterSlice = createSlice({
             is_active: s.id_semester === action.payload.data.id_semester
           }));
         }
+        // Clear selected kurikulum after successful creation
+        state.selectedKurikulumForSemester = null;
       })
       .addCase(createSemester.rejected, (state, action) => {
         state.loading = false;
@@ -241,8 +250,11 @@ export const {
   clearError, 
   clearDetail, 
   clearStatistics,
-  updateSemesterLocally 
+  updateSemesterLocally,
+  setSelectedKurikulumForSemester,
+  clearSelectedKurikulumForSemester
 } = semesterSlice.actions;
+
 export default semesterSlice.reducer;
 
 // Selectors
@@ -254,3 +266,4 @@ export const selectTahunAjaran = (state) => state.semester.tahunAjaran;
 export const selectSemesterLoading = (state) => state.semester.loading;
 export const selectSemesterError = (state) => state.semester.error;
 export const selectSemesterPagination = (state) => state.semester.pagination;
+export const selectSelectedKurikulumForSemester = (state) => state.semester.selectedKurikulumForSemester;
