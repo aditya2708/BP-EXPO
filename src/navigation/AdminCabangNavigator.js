@@ -14,6 +14,12 @@ import AdminCabangDonaturListScreen from '../features/adminCabang/screen/AdminCa
 import AdminCabangDonaturFormScreen from '../features/adminCabang/screen/AdminCabangDonaturFormScreen';
 import AdminCabangDonaturDetailScreen from '../features/adminCabang/screen/AdminCabangDonaturDetailScreen';
 import DonaturFilterScreen from '../features/adminCabang/screen/DonaturFilterScreen';
+import KurikulumManagementScreen from '../features/adminCabang/screen/KurikulumManagementScreen';
+import KurikulumFormScreen from '../features/adminCabang/screen/KurikulumFormScreen';
+import KurikulumDetailScreen from '../features/adminCabang/screen/KurikulumDetailScreen';
+import MataPelajaranManagementScreen from '../features/adminCabang/screen/MataPelajaranManagementScreen';
+import MataPelajaranFormScreen from '../features/adminCabang/screen/MataPelajaranFormScreen';
+import MateriKurikulumScreen from '../features/adminCabang/screen/MateriKurikulumScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
@@ -51,6 +57,42 @@ const ManagementStackNavigator = () => {
         name="SurveyApprovalDetail" 
         component={SurveyApprovalDetailScreen} 
         options={{ headerTitle: 'Detail Survei' }}
+      />
+      
+      {/* ADD THESE NEW KURIKULUM SCREENS */}
+      <ManagementStack.Screen 
+        name="KurikulumManagement" 
+        component={KurikulumManagementScreen} 
+        options={{ headerTitle: 'Manajemen Kurikulum' }}
+      />
+      <ManagementStack.Screen 
+        name="KurikulumForm" 
+        component={KurikulumFormScreen} 
+        options={({ route }) => ({ 
+          headerTitle: route.params?.kurikulum ? 'Edit Kurikulum' : 'Tambah Kurikulum'
+        })}
+      />
+      <ManagementStack.Screen 
+        name="KurikulumDetail" 
+        component={KurikulumDetailScreen} 
+        options={{ headerTitle: 'Detail Kurikulum' }}
+      />
+      <ManagementStack.Screen 
+        name="MataPelajaranManagement" 
+        component={MataPelajaranManagementScreen} 
+        options={{ headerTitle: 'Manajemen Mata Pelajaran' }}
+      />
+      <ManagementStack.Screen 
+        name="MataPelajaranForm" 
+        component={MataPelajaranFormScreen} 
+        options={({ route }) => ({ 
+          headerTitle: route.params?.mataPelajaran ? 'Edit Mata Pelajaran' : 'Tambah Mata Pelajaran'
+        })}
+      />
+      <ManagementStack.Screen 
+        name="MateriKurikulum" 
+        component={MateriKurikulumScreen} 
+        options={{ headerTitle: 'Materi Kurikulum' }}
       />
     </ManagementStack.Navigator>
   );
