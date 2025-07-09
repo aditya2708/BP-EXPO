@@ -19,6 +19,9 @@ import raportLaporanReducer from '../features/adminShelter/redux/raportLaporanSl
 import laporanSuratReducer from '../features/adminShelter/redux/laporanSuratSlice';
 import laporanAktivitasReducer from '../features/adminShelter/redux/laporanAktivitasSlice';
 import historiLaporanReducer from '../features/adminShelter/redux/historiLaporanSlice';
+// ADD THESE MISSING IMPORTS
+import kurikulumReducer from '../features/adminCabang/redux/kurikulumSlice';
+import mataPelajaranReducer from '../features/adminCabang/redux/mataPelajaranSlice';
 
 const appReducer = combineReducers({
   auth: authReducer,
@@ -41,6 +44,9 @@ const appReducer = combineReducers({
   laporanSurat: laporanSuratReducer,
   laporanAktivitas: laporanAktivitasReducer,
   historiLaporan: historiLaporanReducer,
+  // ADD THESE MISSING REDUCERS
+  kurikulum: kurikulumReducer,
+  mataPelajaran: mataPelajaranReducer,
 });
 
 const rootReducer = (state, action) => {

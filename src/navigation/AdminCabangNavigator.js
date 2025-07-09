@@ -20,6 +20,7 @@ import KurikulumDetailScreen from '../features/adminCabang/screen/KurikulumDetai
 import MataPelajaranManagementScreen from '../features/adminCabang/screen/MataPelajaranManagementScreen';
 import MataPelajaranFormScreen from '../features/adminCabang/screen/MataPelajaranFormScreen';
 import MateriKurikulumScreen from '../features/adminCabang/screen/MateriKurikulumScreen';
+import MataPelajaranDetailScreen from '../features/adminCabang/screen/MataPelajaranDetailScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
@@ -82,6 +83,11 @@ const ManagementStackNavigator = () => {
         component={MataPelajaranManagementScreen} 
         options={{ headerTitle: 'Manajemen Mata Pelajaran' }}
       />
+      <ManagementStack.Screen 
+  name="MataPelajaranDetail" 
+  component={MataPelajaranDetailScreen} 
+  options={{ headerTitle: 'Detail Mata Pelajaran' }}
+/>
       <ManagementStack.Screen 
         name="MataPelajaranForm" 
         component={MataPelajaranFormScreen} 
