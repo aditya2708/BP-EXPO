@@ -26,12 +26,23 @@ export const ADMIN_PUSAT_ENDPOINTS = {
     DETAIL: (childId, riwayatId) => `/admin-pusat/anak/${childId}/riwayat/${riwayatId}`
   },
   KELUARGA: {
-  LIST: '/admin-pusat/keluarga',
-  DETAIL: (id) => `/admin-pusat/keluarga/${id}`,
-  DROPDOWN: '/admin-pusat/keluarga-dropdown',
-  WILBIN_BY_KACAB: (kacabId) => `/admin-pusat/keluarga-wilbin/${kacabId}`,
-  SHELTER_BY_WILBIN: (wilbinId) => `/admin-pusat/keluarga-shelter/${wilbinId}`
-}
+    LIST: '/admin-pusat/keluarga',
+    DETAIL: (id) => `/admin-pusat/keluarga/${id}`,
+    DROPDOWN: '/admin-pusat/keluarga-dropdown',
+    WILBIN_BY_KACAB: (kacabId) => `/admin-pusat/keluarga-wilbin/${kacabId}`,
+    SHELTER_BY_WILBIN: (wilbinId) => `/admin-pusat/keluarga-shelter/${wilbinId}`
+  },
+  TUTOR_HONOR_SETTINGS: {
+    LIST: '/admin-pusat/tutor-honor-settings',
+    ACTIVE: '/admin-pusat/tutor-honor-settings/active',
+    CREATE: '/admin-pusat/tutor-honor-settings',
+    DETAIL: (id) => `/admin-pusat/tutor-honor-settings/${id}`,
+    UPDATE: (id) => `/admin-pusat/tutor-honor-settings/${id}`,
+    SET_ACTIVE: (id) => `/admin-pusat/tutor-honor-settings/${id}/set-active`,
+    DELETE: (id) => `/admin-pusat/tutor-honor-settings/${id}`,
+    CALCULATE_PREVIEW: '/admin-pusat/tutor-honor-settings/calculate-preview',
+    STATISTICS: '/admin-pusat/tutor-honor-settings-statistics'
+  }
 };
 
 export const ADMIN_CABANG_ENDPOINTS = {
@@ -59,6 +70,31 @@ export const ADMIN_CABANG_ENDPOINTS = {
     FILTER_OPTIONS: '/admin-cabang/donatur-filter-options',
     SHELTERS_BY_WILBIN: (wilbinId) => `/admin-cabang/donatur-shelters/${wilbinId}`,
     STATS: '/admin-cabang/donatur-stats'
+  },
+  KURIKULUM: {
+    LIST: '/admin-cabang/kurikulum',
+    DETAIL: (id) => `/admin-cabang/kurikulum/${id}`,
+    CREATE: '/admin-cabang/kurikulum',
+    UPDATE: (id) => `/admin-cabang/kurikulum/${id}`,
+    DELETE: (id) => `/admin-cabang/kurikulum/${id}`,
+    ACTIVE: '/admin-cabang/kurikulum/active',
+    SET_ACTIVE: (id) => `/admin-cabang/kurikulum/${id}/set-active`,
+    STATISTICS: (id) => `/admin-cabang/kurikulum/${id}/statistics`,
+    TAHUN_BERLAKU: '/admin-cabang/kurikulum/tahun-berlaku',
+    ADD_MATERI: (id) => `/admin-cabang/kurikulum/${id}/materi`,
+    REMOVE_MATERI: (id, materiId) => `/admin-cabang/kurikulum/${id}/materi/${materiId}`
+  },
+
+  MATA_PELAJARAN: {
+    LIST: '/admin-cabang/mata-pelajaran',
+    DETAIL: (id) => `/admin-cabang/mata-pelajaran/${id}`,
+    CREATE: '/admin-cabang/mata-pelajaran',
+    UPDATE: (id) => `/admin-cabang/mata-pelajaran/${id}`,
+    DELETE: (id) => `/admin-cabang/mata-pelajaran/${id}`,
+    BY_KATEGORI: (kategori) => `/admin-cabang/mata-pelajaran/kategori/${kategori || ''}`,
+    KATEGORI_OPTIONS: '/admin-cabang/mata-pelajaran/kategori-options',
+    STATISTICS: '/admin-cabang/mata-pelajaran/statistics',
+    DROPDOWN: '/admin-cabang/mata-pelajaran/dropdown'
   }
 };
 
@@ -85,28 +121,41 @@ export const ADMIN_SHELTER_ENDPOINTS = {
     DETAIL: (childId, raportId) => `/admin-shelter/anak/${childId}/raport/${raportId}`,
     UPDATE: (childId, raportId) => `/admin-shelter/anak/${childId}/raport/${raportId}/update`
   },
- PRESTASI: {
-  LIST: (childId) => `/admin-shelter/anak/${childId}/prestasi`,
-  CREATE: (childId) => `/admin-shelter/anak/${childId}/prestasi`,
-  DETAIL: (childId, prestasiId) => `/admin-shelter/anak/${childId}/prestasi/${prestasiId}`,
-  UPDATE: (childId, prestasiId) => `/admin-shelter/anak/${childId}/prestasi/${prestasiId}`,
-  DELETE: (childId, prestasiId) => `/admin-shelter/anak/${childId}/prestasi/${prestasiId}`
-},
-
-RIWAYAT: {
-  LIST: (childId) => `/admin-shelter/anak/${childId}/riwayat`,
-  CREATE: (childId) => `/admin-shelter/anak/${childId}/riwayat`,
-  DETAIL: (childId, riwayatId) => `/admin-shelter/anak/${childId}/riwayat/${riwayatId}`,
-  UPDATE: (childId, riwayatId) => `/admin-shelter/anak/${childId}/riwayat/${riwayatId}`,
-  DELETE: (childId, riwayatId) => `/admin-shelter/anak/${childId}/riwayat/${riwayatId}`
-},
-TUTOR: {
+  PRESTASI: {
+    LIST: (childId) => `/admin-shelter/anak/${childId}/prestasi`,
+    CREATE: (childId) => `/admin-shelter/anak/${childId}/prestasi`,
+    DETAIL: (childId, prestasiId) => `/admin-shelter/anak/${childId}/prestasi/${prestasiId}`,
+    UPDATE: (childId, prestasiId) => `/admin-shelter/anak/${childId}/prestasi/${prestasiId}`,
+    DELETE: (childId, prestasiId) => `/admin-shelter/anak/${childId}/prestasi/${prestasiId}`
+  },
+  RIWAYAT: {
+    LIST: (childId) => `/admin-shelter/anak/${childId}/riwayat`,
+    CREATE: (childId) => `/admin-shelter/anak/${childId}/riwayat`,
+    DETAIL: (childId, riwayatId) => `/admin-shelter/anak/${childId}/riwayat/${riwayatId}`,
+    UPDATE: (childId, riwayatId) => `/admin-shelter/anak/${childId}/riwayat/${riwayatId}`,
+    DELETE: (childId, riwayatId) => `/admin-shelter/anak/${childId}/riwayat/${riwayatId}`
+  },
+  TUTOR: {
     LIST: '/admin-shelter/tutor',
     DETAIL: (id) => `/admin-shelter/tutor/${id}`,
     CREATE: '/admin-shelter/tutor',
     UPDATE: (id) => `/admin-shelter/tutor/${id}`
-},
- KELOMPOK: {
+  },
+  TUTOR_HONOR: {
+    GET_TUTOR_HONOR: (tutorId) => `/admin-shelter/tutor-honor/tutor/${tutorId}`,
+    GET_HISTORY: (tutorId) => `/admin-shelter/tutor-honor/tutor/${tutorId}/history`,
+    GET_STATISTICS: (tutorId) => `/admin-shelter/tutor-honor/tutor/${tutorId}/statistics`,
+    GET_MONTHLY_DETAIL: (tutorId, month, year) => `/admin-shelter/tutor-honor/tutor/${tutorId}/month/${month}/year/${year}`,
+    CALCULATE: (tutorId) => `/admin-shelter/tutor-honor/calculate/${tutorId}`,
+    APPROVE: (honorId) => `/admin-shelter/tutor-honor/approve/${honorId}`,
+    MARK_PAID: (honorId) => `/admin-shelter/tutor-honor/mark-paid/${honorId}`,
+    GET_STATS: '/admin-shelter/tutor-honor/stats',
+    CURRENT_SETTINGS: '/admin-shelter/tutor-honor/current-settings',
+    CALCULATE_PREVIEW: '/admin-shelter/tutor-honor/calculate-preview',
+    GET_TUTOR_PREVIEW: (tutorId) => `/admin-shelter/tutor-honor/tutor/${tutorId}/preview`,
+    GET_YEAR_RANGE: (tutorId) => `/admin-shelter/tutor-honor/tutor/${tutorId}/year-range`
+  },
+  KELOMPOK: {
     LIST: '/admin-shelter/kelompok',
     DETAIL: (id) => `/admin-shelter/kelompok/${id}`,
     LEVELS: '/admin-shelter/kelompok-levels',
@@ -117,44 +166,43 @@ TUTOR: {
     MOVE_CHILD: (childId) => `/admin-shelter/move-child/${childId}`
   },
   KELUARGA: {
-  LIST: '/admin-shelter/keluarga',
-  DETAIL: (id) => `/admin-shelter/keluarga/${id}`,
-  DROPDOWN: '/admin-shelter/keluarga-dropdown',
-  WILBIN_BY_KACAB: (kacabId) => `/admin-shelter/keluarga-wilbin/${kacabId}`,
-  SHELTER_BY_WILBIN: (wilbinId) => `/admin-shelter/keluarga-shelter/${wilbinId}`
-},
-PENGAJUAN_ANAK: {
-  SEARCH_KELUARGA: '/admin-shelter/pengajuan-anak/search-keluarga',
-  VALIDATE_KK: '/admin-shelter/pengajuan-anak/validate-kk',
-  SUBMIT: '/admin-shelter/pengajuan-anak/submit'
-},
-
-AKTIVITAS: {
-  LIST: '/admin-shelter/aktivitas',
-  DETAIL: (id) => `/admin-shelter/aktivitas/${id}`,
-  CREATE: '/admin-shelter/aktivitas'
-},
-SURAT: {
-  LIST: (childId) => `/admin-shelter/anak/${childId}/surat`,
-  CREATE: (childId) => `/admin-shelter/anak/${childId}/surat`,
-  DETAIL: (childId, suratId) => `/admin-shelter/anak/${childId}/surat/${suratId}`,
-  UPDATE: (childId, suratId) => `/admin-shelter/anak/${childId}/surat/${suratId}`,
-  DELETE: (childId, suratId) => `/admin-shelter/anak/${childId}/surat/${suratId}`,
-  MARK_READ: (childId, suratId) => `/admin-shelter/anak/${childId}/surat/${suratId}/read`
-},
-RAPORT_FORMAL: {
-  LIST: (childId) => `/admin-shelter/anak/${childId}/raport-formal`,
-  CREATE: (childId) => `/admin-shelter/anak/${childId}/raport-formal`,
-  DETAIL: (childId, raportId) => `/admin-shelter/anak/${childId}/raport-formal/${raportId}`,
-  UPDATE: (childId, raportId) => `/admin-shelter/anak/${childId}/raport-formal/${raportId}`,
-  DELETE: (childId, raportId) => `/admin-shelter/anak/${childId}/raport-formal/${raportId}`
-},
-HISTORI: {
-  LIST: '/admin-shelter/laporan/histori',
-  DETAIL: (id) => `/admin-shelter/laporan/histori/detail/${id}`,
-  JENIS_HISTORI_OPTIONS: '/admin-shelter/laporan/histori/jenis-histori-options',
-  AVAILABLE_YEARS: '/admin-shelter/laporan/histori/available-years'
-}
+    LIST: '/admin-shelter/keluarga',
+    DETAIL: (id) => `/admin-shelter/keluarga/${id}`,
+    DROPDOWN: '/admin-shelter/keluarga-dropdown',
+    WILBIN_BY_KACAB: (kacabId) => `/admin-shelter/keluarga-wilbin/${kacabId}`,
+    SHELTER_BY_WILBIN: (wilbinId) => `/admin-shelter/keluarga-shelter/${wilbinId}`
+  },
+  PENGAJUAN_ANAK: {
+    SEARCH_KELUARGA: '/admin-shelter/pengajuan-anak/search-keluarga',
+    VALIDATE_KK: '/admin-shelter/pengajuan-anak/validate-kk',
+    SUBMIT: '/admin-shelter/pengajuan-anak/submit'
+  },
+  AKTIVITAS: {
+    LIST: '/admin-shelter/aktivitas',
+    DETAIL: (id) => `/admin-shelter/aktivitas/${id}`,
+    CREATE: '/admin-shelter/aktivitas'
+  },
+  SURAT: {
+    LIST: (childId) => `/admin-shelter/anak/${childId}/surat`,
+    CREATE: (childId) => `/admin-shelter/anak/${childId}/surat`,
+    DETAIL: (childId, suratId) => `/admin-shelter/anak/${childId}/surat/${suratId}`,
+    UPDATE: (childId, suratId) => `/admin-shelter/anak/${childId}/surat/${suratId}`,
+    DELETE: (childId, suratId) => `/admin-shelter/anak/${childId}/surat/${suratId}`,
+    MARK_READ: (childId, suratId) => `/admin-shelter/anak/${childId}/surat/${suratId}/read`
+  },
+  RAPORT_FORMAL: {
+    LIST: (childId) => `/admin-shelter/anak/${childId}/raport-formal`,
+    CREATE: (childId) => `/admin-shelter/anak/${childId}/raport-formal`,
+    DETAIL: (childId, raportId) => `/admin-shelter/anak/${childId}/raport-formal/${raportId}`,
+    UPDATE: (childId, raportId) => `/admin-shelter/anak/${childId}/raport-formal/${raportId}`,
+    DELETE: (childId, raportId) => `/admin-shelter/anak/${childId}/raport-formal/${raportId}`
+  },
+  HISTORI: {
+    LIST: '/admin-shelter/laporan/histori',
+    DETAIL: (id) => `/admin-shelter/laporan/histori/detail/${id}`,
+    JENIS_HISTORI_OPTIONS: '/admin-shelter/laporan/histori/jenis-histori-options',
+    AVAILABLE_YEARS: '/admin-shelter/laporan/histori/available-years'
+  }
 };
 
 export const DONATUR_ENDPOINTS = {
