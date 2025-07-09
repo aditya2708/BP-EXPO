@@ -69,6 +69,7 @@ import RaportGenerateScreen from '../features/adminShelter/screens/RaportGenerat
 import SemesterManagementScreen from '../features/adminShelter/screens/SemesterManagementScreen';
 import SemesterFormScreen from '../features/adminShelter/screens/SemesterFormScreen';
 import SemesterDetailScreen from '../features/adminShelter/screens/SemesterDetailScreen';
+import KurikulumSelectionScreen from '../features/adminShelter/screens/KurikulumSelectionScreen';
 
 import KeuanganListScreen from '../features/adminShelter/screens/KeuanganListScreen';
 import KeuanganFormScreen from '../features/adminShelter/screens/KeuanganFormScreen';
@@ -256,6 +257,11 @@ const ManagementStackNavigator = () => (
       name="SemesterDetail" 
       component={SemesterDetailScreen} 
       options={{ headerTitle: 'Detail Semester' }} 
+    />
+    <ManagementStack.Screen 
+      name="KurikulumSelection" 
+      component={KurikulumSelectionScreen} 
+      options={{ headerTitle: 'Pilih Kurikulum' }} 
     />
     <ManagementStack.Screen 
       name="PenilaianList" 

@@ -10,6 +10,7 @@ import aktivitasReducer from '../features/adminShelter/redux/aktivitasSlice';
 import penilaianReducer from '../features/adminShelter/redux/penilaianSlice';
 import raportReducer from '../features/adminShelter/redux/raportSlice';
 import semesterReducer from '../features/adminShelter/redux/semesterSlice';
+import kurikulumShelterReducer from '../features/adminShelter/redux/kurikulumShelterSlice';
 import tutorAttendaceReducer from '../features/adminShelter/redux/tutorAttendanceSlice';
 import laporanReducer from '../features/adminShelter/redux/laporanSlice';
 import tutorLaporanReducer from '../features/adminShelter/redux/tutorLaporanSlice';
@@ -31,6 +32,7 @@ const appReducer = combineReducers({
   penilaian: penilaianReducer,
   raport: raportReducer,
   semester: semesterReducer,
+  kurikulumShelter: kurikulumShelterReducer,
   tutorAttendance: tutorAttendaceReducer,
   laporan: laporanReducer,
   tutorLaporan: tutorLaporanReducer,

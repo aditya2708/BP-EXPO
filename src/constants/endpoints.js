@@ -115,6 +115,12 @@ export const ADMIN_SHELTER_ENDPOINTS = {
     BY_CHILD: (childId) => `/admin-shelter/keuangan/child/${childId}`,
     STATISTICS: '/admin-shelter/keuangan-statistics'
   },
+  KURIKULUM: {
+    LIST: '/admin-shelter/kurikulum',
+    DETAIL: (id) => `/admin-shelter/kurikulum/${id}`,
+    PREVIEW: (id) => `/admin-shelter/kurikulum/${id}/preview`,
+    DROPDOWN: '/admin-shelter/kurikulum-dropdown'
+  },
   RAPORT: {
     LIST: (childId) => `/admin-shelter/anak/${childId}/raport`,
     CREATE: (childId) => `/admin-shelter/anak/${childId}/raport/create`,
