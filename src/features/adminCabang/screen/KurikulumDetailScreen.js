@@ -1,4 +1,3 @@
-// 21. src/features/adminCabang/screens/KurikulumDetailScreen.js
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -8,7 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
-  FlatList
+  FlatList 
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +15,7 @@ import { useSelector, useDispatch } from 'react-redux';
 
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../common/components/ErrorMessage';
-// import MateriKurikulumCard from '../components/MateriKurikulumCard';
+import MateriKurikulumCard from '../components/MateriKurikulumCard';
 
 import {
   fetchKurikulumDetail,
