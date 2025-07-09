@@ -7,6 +7,8 @@ import ErrorMessage from '../../../common/components/ErrorMessage';
 import { adminCabangApi } from '../api/adminCabangApi';
 import { adminCabangSurveyApi } from '../api/adminCabangSurveyApi';
 import { adminCabangDonaturApi } from '../api/adminCabangDonaturApi';
+import { kurikulumApi } from '../api/kurikulumApi';
+import { mataPelajaranApi } from '../api/mataPelajaranApi';
 import { useAuth } from '../../../common/hooks/useAuth';
 
 const { width } = Dimensions.get('window');
@@ -17,6 +19,8 @@ const AdminCabangDashboardScreen = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [surveyStats, setSurveyStats] = useState({});
   const [donaturStats, setDonaturStats] = useState({});
+  const [kurikulumStats, setKurikulumStats] = useState({});
+  const [mataPelajaranStats, setMataPelajaranStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -24,14 +28,30 @@ const AdminCabangDashboardScreen = () => {
   const fetchDashboardData = async () => {
     try {
       setError(null);
-      const [dashboardResponse, statsResponse, donaturStatsResponse] = await Promise.all([
+      const [
+        dashboardResponse, 
+        statsResponse, 
+        donaturStatsResponse,
+        kurikulumStatsResponse,
+        mataPelajaranStatsResponse
+      ] = await Promise.all([
         adminCabangApi.getDashboard(),
         adminCabangSurveyApi.getStats(),
-        adminCabangDonaturApi.getStats()
+        adminCabangDonaturApi.getStats(),
+        kurikulumApi.getAllKurikulum({ per_page: 1 }),
+        mataPelajaranApi.getStatistics().catch(() => ({ data: { data: {} } }))
       ]);
+      
       setDashboardData(dashboardResponse.data.data);
       setSurveyStats(statsResponse.data.data);
       setDonaturStats(donaturStatsResponse.data.data);
+      
+      const kurikulumData = kurikulumStatsResponse.data.data;
+      setKurikulumStats({
+        total_kurikulum: kurikulumData?.total || 0,
+        active_kurikulum: kurikulumData?.data?.filter(k => k.status === 'aktif').length || 0
+      });
+      setMataPelajaranStats(mataPelajaranStatsResponse.data.data || {});
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
       setError('Gagal memuat data dashboard. Silakan coba lagi.');
@@ -41,11 +61,19 @@ const AdminCabangDashboardScreen = () => {
     }
   };
 
-  useEffect(() => { fetchDashboardData(); }, []);
+  useEffect(() => { 
+    fetchDashboardData(); 
+  }, []);
 
-  const handleRefresh = () => { setRefreshing(true); fetchDashboardData(); };
+  const handleRefresh = () => { 
+    setRefreshing(true); 
+    fetchDashboardData(); 
+  };
+
   const navigateToSurveyManagement = () => navigation.navigate('Management');
   const navigateToDonaturManagement = () => navigation.navigate('DonaturManagement');
+  const navigateToKurikulumManagement = () => navigation.navigate('Management', { screen: 'KurikulumManagement' });
+  const navigateToMataPelajaranManagement = () => navigation.navigate('Management', { screen: 'MataPelajaranManagement' });
   const navigateToProfile = () => navigation.navigate('ProfileTab');
 
   if (loading && !refreshing) return <LoadingSpinner fullScreen message="Memuat dashboard..." />;
@@ -53,6 +81,8 @@ const AdminCabangDashboardScreen = () => {
   const quickActions = [
     { title: 'Manajemen Survey', description: 'Kelola semua persetujuan survey', icon: 'document-text', color: '#f39c12', onPress: navigateToSurveyManagement, badge: surveyStats.pending },
     { title: 'Manajemen Donatur', description: 'Kelola data donatur cabang', icon: 'people', color: '#3498db', onPress: navigateToDonaturManagement, badge: donaturStats.total_donatur },
+    { title: 'Kurikulum', description: 'Kelola kurikulum dan mata pelajaran', icon: 'book', color: '#8e44ad', onPress: navigateToKurikulumManagement, badge: kurikulumStats.total_kurikulum },
+    { title: 'Mata Pelajaran', description: 'Kelola mata pelajaran', icon: 'library', color: '#16a085', onPress: navigateToMataPelajaranManagement, badge: mataPelajaranStats.total_mata_pelajaran },
     { title: 'Laporan', description: 'Lihat statistik persetujuan', icon: 'stats-chart', color: '#9b59b6' },
     { title: 'Bantuan', description: 'Dapatkan dukungan dan panduan', icon: 'help-circle', color: '#2ecc71' }
   ];
@@ -61,7 +91,7 @@ const AdminCabangDashboardScreen = () => {
     { icon: 'map-outline', color: '#2ecc71', value: dashboardData?.wilbin_count || 0, label: 'Wilayah Binaan' },
     { icon: 'home-outline', color: '#e74c3c', value: dashboardData?.shelter_count || 0, label: 'Shelter' },
     { icon: 'people-outline', color: '#3498db', value: donaturStats.total_donatur || 0, label: 'Donatur' },
-    { icon: 'document-text-outline', color: '#f39c12', value: surveyStats.pending || 0, label: 'Survey Tertunda' }
+    { icon: 'book-outline', color: '#8e44ad', value: kurikulumStats.total_kurikulum || 0, label: 'Kurikulum' }
   ];
 
   const surveyStatsData = [
@@ -74,6 +104,12 @@ const AdminCabangDashboardScreen = () => {
     { icon: 'people-outline', color: '#3498db', value: donaturStats.total_donatur || 0, label: 'Total Donatur' },
     { icon: 'person-add-outline', color: '#27ae60', value: donaturStats.donatur_with_children || 0, label: 'Dengan Anak' },
     { icon: 'person-outline', color: '#95a5a6', value: donaturStats.donatur_without_children || 0, label: 'Belum Memiliki' }
+  ];
+
+  const kurikulumStatsData = [
+    { icon: 'book-outline', color: '#8e44ad', value: kurikulumStats.total_kurikulum || 0, label: 'Total Kurikulum' },
+    { icon: 'checkmark-circle-outline', color: '#27ae60', value: kurikulumStats.active_kurikulum || 0, label: 'Aktif' },
+    { icon: 'library-outline', color: '#16a085', value: mataPelajaranStats.total_mata_pelajaran || 0, label: 'Mata Pelajaran' }
   ];
 
   const StatCard = ({ icon, color, value, label, horizontal = false }) => (
@@ -131,6 +167,13 @@ const AdminCabangDashboardScreen = () => {
         <Text style={styles.sectionTitle}>Statistik Donatur</Text>
         <View style={styles.surveyStatsGrid}>
           {donaturStatsData.map((stat, index) => <StatCard key={index} {...stat} />)}
+        </View>
+      </View>
+
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Statistik Kurikulum</Text>
+        <View style={styles.surveyStatsGrid}>
+          {kurikulumStatsData.map((stat, index) => <StatCard key={index} {...stat} />)}
         </View>
       </View>
 
