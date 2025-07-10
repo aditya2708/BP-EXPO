@@ -2,35 +2,35 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const MataPelajaranCard = ({ mataPelajaran, onPress, onEdit, onDelete }) => {
-  const getKategoriColor = (kategori) => {
-    switch (kategori) {
-      case 'wajib': return '#e74c3c';
-      case 'pilihan': return '#3498db';
-      case 'muatan_lokal': return '#f39c12';
-      case 'ekstrakurikuler': return '#9b59b6';
-      default: return '#95a5a6';
-    }
+const MateriCard = ({ materi, onPress, onEdit, onDelete }) => {
+  const getRomanNumeral = (tingkat) => {
+    const numerals = {
+      1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI',
+      7: 'VII', 8: 'VIII', 9: 'IX', 10: 'X', 11: 'XI', 12: 'XII'
+    };
+    return numerals[tingkat] || tingkat;
   };
 
-  const getKategoriText = (kategori) => {
-    switch (kategori) {
-      case 'wajib': return 'Wajib';
-      case 'pilihan': return 'Pilihan';
-      case 'muatan_lokal': return 'Muatan Lokal';
-      case 'ekstrakurikuler': return 'Ekstrakurikuler';
-      default: return kategori;
+  const getKelasDisplayName = () => {
+    if (!materi.kelas) return 'N/A';
+    
+    if (materi.kelas.jenis_kelas === 'standard' && materi.kelas.tingkat) {
+      return `Kelas ${getRomanNumeral(materi.kelas.tingkat)}`;
     }
+    return materi.kelas.nama_kelas;
   };
 
-  const getKategoriIcon = (kategori) => {
-    switch (kategori) {
-      case 'wajib': return 'bookmark';
-      case 'pilihan': return 'options-outline';
-      case 'muatan_lokal': return 'location-outline';
-      case 'ekstrakurikuler': return 'basketball-outline';
-      default: return 'library-outline';
-    }
+  const getHierarchyPath = () => {
+    const jenjang = materi.kelas?.jenjang?.nama_jenjang || 'N/A';
+    const kelas = getKelasDisplayName();
+    return `${jenjang} > ${kelas}`;
+  };
+
+  const getMataPelajaranColor = (mataPelajaran) => {
+    // Simple hash to color mapping for consistency
+    const colors = ['#3498db', '#e74c3c', '#f39c12', '#9b59b6', '#2ecc71', '#34495e'];
+    const hash = mataPelajaran?.split('').reduce((a, b) => a + b.charCodeAt(0), 0) || 0;
+    return colors[hash % colors.length];
   };
 
   return (
@@ -39,19 +39,22 @@ const MataPelajaranCard = ({ mataPelajaran, onPress, onEdit, onDelete }) => {
         <View style={styles.header}>
           <View style={styles.titleContainer}>
             <Text style={styles.title} numberOfLines={2}>
-              {mataPelajaran.nama_mata_pelajaran}
+              {materi.nama_materi}
             </Text>
-            <View style={[styles.kategoriBadge, { backgroundColor: getKategoriColor(mataPelajaran.kategori) }]}>
-              <Ionicons 
-                name={getKategoriIcon(mataPelajaran.kategori)} 
-                size={12} 
-                color="#fff" 
-                style={styles.kategoriIcon}
-              />
-              <Text style={styles.kategoriText}>
-                {getKategoriText(mataPelajaran.kategori)}
+            <View style={[styles.mataPelajaranBadge, { backgroundColor: getMataPelajaranColor(materi.mata_pelajaran) }]}>
+              <Text style={styles.badgeText} numberOfLines={1}>
+                {materi.mata_pelajaran || 'N/A'}
               </Text>
             </View>
+          </View>
+        </View>
+
+        <View style={styles.hierarchyContainer}>
+          <View style={styles.hierarchyRow}>
+            <Ionicons name="git-branch-outline" size={16} color="#666" />
+            <Text style={styles.hierarchyText} numberOfLines={1}>
+              {getHierarchyPath()}
+            </Text>
           </View>
         </View>
 
@@ -59,25 +62,23 @@ const MataPelajaranCard = ({ mataPelajaran, onPress, onEdit, onDelete }) => {
           <View style={styles.infoRow}>
             <Ionicons name="school-outline" size={16} color="#666" />
             <Text style={styles.infoText}>
-              {mataPelajaran.jenjang?.nama_jenjang || 'N/A'}
+              {materi.kelas?.jenjang?.nama_jenjang || 'N/A'}
             </Text>
           </View>
           
           <View style={styles.infoRow}>
-            <Ionicons name="code-outline" size={16} color="#666" />
+            <Ionicons name="library-outline" size={16} color="#666" />
             <Text style={styles.infoText}>
-              Jenjang: {mataPelajaran.jenjang?.kode_jenjang || 'N/A'}
+              {getKelasDisplayName()}
             </Text>
           </View>
           
-          {mataPelajaran.kurikulum_materi_count !== undefined && (
-            <View style={styles.infoRow}>
-              <Ionicons name="book-outline" size={16} color="#666" />
-              <Text style={styles.infoText}>
-                Digunakan di {mataPelajaran.kurikulum_materi_count || 0} kurikulum
-              </Text>
-            </View>
-          )}
+          <View style={styles.infoRow}>
+            <Ionicons name="book-outline" size={16} color="#666" />
+            <Text style={styles.infoText}>
+              Digunakan di {materi.kurikulum_materi_count || 0} kurikulum
+            </Text>
+          </View>
         </View>
 
         <View style={styles.actionContainer}>
@@ -125,22 +126,34 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
   },
-  kategoriBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  mataPelajaranBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-    minWidth: 80,
-    justifyContent: 'center',
+    maxWidth: 120,
+    alignItems: 'center',
   },
-  kategoriIcon: {
-    marginRight: 4,
-  },
-  kategoriText: {
+  badgeText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
+  },
+  hierarchyContainer: {
+    marginBottom: 12,
+    backgroundColor: '#f8f9fa',
+    padding: 8,
+    borderRadius: 6,
+  },
+  hierarchyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  hierarchyText: {
+    fontSize: 13,
+    color: '#555',
+    marginLeft: 8,
+    fontWeight: '500',
+    flex: 1,
   },
   infoContainer: {
     marginBottom: 16,
@@ -174,4 +187,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MataPelajaranCard;
+export default MateriCard;

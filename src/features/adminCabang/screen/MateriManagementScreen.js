@@ -15,81 +15,94 @@ import { useSelector, useDispatch } from 'react-redux';
 
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../common/components/ErrorMessage';
-import MataPelajaranCard from '../components/MataPelajaranCard';
+import MateriCard from '../components/MateriCard';
 
 import {
-  fetchMataPelajaranList,
-  deleteMataPelajaran,
-  selectMataPelajaranList,
-  selectMataPelajaranLoading,
-  selectMataPelajaranError,
-  selectMataPelajaranPagination
-} from '../redux/mataPelajaranSlice';
+  fetchMateriList,
+  deleteMateri,
+  selectMateriList,
+  selectMateriLoading,
+  selectMateriError,
+  selectMateriPagination
+} from '../redux/materiSlice';
 
 import {
   fetchJenjangForDropdown,
   selectJenjangDropdownData
 } from '../redux/jenjangSlice';
 
-const MataPelajaranManagementScreen = () => {
+import {
+  fetchKelasByJenjang,
+  selectKelasByJenjang
+} from '../redux/kelasSlice';
+
+const MateriManagementScreen = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
   
-  const mataPelajaranList = useSelector(selectMataPelajaranList);
-  const loading = useSelector(selectMataPelajaranLoading);
-  const error = useSelector(selectMataPelajaranError);
-  const pagination = useSelector(selectMataPelajaranPagination);
+  const materiList = useSelector(selectMateriList);
+  const loading = useSelector(selectMateriLoading);
+  const error = useSelector(selectMateriError);
+  const pagination = useSelector(selectMateriPagination);
   const jenjangData = useSelector(selectJenjangDropdownData);
+  const kelasByJenjang = useSelector(selectKelasByJenjang);
   
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [filterJenjang, setFilterJenjang] = useState('');
-  const [filterKategori, setFilterKategori] = useState('');
+  const [filterKelas, setFilterKelas] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    loadMataPelajaran();
+    loadMateri();
     dispatch(fetchJenjangForDropdown());
   }, []);
 
-  const loadMataPelajaran = async (page = 1) => {
+  useEffect(() => {
+    if (filterJenjang) {
+      dispatch(fetchKelasByJenjang(filterJenjang));
+      setFilterKelas('');
+    }
+  }, [filterJenjang]);
+
+  const loadMateri = async (page = 1) => {
     const params = { page };
     if (filterJenjang) params.id_jenjang = filterJenjang;
-    if (filterKategori) params.kategori = filterKategori;
+    if (filterKelas) params.id_kelas = filterKelas;
     if (searchQuery.trim()) params.search = searchQuery.trim();
     
-    dispatch(fetchMataPelajaranList(params));
+    dispatch(fetchMateriList(params));
   };
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadMataPelajaran(1);
+    await loadMateri(1);
     setRefreshing(false);
   };
 
   const handleLoadMore = async () => {
     if (pagination.current_page < pagination.last_page && !loadingMore) {
       setLoadingMore(true);
-      await loadMataPelajaran(pagination.current_page + 1);
+      await loadMateri(pagination.current_page + 1);
       setLoadingMore(false);
     }
   };
 
-  const navigateToForm = (mataPelajaran = null) => {
-    navigation.navigate('MataPelajaranForm', { mataPelajaran });
+  const navigateToForm = (materi = null) => {
+    navigation.navigate('MateriForm', { materi });
   };
 
-  const navigateToDetail = (mataPelajaran) => {
-    navigation.navigate('MataPelajaranDetail', { 
-      mataPelajaranId: mataPelajaran.id_mata_pelajaran,
-      mataPelajaran 
+  const navigateToDetail = (materi) => {
+    navigation.navigate('MateriDetail', { 
+      materiId: materi.id_materi,
+      materi 
     });
   };
 
-  const handleDelete = (mataPelajaran) => {
+  const handleDelete = (materi) => {
     Alert.alert(
-      'Hapus Mata Pelajaran',
-      `Hapus ${mataPelajaran.nama_mata_pelajaran}?`,
+      'Hapus Materi',
+      `Hapus ${materi.nama_materi}?`,
       [
         { text: 'Batal', style: 'cancel' },
         {
@@ -97,10 +110,10 @@ const MataPelajaranManagementScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await dispatch(deleteMataPelajaran(mataPelajaran.id_mata_pelajaran)).unwrap();
-              Alert.alert('Sukses', 'Mata pelajaran berhasil dihapus');
+              await dispatch(deleteMateri(materi.id_materi)).unwrap();
+              Alert.alert('Sukses', 'Materi berhasil dihapus');
             } catch (err) {
-              Alert.alert('Error', err.message || 'Gagal menghapus mata pelajaran');
+              Alert.alert('Error', err.message || 'Gagal menghapus materi');
             }
           }
         }
@@ -109,23 +122,38 @@ const MataPelajaranManagementScreen = () => {
   };
 
   const applyFilters = () => {
-    loadMataPelajaran(1);
+    loadMateri(1);
   };
 
   const clearFilters = () => {
     setFilterJenjang('');
-    setFilterKategori('');
+    setFilterKelas('');
     setSearchQuery('');
-    loadMataPelajaran(1);
+    loadMateri(1);
   };
 
   const handleSearch = () => {
-    loadMataPelajaran(1);
+    loadMateri(1);
   };
 
-  const renderMataPelajaran = ({ item }) => (
-    <MataPelajaranCard
-      mataPelajaran={item}
+  const getRomanNumeral = (tingkat) => {
+    const numerals = {
+      1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI',
+      7: 'VII', 8: 'VIII', 9: 'IX', 10: 'X', 11: 'XI', 12: 'XII'
+    };
+    return numerals[tingkat] || tingkat;
+  };
+
+  const getKelasDisplayName = (kelas) => {
+    if (kelas.jenis_kelas === 'standard' && kelas.tingkat) {
+      return `Kelas ${getRomanNumeral(kelas.tingkat)}`;
+    }
+    return kelas.nama_kelas;
+  };
+
+  const renderMateri = ({ item }) => (
+    <MateriCard
+      materi={item}
       onPress={() => navigateToDetail(item)}
       onEdit={() => navigateToForm(item)}
       onDelete={() => handleDelete(item)}
@@ -142,13 +170,7 @@ const MataPelajaranManagementScreen = () => {
   };
 
   const renderSearchAndFilter = () => {
-    const categories = [
-      { label: 'Semua', value: '' },
-      { label: 'Wajib', value: 'wajib' },
-      { label: 'Pilihan', value: 'pilihan' },
-      { label: 'Muatan Lokal', value: 'muatan_lokal' },
-      { label: 'Ekstrakurikuler', value: 'ekstrakurikuler' }
-    ];
+    const kelasData = filterJenjang ? (kelasByJenjang[filterJenjang] || []) : [];
 
     return (
       <View style={styles.filterContainer}>
@@ -159,7 +181,7 @@ const MataPelajaranManagementScreen = () => {
               style={styles.searchInput}
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholder="Cari nama mata pelajaran..."
+              placeholder="Cari nama materi..."
               placeholderTextColor="#999"
               onSubmitEditing={handleSearch}
               returnKeyType="search"
@@ -167,7 +189,7 @@ const MataPelajaranManagementScreen = () => {
             {searchQuery ? (
               <TouchableOpacity onPress={() => {
                 setSearchQuery('');
-                loadMataPelajaran(1);
+                loadMateri(1);
               }}>
                 <Ionicons name="close-circle" size={20} color="#666" />
               </TouchableOpacity>
@@ -210,30 +232,40 @@ const MataPelajaranManagementScreen = () => {
           </View>
         </View>
 
-        <View style={styles.filterSection}>
-          <Text style={styles.filterLabel}>Kategori:</Text>
-          <View style={styles.filterButtons}>
-            {categories.map((category) => (
+        {filterJenjang && kelasData.length > 0 && (
+          <View style={styles.filterSection}>
+            <Text style={styles.filterLabel}>Kelas:</Text>
+            <View style={styles.filterButtons}>
               <TouchableOpacity
-                key={category.value}
-                style={[
-                  styles.filterButton,
-                  filterKategori === category.value && styles.filterButtonActive
-                ]}
-                onPress={() => setFilterKategori(category.value)}
+                style={[styles.filterButton, !filterKelas && styles.filterButtonActive]}
+                onPress={() => setFilterKelas('')}
               >
-                <Text
-                  style={[
-                    styles.filterButtonText,
-                    filterKategori === category.value && styles.filterButtonTextActive
-                  ]}
-                >
-                  {category.label}
+                <Text style={[styles.filterButtonText, !filterKelas && styles.filterButtonTextActive]}>
+                  Semua
                 </Text>
               </TouchableOpacity>
-            ))}
+              {kelasData.map((kelas) => (
+                <TouchableOpacity
+                  key={kelas.id_kelas}
+                  style={[
+                    styles.filterButton,
+                    filterKelas === kelas.id_kelas.toString() && styles.filterButtonActive
+                  ]}
+                  onPress={() => setFilterKelas(kelas.id_kelas.toString())}
+                >
+                  <Text
+                    style={[
+                      styles.filterButtonText,
+                      filterKelas === kelas.id_kelas.toString() && styles.filterButtonTextActive
+                    ]}
+                  >
+                    {getKelasDisplayName(kelas)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-        </View>
+        )}
 
         <View style={styles.filterActions}>
           <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
@@ -248,7 +280,7 @@ const MataPelajaranManagementScreen = () => {
   };
 
   if (loading && !refreshing) {
-    return <LoadingSpinner fullScreen message="Memuat mata pelajaran..." />;
+    return <LoadingSpinner fullScreen message="Memuat materi..." />;
   }
 
   return (
@@ -256,16 +288,16 @@ const MataPelajaranManagementScreen = () => {
       {error && (
         <ErrorMessage
           message={error}
-          onRetry={() => loadMataPelajaran()}
+          onRetry={() => loadMateri()}
         />
       )}
 
       {renderSearchAndFilter()}
 
       <FlatList
-        data={mataPelajaranList}
-        renderItem={renderMataPelajaran}
-        keyExtractor={(item) => item.id_mata_pelajaran.toString()}
+        data={materiList}
+        renderItem={renderMateri}
+        keyExtractor={(item) => item.id_materi.toString()}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
@@ -275,9 +307,9 @@ const MataPelajaranManagementScreen = () => {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="library-outline" size={64} color="#bdc3c7" />
-            <Text style={styles.emptyText}>Belum ada mata pelajaran</Text>
-            <Text style={styles.emptySubText}>Tap tombol + untuk menambah mata pelajaran</Text>
+            <Ionicons name="book-outline" size={64} color="#bdc3c7" />
+            <Text style={styles.emptyText}>Belum ada materi</Text>
+            <Text style={styles.emptySubText}>Tap tombol + untuk menambah materi</Text>
           </View>
         }
       />
@@ -432,4 +464,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MataPelajaranManagementScreen;
+export default MateriManagementScreen;

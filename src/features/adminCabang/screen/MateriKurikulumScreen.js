@@ -14,11 +14,11 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector, useDispatch } from 'react-redux';
-import { Picker } from '@react-native-picker/picker';
 
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../common/components/ErrorMessage';
 import MateriKurikulumCard from '../components/MateriKurikulumCard';
+import CascadeSelector from '../components/CascadeSelector';
 
 import {
   fetchKurikulumDetail,
@@ -28,11 +28,6 @@ import {
   selectKurikulumLoading,
   selectKurikulumError
 } from '../redux/kurikulumSlice';
-
-import {
-  fetchForDropdown,
-  selectDropdownData
-} from '../redux/mataPelajaranSlice';
 
 const MateriKurikulumScreen = () => {
   const navigation = useNavigation();
@@ -44,17 +39,17 @@ const MateriKurikulumScreen = () => {
   const kurikulumDetail = useSelector(selectKurikulumDetail);
   const loading = useSelector(selectKurikulumLoading);
   const error = useSelector(selectKurikulumError);
-  const mataPelajaranDropdown = useSelector(selectDropdownData);
   
   const [refreshing, setRefreshing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    id_mata_pelajaran: '',
-    id_materi: '',
-    jam_pelajaran: '60'
+    jenjang: '',
+    mataPelajaran: '',
+    kelas: '',
+    materi: '',
+    jamPelajaran: '60'
   });
-  const [availableMateri, setAvailableMateri] = useState([]);
 
   useEffect(() => {
     loadData();
@@ -62,7 +57,6 @@ const MateriKurikulumScreen = () => {
 
   const loadData = async () => {
     dispatch(fetchKurikulumDetail(kurikulumId));
-    dispatch(fetchForDropdown());
   };
 
   const handleRefresh = async () => {
@@ -73,33 +67,22 @@ const MateriKurikulumScreen = () => {
 
   const handleAddMateri = () => {
     setFormData({
-      id_mata_pelajaran: '',
-      id_materi: '',
-      jam_pelajaran: '60'
+      jenjang: '',
+      mataPelajaran: '',
+      kelas: '',
+      materi: '',
+      jamPelajaran: '60'
     });
-    setAvailableMateri([]);
     setShowAddModal(true);
   };
 
-  const handleMataPelajaranChange = (mataPelajaranId) => {
-    setFormData(prev => ({ ...prev, id_mata_pelajaran: mataPelajaranId, id_materi: '' }));
-    
-    // Mock available materi - in real app, fetch from API based on mata pelajaran
-    const mockMateri = [
-      { id_materi: 1, nama_materi: 'Pengenalan Dasar' },
-      { id_materi: 2, nama_materi: 'Konsep Menengah' },
-      { id_materi: 3, nama_materi: 'Praktik Lanjutan' }
-    ];
-    setAvailableMateri(mockMateri);
-  };
-
   const handleSubmitMateri = async () => {
-    if (!formData.id_mata_pelajaran || !formData.id_materi || !formData.jam_pelajaran) {
+    if (!formData.mataPelajaran || !formData.materi || !formData.jamPelajaran) {
       Alert.alert('Error', 'Semua field wajib diisi');
       return;
     }
 
-    const jamPelajaran = parseInt(formData.jam_pelajaran);
+    const jamPelajaran = parseInt(formData.jamPelajaran);
     if (isNaN(jamPelajaran) || jamPelajaran < 1) {
       Alert.alert('Error', 'Jam pelajaran harus berupa angka positif');
       return;
@@ -110,8 +93,8 @@ const MateriKurikulumScreen = () => {
       await dispatch(addMateri({
         id: kurikulumId,
         materiData: {
-          id_mata_pelajaran: formData.id_mata_pelajaran,
-          id_materi: formData.id_materi,
+          id_mata_pelajaran: formData.mataPelajaran,
+          id_materi: formData.materi,
           jam_pelajaran: jamPelajaran
         }
       })).unwrap();
@@ -150,6 +133,10 @@ const MateriKurikulumScreen = () => {
     );
   };
 
+  const updateFormField = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   const renderMateriItem = ({ item }) => (
     <MateriKurikulumCard
       materiItem={item}
@@ -174,57 +161,27 @@ const MateriKurikulumScreen = () => {
           </View>
 
           <View style={styles.formContainer}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Mata Pelajaran *</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={formData.id_mata_pelajaran}
-                  onValueChange={handleMataPelajaranChange}
-                  style={styles.picker}
-                >
-                  <Picker.Item label="Pilih Mata Pelajaran" value="" />
-                  {Object.keys(mataPelajaranDropdown).map((kategori) => 
-                    mataPelajaranDropdown[kategori].map((mp) => (
-                      <Picker.Item
-                        key={mp.id_mata_pelajaran}
-                        label={`${mp.nama_mata_pelajaran} (${kategori})`}
-                        value={mp.id_mata_pelajaran.toString()}
-                      />
-                    ))
-                  )}
-                </Picker>
-              </View>
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Materi *</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={formData.id_materi}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, id_materi: value }))}
-                  style={styles.picker}
-                  enabled={availableMateri.length > 0}
-                >
-                  <Picker.Item label="Pilih Materi" value="" />
-                  {availableMateri.map((materi) => (
-                    <Picker.Item
-                      key={materi.id_materi}
-                      label={materi.nama_materi}
-                      value={materi.id_materi.toString()}
-                    />
-                  ))}
-                </Picker>
-              </View>
-            </View>
+            <CascadeSelector
+              selectedJenjang={formData.jenjang}
+              selectedMataPelajaran={formData.mataPelajaran}
+              selectedKelas={formData.kelas}
+              selectedMateri={formData.materi}
+              onJenjangChange={(value) => updateFormField('jenjang', value)}
+              onMataPelajaranChange={(value) => updateFormField('mataPelajaran', value)}
+              onKelasChange={(value) => updateFormField('kelas', value)}
+              onMateriChange={(value) => updateFormField('materi', value)}
+              disabled={submitting}
+            />
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Jam Pelajaran *</Text>
               <TextInput
                 style={styles.input}
-                value={formData.jam_pelajaran}
-                onChangeText={(value) => setFormData(prev => ({ ...prev, jam_pelajaran: value }))}
+                value={formData.jamPelajaran}
+                onChangeText={(value) => updateFormField('jamPelajaran', value)}
                 placeholder="Contoh: 60"
                 keyboardType="numeric"
+                editable={!submitting}
               />
               <Text style={styles.helpText}>Dalam satuan menit</Text>
             </View>
@@ -375,6 +332,7 @@ const styles = StyleSheet.create({
     padding: 20,
     width: '90%',
     maxWidth: 400,
+    maxHeight: '80%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -392,6 +350,7 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     marginBottom: 16,
+    marginTop: 16,
   },
   label: {
     fontSize: 16,
@@ -406,15 +365,6 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     backgroundColor: '#fff',
-  },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    backgroundColor: '#fff',
-  },
-  picker: {
-    height: 50,
   },
   helpText: {
     fontSize: 12,

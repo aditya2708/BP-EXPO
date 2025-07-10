@@ -2,35 +2,32 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const MataPelajaranCard = ({ mataPelajaran, onPress, onEdit, onDelete }) => {
-  const getKategoriColor = (kategori) => {
-    switch (kategori) {
-      case 'wajib': return '#e74c3c';
-      case 'pilihan': return '#3498db';
-      case 'muatan_lokal': return '#f39c12';
-      case 'ekstrakurikuler': return '#9b59b6';
-      default: return '#95a5a6';
-    }
+const KelasCard = ({ kelas, onPress, onEdit, onDelete }) => {
+  const getRomanNumeral = (tingkat) => {
+    const numerals = {
+      1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI',
+      7: 'VII', 8: 'VIII', 9: 'IX', 10: 'X', 11: 'XI', 12: 'XII'
+    };
+    return numerals[tingkat] || tingkat;
   };
 
-  const getKategoriText = (kategori) => {
-    switch (kategori) {
-      case 'wajib': return 'Wajib';
-      case 'pilihan': return 'Pilihan';
-      case 'muatan_lokal': return 'Muatan Lokal';
-      case 'ekstrakurikuler': return 'Ekstrakurikuler';
-      default: return kategori;
+  const getDisplayName = () => {
+    if (kelas.jenis_kelas === 'standard' && kelas.tingkat) {
+      return `Kelas ${getRomanNumeral(kelas.tingkat)}`;
     }
+    return kelas.nama_kelas;
   };
 
-  const getKategoriIcon = (kategori) => {
-    switch (kategori) {
-      case 'wajib': return 'bookmark';
-      case 'pilihan': return 'options-outline';
-      case 'muatan_lokal': return 'location-outline';
-      case 'ekstrakurikuler': return 'basketball-outline';
-      default: return 'library-outline';
-    }
+  const getJenisColor = (jenis) => {
+    return jenis === 'standard' ? '#3498db' : '#e74c3c';
+  };
+
+  const getJenisText = (jenis) => {
+    return jenis === 'standard' ? 'Standard' : 'Custom';
+  };
+
+  const getStatusColor = (isActive) => {
+    return isActive ? '#27ae60' : '#95a5a6';
   };
 
   return (
@@ -39,18 +36,12 @@ const MataPelajaranCard = ({ mataPelajaran, onPress, onEdit, onDelete }) => {
         <View style={styles.header}>
           <View style={styles.titleContainer}>
             <Text style={styles.title} numberOfLines={2}>
-              {mataPelajaran.nama_mata_pelajaran}
+              {getDisplayName()}
             </Text>
-            <View style={[styles.kategoriBadge, { backgroundColor: getKategoriColor(mataPelajaran.kategori) }]}>
-              <Ionicons 
-                name={getKategoriIcon(mataPelajaran.kategori)} 
-                size={12} 
-                color="#fff" 
-                style={styles.kategoriIcon}
-              />
-              <Text style={styles.kategoriText}>
-                {getKategoriText(mataPelajaran.kategori)}
-              </Text>
+            <View style={styles.badgeContainer}>
+              <View style={[styles.jenisBadge, { backgroundColor: getJenisColor(kelas.jenis_kelas) }]}>
+                <Text style={styles.badgeText}>{getJenisText(kelas.jenis_kelas)}</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -59,26 +50,42 @@ const MataPelajaranCard = ({ mataPelajaran, onPress, onEdit, onDelete }) => {
           <View style={styles.infoRow}>
             <Ionicons name="school-outline" size={16} color="#666" />
             <Text style={styles.infoText}>
-              {mataPelajaran.jenjang?.nama_jenjang || 'N/A'}
+              {kelas.jenjang?.nama_jenjang || 'N/A'}
             </Text>
+          </View>
+          
+          {kelas.tingkat && (
+            <View style={styles.infoRow}>
+              <Ionicons name="bar-chart-outline" size={16} color="#666" />
+              <Text style={styles.infoText}>Tingkat: {kelas.tingkat}</Text>
+            </View>
+          )}
+          
+          <View style={styles.infoRow}>
+            <Ionicons name="list-outline" size={16} color="#666" />
+            <Text style={styles.infoText}>Urutan: {kelas.urutan}</Text>
           </View>
           
           <View style={styles.infoRow}>
-            <Ionicons name="code-outline" size={16} color="#666" />
+            <Ionicons name="book-outline" size={16} color="#666" />
             <Text style={styles.infoText}>
-              Jenjang: {mataPelajaran.jenjang?.kode_jenjang || 'N/A'}
+              {kelas.materi_count || 0} Materi
             </Text>
           </View>
-          
-          {mataPelajaran.kurikulum_materi_count !== undefined && (
-            <View style={styles.infoRow}>
-              <Ionicons name="book-outline" size={16} color="#666" />
-              <Text style={styles.infoText}>
-                Digunakan di {mataPelajaran.kurikulum_materi_count || 0} kurikulum
-              </Text>
-            </View>
-          )}
+
+          <View style={styles.infoRow}>
+            <Ionicons name="checkmark-circle-outline" size={16} color={getStatusColor(kelas.is_active)} />
+            <Text style={[styles.infoText, { color: getStatusColor(kelas.is_active) }]}>
+              {kelas.is_active ? 'Aktif' : 'Non Aktif'}
+            </Text>
+          </View>
         </View>
+
+        {kelas.deskripsi && (
+          <Text style={styles.description} numberOfLines={2}>
+            {kelas.deskripsi}
+          </Text>
+        )}
 
         <View style={styles.actionContainer}>
           <TouchableOpacity style={styles.actionButton} onPress={onEdit}>
@@ -125,25 +132,23 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
   },
-  kategoriBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  badgeContainer: {
+    alignItems: 'flex-end',
+  },
+  jenisBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-    minWidth: 80,
-    justifyContent: 'center',
+    minWidth: 60,
+    alignItems: 'center',
   },
-  kategoriIcon: {
-    marginRight: 4,
-  },
-  kategoriText: {
+  badgeText: {
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',
   },
   infoContainer: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   infoRow: {
     flexDirection: 'row',
@@ -154,6 +159,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginLeft: 8,
+  },
+  description: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+    marginBottom: 16,
+    fontStyle: 'italic',
   },
   actionContainer: {
     flexDirection: 'row',
@@ -174,4 +186,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MataPelajaranCard;
+export default KelasCard;

@@ -38,6 +38,31 @@ const MateriKurikulumCard = ({ materiItem, onEdit, onDelete, onMoveUp, onMoveDow
     }
   };
 
+  const getRomanNumeral = (tingkat) => {
+    const numerals = {
+      1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI',
+      7: 'VII', 8: 'VIII', 9: 'IX', 10: 'X', 11: 'XI', 12: 'XII'
+    };
+    return numerals[tingkat] || tingkat;
+  };
+
+  const getKelasDisplayName = () => {
+    if (!materiItem.materi?.kelas) return 'N/A';
+    
+    const kelas = materiItem.materi.kelas;
+    if (kelas.jenis_kelas === 'standard' && kelas.tingkat) {
+      return `Kelas ${getRomanNumeral(kelas.tingkat)}`;
+    }
+    return kelas.nama_kelas;
+  };
+
+  const getHierarchyPath = () => {
+    const jenjang = materiItem.mata_pelajaran?.jenjang?.nama_jenjang || 'N/A';
+    const mataPelajaran = materiItem.mata_pelajaran?.nama_mata_pelajaran || 'N/A';
+    const kelas = getKelasDisplayName();
+    return `${jenjang} > ${mataPelajaran} > ${kelas}`;
+  };
+
   return (
     <View style={styles.card}>
       <View style={styles.cardContent}>
@@ -60,10 +85,16 @@ const MateriKurikulumCard = ({ materiItem, onEdit, onDelete, onMoveUp, onMoveDow
                   {getKategoriText(materiItem.mata_pelajaran?.kategori)}
                 </Text>
               </View>
-              <Text style={styles.mataPelajaranText} numberOfLines={1}>
-                {materiItem.mata_pelajaran?.nama_mata_pelajaran || 'Mata Pelajaran'}
-              </Text>
             </View>
+          </View>
+        </View>
+
+        <View style={styles.hierarchyContainer}>
+          <View style={styles.hierarchyRow}>
+            <Ionicons name="git-branch-outline" size={14} color="#666" />
+            <Text style={styles.hierarchyText} numberOfLines={1}>
+              {getHierarchyPath()}
+            </Text>
           </View>
         </View>
 
@@ -175,9 +206,20 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
   },
-  mataPelajaranText: {
-    fontSize: 14,
-    color: '#666',
+  hierarchyContainer: {
+    marginBottom: 12,
+    backgroundColor: '#f8f9fa',
+    padding: 8,
+    borderRadius: 6,
+  },
+  hierarchyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  hierarchyText: {
+    fontSize: 12,
+    color: '#555',
+    marginLeft: 8,
     fontWeight: '500',
     flex: 1,
   },
