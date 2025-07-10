@@ -14,13 +14,32 @@ import AdminCabangDonaturListScreen from '../features/adminCabang/screen/AdminCa
 import AdminCabangDonaturFormScreen from '../features/adminCabang/screen/AdminCabangDonaturFormScreen';
 import AdminCabangDonaturDetailScreen from '../features/adminCabang/screen/AdminCabangDonaturDetailScreen';
 import DonaturFilterScreen from '../features/adminCabang/screen/DonaturFilterScreen';
+
+// Kurikulum Management Screens
 import KurikulumManagementScreen from '../features/adminCabang/screen/KurikulumManagementScreen';
 import KurikulumFormScreen from '../features/adminCabang/screen/KurikulumFormScreen';
 import KurikulumDetailScreen from '../features/adminCabang/screen/KurikulumDetailScreen';
+import MateriKurikulumScreen from '../features/adminCabang/screen/MateriKurikulumScreen';
+
+// Mata Pelajaran Management Screens
 import MataPelajaranManagementScreen from '../features/adminCabang/screen/MataPelajaranManagementScreen';
 import MataPelajaranFormScreen from '../features/adminCabang/screen/MataPelajaranFormScreen';
-import MateriKurikulumScreen from '../features/adminCabang/screen/MateriKurikulumScreen';
 import MataPelajaranDetailScreen from '../features/adminCabang/screen/MataPelajaranDetailScreen';
+
+// Jenjang Management Screens
+import JenjangManagementScreen from '../features/adminCabang/screen/JenjangManagementScreen';
+import JenjangFormScreen from '../features/adminCabang/screen/JenjangFormScreen';
+import JenjangDetailScreen from '../features/adminCabang/screen/JenjangDetailScreen';
+
+// Kelas Management Screens
+import KelasManagementScreen from '../features/adminCabang/screen/KelasManagementScreen';
+import KelasFormScreen from '../features/adminCabang/screen/KelasFormScreen';
+import KelasDetailScreen from '../features/adminCabang/screen/KelasDetailScreen';
+
+// Materi Management Screens
+import MateriManagementScreen from '../features/adminCabang/screen/MateriManagementScreen';
+import MateriFormScreen from '../features/adminCabang/screen/MateriFormScreen';
+import MateriDetailScreen from '../features/adminCabang/screen/MateriDetailScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
@@ -60,7 +79,7 @@ const ManagementStackNavigator = () => {
         options={{ headerTitle: 'Detail Survei' }}
       />
       
-      {/* ADD THESE NEW KURIKULUM SCREENS */}
+      {/* Kurikulum Management */}
       <ManagementStack.Screen 
         name="KurikulumManagement" 
         component={KurikulumManagementScreen} 
@@ -79,15 +98,55 @@ const ManagementStackNavigator = () => {
         options={{ headerTitle: 'Detail Kurikulum' }}
       />
       <ManagementStack.Screen 
+        name="MateriKurikulum" 
+        component={MateriKurikulumScreen} 
+        options={{ headerTitle: 'Materi Kurikulum' }}
+      />
+
+      {/* Jenjang Management */}
+      <ManagementStack.Screen 
+        name="JenjangManagement" 
+        component={JenjangManagementScreen} 
+        options={{ headerTitle: 'Manajemen Jenjang' }}
+      />
+      <ManagementStack.Screen 
+        name="JenjangForm" 
+        component={JenjangFormScreen} 
+        options={({ route }) => ({ 
+          headerTitle: route.params?.jenjang ? 'Edit Jenjang' : 'Tambah Jenjang'
+        })}
+      />
+      <ManagementStack.Screen 
+        name="JenjangDetail" 
+        component={JenjangDetailScreen} 
+        options={{ headerTitle: 'Detail Jenjang' }}
+      />
+
+      {/* Kelas Management */}
+      <ManagementStack.Screen 
+        name="KelasManagement" 
+        component={KelasManagementScreen} 
+        options={{ headerTitle: 'Manajemen Kelas' }}
+      />
+      <ManagementStack.Screen 
+        name="KelasForm" 
+        component={KelasFormScreen} 
+        options={({ route }) => ({ 
+          headerTitle: route.params?.kelas ? 'Edit Kelas' : 'Tambah Kelas'
+        })}
+      />
+      <ManagementStack.Screen 
+        name="KelasDetail" 
+        component={KelasDetailScreen} 
+        options={{ headerTitle: 'Detail Kelas' }}
+      />
+
+      {/* Mata Pelajaran Management */}
+      <ManagementStack.Screen 
         name="MataPelajaranManagement" 
         component={MataPelajaranManagementScreen} 
         options={{ headerTitle: 'Manajemen Mata Pelajaran' }}
       />
-      <ManagementStack.Screen 
-  name="MataPelajaranDetail" 
-  component={MataPelajaranDetailScreen} 
-  options={{ headerTitle: 'Detail Mata Pelajaran' }}
-/>
       <ManagementStack.Screen 
         name="MataPelajaranForm" 
         component={MataPelajaranFormScreen} 
@@ -96,9 +155,28 @@ const ManagementStackNavigator = () => {
         })}
       />
       <ManagementStack.Screen 
-        name="MateriKurikulum" 
-        component={MateriKurikulumScreen} 
-        options={{ headerTitle: 'Materi Kurikulum' }}
+        name="MataPelajaranDetail" 
+        component={MataPelajaranDetailScreen} 
+        options={{ headerTitle: 'Detail Mata Pelajaran' }}
+      />
+
+      {/* Materi Management */}
+      <ManagementStack.Screen 
+        name="MateriManagement" 
+        component={MateriManagementScreen} 
+        options={{ headerTitle: 'Manajemen Materi' }}
+      />
+      <ManagementStack.Screen 
+        name="MateriForm" 
+        component={MateriFormScreen} 
+        options={({ route }) => ({ 
+          headerTitle: route.params?.materi ? 'Edit Materi' : 'Tambah Materi'
+        })}
+      />
+      <ManagementStack.Screen 
+        name="MateriDetail" 
+        component={MateriDetailScreen} 
+        options={{ headerTitle: 'Detail Materi' }}
       />
     </ManagementStack.Navigator>
   );
@@ -204,7 +282,7 @@ const AdminCabangNavigator = () => {
       <Tab.Screen 
         name="Management" 
         component={ManagementStackNavigator} 
-        options={{ tabBarLabel: 'Survei' }}
+        options={{ tabBarLabel: 'Kurikulum' }}
       />
       <Tab.Screen 
         name="PengajuanDonatur" 
