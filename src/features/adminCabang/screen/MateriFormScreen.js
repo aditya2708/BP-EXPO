@@ -12,71 +12,82 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector, useDispatch } from 'react-redux';
-import { Picker } from '@react-native-picker/picker';
 
 import JenjangSelector from '../components/JenjangSelector';
+import KelasSelector from '../components/KelasSelector';
 
 import {
-  createMataPelajaran,
-  updateMataPelajaran,
-  fetchKategoriOptions,
-  selectMataPelajaranLoading,
-  selectMataPelajaranError,
-  selectKategoriOptions
-} from '../redux/mataPelajaranSlice';
+  createMateri,
+  updateMateri,
+  selectMateriLoading,
+  selectMateriError
+} from '../redux/materiSlice';
 
 import {
   fetchJenjangForDropdown
 } from '../redux/jenjangSlice';
 
-const MataPelajaranFormScreen = () => {
+import {
+  fetchKelasByJenjang
+} from '../redux/kelasSlice';
+
+const MateriFormScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const dispatch = useDispatch();
   
-  const { mataPelajaran } = route.params || {};
-  const isEdit = !!mataPelajaran;
+  const { materi } = route.params || {};
+  const isEdit = !!materi;
   
-  const loading = useSelector(selectMataPelajaranLoading);
-  const error = useSelector(selectMataPelajaranError);
-  const kategoriOptions = useSelector(selectKategoriOptions);
+  const loading = useSelector(selectMateriLoading);
+  const error = useSelector(selectMateriError);
   
   const [formData, setFormData] = useState({
-    nama_mata_pelajaran: '',
-    kategori: 'wajib',
-    id_jenjang: ''
+    jenjang: '',
+    id_kelas: '',
+    mata_pelajaran: '',
+    nama_materi: ''
   });
   
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    dispatch(fetchKategoriOptions());
     dispatch(fetchJenjangForDropdown());
   }, []);
 
   useEffect(() => {
-    if (mataPelajaran) {
+    if (materi) {
+      const jenjangId = materi.kelas?.id_jenjang?.toString() || '';
       setFormData({
-        nama_mata_pelajaran: mataPelajaran.nama_mata_pelajaran || '',
-        kategori: mataPelajaran.kategori || 'wajib',
-        id_jenjang: mataPelajaran.id_jenjang?.toString() || ''
+        jenjang: jenjangId,
+        id_kelas: materi.id_kelas?.toString() || '',
+        mata_pelajaran: materi.mata_pelajaran || '',
+        nama_materi: materi.nama_materi || ''
       });
+      
+      if (jenjangId) {
+        dispatch(fetchKelasByJenjang(jenjangId));
+      }
     }
-  }, [mataPelajaran]);
+  }, [materi]);
 
   const validateForm = () => {
     const newErrors = {};
     
-    if (!formData.nama_mata_pelajaran.trim()) {
-      newErrors.nama_mata_pelajaran = 'Nama mata pelajaran wajib diisi';
+    if (!formData.jenjang) {
+      newErrors.jenjang = 'Jenjang wajib dipilih';
     }
     
-    if (!formData.kategori) {
-      newErrors.kategori = 'Kategori wajib dipilih';
+    if (!formData.id_kelas) {
+      newErrors.id_kelas = 'Kelas wajib dipilih';
     }
     
-    if (!formData.id_jenjang) {
-      newErrors.id_jenjang = 'Jenjang wajib dipilih';
+    if (!formData.mata_pelajaran.trim()) {
+      newErrors.mata_pelajaran = 'Mata pelajaran wajib diisi';
+    }
+    
+    if (!formData.nama_materi.trim()) {
+      newErrors.nama_materi = 'Nama materi wajib diisi';
     }
     
     setErrors(newErrors);
@@ -87,23 +98,23 @@ const MataPelajaranFormScreen = () => {
     if (!validateForm()) return;
     
     const submitData = {
-      nama_mata_pelajaran: formData.nama_mata_pelajaran.trim(),
-      kategori: formData.kategori,
-      id_jenjang: parseInt(formData.id_jenjang)
+      id_kelas: formData.id_kelas,
+      mata_pelajaran: formData.mata_pelajaran.trim(),
+      nama_materi: formData.nama_materi.trim()
     };
     
     try {
       if (isEdit) {
-        await dispatch(updateMataPelajaran({
-          id: mataPelajaran.id_mata_pelajaran,
-          mataPelajaranData: submitData
+        await dispatch(updateMateri({
+          id: materi.id_materi,
+          materiData: submitData
         })).unwrap();
-        Alert.alert('Sukses', 'Mata pelajaran berhasil diperbarui', [
+        Alert.alert('Sukses', 'Materi berhasil diperbarui', [
           { text: 'OK', onPress: () => navigation.goBack() }
         ]);
       } else {
-        await dispatch(createMataPelajaran(submitData)).unwrap();
-        Alert.alert('Sukses', 'Mata pelajaran berhasil ditambahkan', [
+        await dispatch(createMateri(submitData)).unwrap();
+        Alert.alert('Sukses', 'Materi berhasil ditambahkan', [
           { text: 'OK', onPress: () => navigation.goBack() }
         ]);
       }
@@ -119,60 +130,65 @@ const MataPelajaranFormScreen = () => {
     }
   };
 
-  const defaultKategoriOptions = [
-    { label: 'Wajib', value: 'wajib' },
-    { label: 'Pilihan', value: 'pilihan' },
-    { label: 'Muatan Lokal', value: 'muatan_lokal' },
-    { label: 'Ekstrakurikuler', value: 'ekstrakurikuler' }
-  ];
-
-  const kategoriToShow = kategoriOptions.length > 0 ? kategoriOptions : defaultKategoriOptions;
+  const handleJenjangChange = (jenjangId) => {
+    updateField('jenjang', jenjangId);
+    updateField('id_kelas', '');
+    
+    if (jenjangId) {
+      dispatch(fetchKelasByJenjang(jenjangId));
+    }
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.formContainer}>
         <JenjangSelector
-          selectedValue={formData.id_jenjang}
-          onValueChange={(value) => updateField('id_jenjang', value)}
+          selectedValue={formData.jenjang}
+          onValueChange={handleJenjangChange}
           required
         />
-        {errors.id_jenjang && (
-          <Text style={styles.errorText}>{errors.id_jenjang}</Text>
+        {errors.jenjang && (
+          <Text style={styles.errorText}>{errors.jenjang}</Text>
+        )}
+
+        <KelasSelector
+          selectedValue={formData.id_kelas}
+          onValueChange={(value) => updateField('id_kelas', value)}
+          jenjangId={formData.jenjang}
+          disabled={!formData.jenjang}
+          required
+        />
+        {errors.id_kelas && (
+          <Text style={styles.errorText}>{errors.id_kelas}</Text>
         )}
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Nama Mata Pelajaran *</Text>
+          <Text style={styles.label}>Mata Pelajaran *</Text>
           <TextInput
-            style={[styles.input, errors.nama_mata_pelajaran && styles.inputError]}
-            value={formData.nama_mata_pelajaran}
-            onChangeText={(value) => updateField('nama_mata_pelajaran', value)}
-            placeholder="Masukkan nama mata pelajaran"
+            style={[styles.input, errors.mata_pelajaran && styles.inputError]}
+            value={formData.mata_pelajaran}
+            onChangeText={(value) => updateField('mata_pelajaran', value)}
+            placeholder="Contoh: Matematika, Bahasa Indonesia"
             placeholderTextColor="#999"
           />
-          {errors.nama_mata_pelajaran && (
-            <Text style={styles.errorText}>{errors.nama_mata_pelajaran}</Text>
+          <Text style={styles.helpText}>Nama mata pelajaran untuk materi ini</Text>
+          {errors.mata_pelajaran && (
+            <Text style={styles.errorText}>{errors.mata_pelajaran}</Text>
           )}
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Kategori *</Text>
-          <View style={[styles.pickerContainer, errors.kategori && styles.inputError]}>
-            <Picker
-              selectedValue={formData.kategori}
-              onValueChange={(value) => updateField('kategori', value)}
-              style={styles.picker}
-            >
-              {kategoriToShow.map((option) => (
-                <Picker.Item
-                  key={option.value}
-                  label={option.label}
-                  value={option.value}
-                />
-              ))}
-            </Picker>
-          </View>
-          {errors.kategori && (
-            <Text style={styles.errorText}>{errors.kategori}</Text>
+          <Text style={styles.label}>Nama Materi *</Text>
+          <TextInput
+            style={[styles.input, errors.nama_materi && styles.inputError]}
+            value={formData.nama_materi}
+            onChangeText={(value) => updateField('nama_materi', value)}
+            placeholder="Contoh: Penjumlahan dan Pengurangan"
+            placeholderTextColor="#999"
+          />
+          <Text style={styles.helpText}>Nama spesifik materi pembelajaran</Text>
+          {errors.nama_materi && (
+            <Text style={styles.errorText}>{errors.nama_materi}</Text>
           )}
         </View>
 
@@ -252,15 +268,6 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: '#e74c3c',
   },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    backgroundColor: '#fff',
-  },
-  picker: {
-    height: 50,
-  },
   helpText: {
     fontSize: 12,
     color: '#666',
@@ -314,4 +321,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MataPelajaranFormScreen;
+export default MateriFormScreen;

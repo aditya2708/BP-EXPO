@@ -16,52 +16,52 @@ import LoadingSpinner from '../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../common/components/ErrorMessage';
 
 import {
-  fetchMataPelajaranDetail,
-  deleteMataPelajaran,
-  selectMataPelajaranDetail,
-  selectMataPelajaranLoading,
-  selectMataPelajaranError
-} from '../redux/mataPelajaranSlice';
+  fetchMateriDetail,
+  deleteMateri,
+  selectMateriDetail,
+  selectMateriLoading,
+  selectMateriError
+} from '../redux/materiSlice';
 
-const MataPelajaranDetailScreen = () => {
+const MateriDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const dispatch = useDispatch();
   
-  const { mataPelajaranId, mataPelajaran } = route.params;
+  const { materiId, materi } = route.params;
   
-  const detail = useSelector(selectMataPelajaranDetail);
-  const loading = useSelector(selectMataPelajaranLoading);
-  const error = useSelector(selectMataPelajaranError);
+  const detail = useSelector(selectMateriDetail);
+  const loading = useSelector(selectMateriLoading);
+  const error = useSelector(selectMateriError);
   
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    if (mataPelajaranId) {
-      dispatch(fetchMataPelajaranDetail(mataPelajaranId));
+    if (materiId) {
+      dispatch(fetchMateriDetail(materiId));
     }
-  }, [mataPelajaranId]);
+  }, [materiId]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    if (mataPelajaranId) {
-      await dispatch(fetchMataPelajaranDetail(mataPelajaranId));
+    if (materiId) {
+      await dispatch(fetchMateriDetail(materiId));
     }
     setRefreshing(false);
   };
 
   const handleEdit = () => {
-    navigation.navigate('MataPelajaranForm', { 
-      mataPelajaran: detail || mataPelajaran 
+    navigation.navigate('MateriForm', { 
+      materi: detail || materi 
     });
   };
 
   const handleDelete = () => {
-    const itemToDelete = detail || mataPelajaran;
+    const itemToDelete = detail || materi;
     
     Alert.alert(
-      'Hapus Mata Pelajaran',
-      `Hapus ${itemToDelete.nama_mata_pelajaran}?`,
+      'Hapus Materi',
+      `Hapus ${itemToDelete.nama_materi}?`,
       [
         { text: 'Batal', style: 'cancel' },
         {
@@ -69,12 +69,12 @@ const MataPelajaranDetailScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await dispatch(deleteMataPelajaran(itemToDelete.id_mata_pelajaran)).unwrap();
-              Alert.alert('Sukses', 'Mata pelajaran berhasil dihapus', [
+              await dispatch(deleteMateri(itemToDelete.id_materi)).unwrap();
+              Alert.alert('Sukses', 'Materi berhasil dihapus', [
                 { text: 'OK', onPress: () => navigation.goBack() }
               ]);
             } catch (err) {
-              Alert.alert('Error', err.message || 'Gagal menghapus mata pelajaran');
+              Alert.alert('Error', err.message || 'Gagal menghapus materi');
             }
           }
         }
@@ -82,44 +82,38 @@ const MataPelajaranDetailScreen = () => {
     );
   };
 
-  const getKategoriColor = (kategori) => {
-    switch (kategori) {
-      case 'wajib': return '#e74c3c';
-      case 'pilihan': return '#3498db';
-      case 'muatan_lokal': return '#f39c12';
-      case 'ekstrakurikuler': return '#9b59b6';
-      default: return '#95a5a6';
-    }
+  const getRomanNumeral = (tingkat) => {
+    const numerals = {
+      1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI',
+      7: 'VII', 8: 'VIII', 9: 'IX', 10: 'X', 11: 'XI', 12: 'XII'
+    };
+    return numerals[tingkat] || tingkat;
   };
 
-  const getKategoriText = (kategori) => {
-    switch (kategori) {
-      case 'wajib': return 'Wajib';
-      case 'pilihan': return 'Pilihan';
-      case 'muatan_lokal': return 'Muatan Lokal';
-      case 'ekstrakurikuler': return 'Ekstrakurikuler';
-      default: return kategori;
+  const getKelasDisplayName = (kelas) => {
+    if (!kelas) return 'N/A';
+    
+    if (kelas.jenis_kelas === 'standard' && kelas.tingkat) {
+      return `Kelas ${getRomanNumeral(kelas.tingkat)}`;
     }
+    return kelas.nama_kelas;
   };
 
-  const getKategoriIcon = (kategori) => {
-    switch (kategori) {
-      case 'wajib': return 'bookmark';
-      case 'pilihan': return 'options-outline';
-      case 'muatan_lokal': return 'location-outline';
-      case 'ekstrakurikuler': return 'basketball-outline';
-      default: return 'library-outline';
-    }
+  const getHierarchyPath = (materiData) => {
+    const jenjang = materiData?.kelas?.jenjang?.nama_jenjang || 'N/A';
+    const kelas = getKelasDisplayName(materiData?.kelas);
+    const mataPelajaran = materiData?.mata_pelajaran || 'N/A';
+    return `${jenjang} > ${kelas} > ${mataPelajaran}`;
   };
 
-  const getHierarchyPath = (mpData) => {
-    const jenjang = mpData?.jenjang?.nama_jenjang || 'N/A';
-    const mataPelajaran = mpData?.nama_mata_pelajaran || 'N/A';
-    return `${jenjang} ${'>'}  ${mataPelajaran}`;
+  const getMataPelajaranColor = (mataPelajaran) => {
+    const colors = ['#3498db', '#e74c3c', '#f39c12', '#9b59b6', '#2ecc71', '#34495e'];
+    const hash = mataPelajaran?.split('').reduce((a, b) => a + b.charCodeAt(0), 0) || 0;
+    return colors[hash % colors.length];
   };
 
   if (loading && !refreshing) {
-    return <LoadingSpinner fullScreen message="Memuat detail mata pelajaran..." />;
+    return <LoadingSpinner fullScreen message="Memuat detail materi..." />;
   }
 
   if (error) {
@@ -130,12 +124,12 @@ const MataPelajaranDetailScreen = () => {
     );
   }
 
-  const currentData = detail || mataPelajaran;
+  const currentData = detail || materi;
   
   if (!currentData) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>Data mata pelajaran tidak ditemukan</Text>
+        <Text style={styles.errorText}>Data materi tidak ditemukan</Text>
       </View>
     );
   }
@@ -149,19 +143,10 @@ const MataPelajaranDetailScreen = () => {
         <View style={styles.headerCard}>
           <View style={styles.headerContent}>
             <View style={styles.titleContainer}>
-              <Text style={styles.title}>{currentData.nama_mata_pelajaran}</Text>
-              <View style={[
-                styles.kategoriBadge, 
-                { backgroundColor: getKategoriColor(currentData.kategori) }
-              ]}>
-                <Ionicons 
-                  name={getKategoriIcon(currentData.kategori)} 
-                  size={16} 
-                  color="#fff" 
-                  style={styles.kategoriIcon}
-                />
-                <Text style={styles.kategoriText}>
-                  {getKategoriText(currentData.kategori)}
+              <Text style={styles.title}>{currentData.nama_materi}</Text>
+              <View style={[styles.mataPelajaranBadge, { backgroundColor: getMataPelajaranColor(currentData.mata_pelajaran) }]}>
+                <Text style={styles.badgeText}>
+                  {currentData.mata_pelajaran || 'N/A'}
                 </Text>
               </View>
             </View>
@@ -184,20 +169,18 @@ const MataPelajaranDetailScreen = () => {
           <Text style={styles.cardTitle}>Informasi Detail</Text>
           
           <View style={styles.infoRow}>
-            <Ionicons name="library-outline" size={20} color="#666" />
+            <Ionicons name="book-outline" size={20} color="#666" />
             <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Nama Mata Pelajaran</Text>
-              <Text style={styles.infoValue}>{currentData.nama_mata_pelajaran}</Text>
+              <Text style={styles.infoLabel}>Nama Materi</Text>
+              <Text style={styles.infoValue}>{currentData.nama_materi}</Text>
             </View>
           </View>
 
           <View style={styles.infoRow}>
-            <Ionicons name={getKategoriIcon(currentData.kategori)} size={20} color={getKategoriColor(currentData.kategori)} />
+            <Ionicons name="library-outline" size={20} color="#666" />
             <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Kategori</Text>
-              <Text style={[styles.infoValue, { color: getKategoriColor(currentData.kategori) }]}>
-                {getKategoriText(currentData.kategori)}
-              </Text>
+              <Text style={styles.infoLabel}>Mata Pelajaran</Text>
+              <Text style={styles.infoValue}>{currentData.mata_pelajaran || 'N/A'}</Text>
             </View>
           </View>
 
@@ -206,33 +189,23 @@ const MataPelajaranDetailScreen = () => {
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Jenjang</Text>
               <Text style={styles.infoValue}>
-                {currentData.jenjang?.nama_jenjang || 'N/A'}
+                {currentData.kelas?.jenjang?.nama_jenjang || 'N/A'}
               </Text>
             </View>
           </View>
 
           <View style={styles.infoRow}>
-            <Ionicons name="code-outline" size={20} color="#666" />
+            <Ionicons name="apps-outline" size={20} color="#666" />
             <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Kode Jenjang</Text>
+              <Text style={styles.infoLabel}>Kelas</Text>
               <Text style={styles.infoValue}>
-                {currentData.jenjang?.kode_jenjang || 'N/A'}
+                {getKelasDisplayName(currentData.kelas)}
               </Text>
             </View>
           </View>
 
           <View style={styles.infoRow}>
-            <Ionicons name="business-outline" size={20} color="#666" />
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Cabang</Text>
-              <Text style={styles.infoValue}>
-                {currentData.kacab?.nama_kacab || 'N/A'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Ionicons name="book-outline" size={20} color="#666" />
+            <Ionicons name="documents-outline" size={20} color="#666" />
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Digunakan di Kurikulum</Text>
               <Text style={styles.infoValue}>
@@ -338,19 +311,13 @@ const styles = StyleSheet.create({
     color: '#333',
     textAlign: 'center',
   },
-  kategoriBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  mataPelajaranBadge: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    minWidth: 120,
-    justifyContent: 'center',
+    alignItems: 'center',
   },
-  kategoriIcon: {
-    marginRight: 4,
-  },
-  kategoriText: {
+  badgeText: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
@@ -514,4 +481,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MataPelajaranDetailScreen;
+export default MateriDetailScreen;
