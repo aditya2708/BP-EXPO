@@ -1,4 +1,3 @@
-// 11. src/features/adminCabang/redux/kurikulumSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { kurikulumApi } from '../api/kurikulumApi';
 
@@ -91,6 +90,14 @@ export const removeMateri = createAsyncThunk(
   }
 );
 
+export const fetchKurikulumCascadeData = createAsyncThunk(
+  'kurikulum/fetchCascadeData',
+  async (params) => {
+    const response = await kurikulumApi.getCascadeData(params);
+    return response.data;
+  }
+);
+
 // Slice
 const kurikulumSlice = createSlice({
   name: 'kurikulum',
@@ -100,6 +107,7 @@ const kurikulumSlice = createSlice({
     activeKurikulum: null,
     statistics: null,
     tahunBerlaku: [],
+    cascadeData: {},
     loading: false,
     error: null,
     pagination: {
@@ -118,6 +126,9 @@ const kurikulumSlice = createSlice({
     },
     clearStatistics: (state) => {
       state.statistics = null;
+    },
+    clearCascadeData: (state) => {
+      state.cascadeData = {};
     },
     updateKurikulumLocally: (state, action) => {
       const index = state.list.findIndex(k => k.id_kurikulum === action.payload.id_kurikulum);
@@ -265,6 +276,10 @@ const kurikulumSlice = createSlice({
             km => km.id !== action.payload.materiId
           ) || [];
         }
+      })
+      // Fetch cascade data
+      .addCase(fetchKurikulumCascadeData.fulfilled, (state, action) => {
+        state.cascadeData = { ...state.cascadeData, ...action.payload.data };
       });
   }
 });
@@ -273,6 +288,7 @@ export const {
   clearError, 
   clearDetail, 
   clearStatistics,
+  clearCascadeData,
   updateKurikulumLocally 
 } = kurikulumSlice.actions;
 export default kurikulumSlice.reducer;
@@ -283,6 +299,7 @@ export const selectKurikulumDetail = (state) => state.kurikulum.detail;
 export const selectActiveKurikulum = (state) => state.kurikulum.activeKurikulum;
 export const selectKurikulumStatistics = (state) => state.kurikulum.statistics;
 export const selectTahunBerlaku = (state) => state.kurikulum.tahunBerlaku;
+export const selectKurikulumCascadeData = (state) => state.kurikulum.cascadeData;
 export const selectKurikulumLoading = (state) => state.kurikulum.loading;
 export const selectKurikulumError = (state) => state.kurikulum.error;
 export const selectKurikulumPagination = (state) => state.kurikulum.pagination;

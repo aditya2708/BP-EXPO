@@ -1,4 +1,3 @@
-// 10. src/features/adminCabang/api/mataPelajaranApi.js
 import api from '../../../api/axiosConfig';
 
 export const mataPelajaranApi = {
@@ -22,9 +21,8 @@ export const mataPelajaranApi = {
     return await api.delete(`/admin-cabang/mata-pelajaran/${id}`);
   },
 
-  getByKategori: async (kategori = null) => {
-    const endpoint = kategori ? `/admin-cabang/mata-pelajaran/kategori/${kategori}` : '/admin-cabang/mata-pelajaran/kategori';
-    return await api.get(endpoint);
+  getByJenjang: async (jenjangId) => {
+    return await api.get(`/admin-cabang/mata-pelajaran/jenjang/${jenjangId}`);
   },
 
   getKategoriOptions: async () => {
@@ -35,8 +33,8 @@ export const mataPelajaranApi = {
     return await api.get('/admin-cabang/mata-pelajaran/statistics');
   },
 
-  getForDropdown: async () => {
-    return await api.get('/admin-cabang/mata-pelajaran/dropdown');
+  getForDropdown: async (params = {}) => {
+    return await api.get('/admin-cabang/mata-pelajaran/dropdown', { params });
   },
 
   checkCanDelete: async (id) => {

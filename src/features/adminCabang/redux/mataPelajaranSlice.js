@@ -1,4 +1,3 @@
-// 12. src/features/adminCabang/redux/mataPelajaranSlice.js
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { mataPelajaranApi } from '../api/mataPelajaranApi';
 
@@ -43,10 +42,10 @@ export const deleteMataPelajaran = createAsyncThunk(
   }
 );
 
-export const fetchByKategori = createAsyncThunk(
-  'mataPelajaran/fetchByKategori',
-  async (kategori) => {
-    const response = await mataPelajaranApi.getByKategori(kategori);
+export const fetchMataPelajaranByJenjang = createAsyncThunk(
+  'mataPelajaran/fetchByJenjang',
+  async (jenjangId) => {
+    const response = await mataPelajaranApi.getByJenjang(jenjangId);
     return response.data;
   }
 );
@@ -69,8 +68,8 @@ export const fetchMataPelajaranStatistics = createAsyncThunk(
 
 export const fetchForDropdown = createAsyncThunk(
   'mataPelajaran/fetchForDropdown',
-  async () => {
-    const response = await mataPelajaranApi.getForDropdown();
+  async (params) => {
+    const response = await mataPelajaranApi.getForDropdown(params);
     return response.data;
   }
 );
@@ -81,7 +80,7 @@ const mataPelajaranSlice = createSlice({
   initialState: {
     list: [],
     detail: null,
-    byKategori: {},
+    byJenjang: {},
     kategoriOptions: [],
     dropdownData: {},
     statistics: null,
@@ -110,8 +109,8 @@ const mataPelajaranSlice = createSlice({
         state.list[index] = action.payload;
       }
     },
-    clearByKategori: (state) => {
-      state.byKategori = {};
+    clearByJenjang: (state) => {
+      state.byJenjang = {};
     }
   },
   extraReducers: (builder) => {
@@ -182,9 +181,12 @@ const mataPelajaranSlice = createSlice({
           state.detail = null;
         }
       })
-      // Fetch by kategori
-      .addCase(fetchByKategori.fulfilled, (state, action) => {
-        state.byKategori = action.payload.data || {};
+      // Fetch by jenjang
+      .addCase(fetchMataPelajaranByJenjang.fulfilled, (state, action) => {
+        const jenjangData = action.payload.data;
+        if (jenjangData.jenjang) {
+          state.byJenjang[jenjangData.jenjang.id_jenjang] = jenjangData.mata_pelajaran || [];
+        }
       })
       // Fetch kategori options
       .addCase(fetchKategoriOptions.fulfilled, (state, action) => {
@@ -215,14 +217,14 @@ export const {
   clearDetail, 
   clearStatistics,
   updateMataPelajaranLocally,
-  clearByKategori
+  clearByJenjang
 } = mataPelajaranSlice.actions;
 export default mataPelajaranSlice.reducer;
 
 // Selectors
 export const selectMataPelajaranList = (state) => state.mataPelajaran.list;
 export const selectMataPelajaranDetail = (state) => state.mataPelajaran.detail;
-export const selectMataPelajaranByKategori = (state) => state.mataPelajaran.byKategori;
+export const selectMataPelajaranByJenjang = (state) => state.mataPelajaran.byJenjang;
 export const selectKategoriOptions = (state) => state.mataPelajaran.kategoriOptions;
 export const selectDropdownData = (state) => state.mataPelajaran.dropdownData;
 export const selectMataPelajaranStatistics = (state) => state.mataPelajaran.statistics;

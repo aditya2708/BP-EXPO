@@ -1,4 +1,3 @@
-// 9. src/features/adminCabang/api/kurikulumApi.js
 import api from '../../../api/axiosConfig';
 
 export const kurikulumApi = {
@@ -52,5 +51,9 @@ export const kurikulumApi = {
 
   duplicateKurikulum: async (id, newData) => {
     return await api.post(`/admin-cabang/kurikulum/${id}/duplicate`, newData);
+  },
+
+  getCascadeData: async (params) => {
+    return await api.get('/admin-cabang/kurikulum/cascade-data', { params });
   }
 };
