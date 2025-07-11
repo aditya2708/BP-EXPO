@@ -82,11 +82,11 @@ export const addMateri = createAsyncThunk(
   }
 );
 
-export const removeMateri = createAsyncThunk(
-  'kurikulum/removeMateri',
-  async ({ id, materiId }) => {
-    await kurikulumApi.removeMateri(id, materiId);
-    return { id, materiId };
+export const deleteMateri = createAsyncThunk(
+  'kurikulum/deleteMateri',
+  async ({ kurikulumId, materiId }) => {
+    await kurikulumApi.removeMateri(kurikulumId, materiId);
+    return { kurikulumId, materiId };
   }
 );
 
@@ -196,10 +196,8 @@ const kurikulumSlice = createSlice({
           state.list = [];
         }
         state.list.unshift(action.payload.data);
-        // Update active kurikulum if the new one is set as active
         if (action.payload.data.status === 'aktif') {
           state.activeKurikulum = action.payload.data;
-          // Deactivate others
           state.list = state.list.map(k => ({
             ...k,
             status: k.id_kurikulum === action.payload.data.id_kurikulum ? 'aktif' : (k.status === 'aktif' ? 'nonaktif' : k.status)
@@ -219,10 +217,8 @@ const kurikulumSlice = createSlice({
         if (state.detail?.id_kurikulum === action.payload.data.id_kurikulum) {
           state.detail = action.payload.data;
         }
-        // Update active kurikulum if changed
         if (action.payload.data.status === 'aktif') {
           state.activeKurikulum = action.payload.data;
-          // Deactivate others
           state.list = state.list.map(k => ({
             ...k,
             status: k.id_kurikulum === action.payload.data.id_kurikulum ? 'aktif' : (k.status === 'aktif' ? 'nonaktif' : k.status)
@@ -232,17 +228,16 @@ const kurikulumSlice = createSlice({
       // Delete
       .addCase(deleteKurikulum.fulfilled, (state, action) => {
         state.list = state.list.filter(k => k.id_kurikulum !== action.payload);
-        if (state.activeKurikulum?.id_kurikulum === action.payload) {
-          state.activeKurikulum = null;
+        if (state.detail?.id_kurikulum === action.payload) {
+          state.detail = null;
         }
       })
       // Set active
       .addCase(setActiveKurikulum.fulfilled, (state, action) => {
         state.activeKurikulum = action.payload.data;
-        // Update list to reflect active status
         state.list = state.list.map(k => ({
           ...k,
-          status: k.id_kurikulum === action.payload.data.id_kurikulum ? 'aktif' : (k.status === 'aktif' ? 'nonaktif' : k.status)
+          status: k.id_kurikulum === action.payload.data.id_kurikulum ? 'aktif' : 'nonaktif'
         }));
       })
       // Fetch statistics
@@ -269,8 +264,8 @@ const kurikulumSlice = createSlice({
           state.detail.kurikulum_materi.push(action.payload.data);
         }
       })
-      // Remove materi
-      .addCase(removeMateri.fulfilled, (state, action) => {
+      // Delete materi
+      .addCase(deleteMateri.fulfilled, (state, action) => {
         if (state.detail) {
           state.detail.kurikulum_materi = state.detail.kurikulum_materi?.filter(
             km => km.id !== action.payload.materiId

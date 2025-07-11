@@ -3,21 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const MateriKurikulumCard = ({ materiItem, onEdit, onDelete, onMoveUp, onMoveDown }) => {
-  const formatDuration = (minutes) => {
-    if (minutes < 60) {
-      return `${minutes} menit`;
-    }
-    
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    
-    if (remainingMinutes > 0) {
-      return `${hours} jam ${remainingMinutes} menit`;
-    }
-    
-    return `${hours} jam`;
-  };
-
   const getKategoriColor = (kategori) => {
     switch (kategori) {
       case 'wajib': return '#e74c3c';
@@ -60,86 +45,69 @@ const MateriKurikulumCard = ({ materiItem, onEdit, onDelete, onMoveUp, onMoveDow
     const jenjang = materiItem.mata_pelajaran?.jenjang?.nama_jenjang || 'N/A';
     const mataPelajaran = materiItem.mata_pelajaran?.nama_mata_pelajaran || 'N/A';
     const kelas = getKelasDisplayName();
+    
     return `${jenjang} > ${mataPelajaran} > ${kelas}`;
   };
 
   return (
     <View style={styles.card}>
-      <View style={styles.cardContent}>
-        <View style={styles.header}>
-          <View style={styles.urutanContainer}>
-            <Text style={styles.urutanText}>#{materiItem.urutan}</Text>
-          </View>
-          
-          <View style={styles.titleContainer}>
-            <Text style={styles.materiTitle} numberOfLines={2}>
-              {materiItem.materi?.nama_materi || 'Nama Materi'}
-            </Text>
-            
-            <View style={styles.mataPelajaranContainer}>
-              <View style={[
-                styles.kategoriBadge, 
-                { backgroundColor: getKategoriColor(materiItem.mata_pelajaran?.kategori) }
-              ]}>
-                <Text style={styles.kategoriText}>
-                  {getKategoriText(materiItem.mata_pelajaran?.kategori)}
-                </Text>
-              </View>
-            </View>
-          </View>
+      <View style={styles.cardHeader}>
+        <View style={styles.materiInfo}>
+          <Text style={styles.materiTitle} numberOfLines={2}>
+            {materiItem.materi?.nama_materi || 'N/A'}
+          </Text>
+          <Text style={styles.hierarchyPath} numberOfLines={1}>
+            {getHierarchyPath()}
+          </Text>
         </View>
-
-        <View style={styles.hierarchyContainer}>
-          <View style={styles.hierarchyRow}>
-            <Ionicons name="git-branch-outline" size={14} color="#666" />
-            <Text style={styles.hierarchyText} numberOfLines={1}>
-              {getHierarchyPath()}
+        
+        {materiItem.mata_pelajaran?.kategori && (
+          <View style={[
+            styles.kategoriTag,
+            { backgroundColor: getKategoriColor(materiItem.mata_pelajaran.kategori) }
+          ]}>
+            <Text style={styles.kategoriText}>
+              {getKategoriText(materiItem.mata_pelajaran.kategori)}
             </Text>
           </View>
-        </View>
+        )}
+      </View>
 
-        <View style={styles.infoContainer}>
-          <View style={styles.infoRow}>
-            <Ionicons name="time-outline" size={16} color="#666" />
-            <Text style={styles.infoText}>
-              Durasi: {formatDuration(materiItem.jam_pelajaran)}
-            </Text>
-          </View>
-          
-          <View style={styles.infoRow}>
-            <Ionicons name="list-outline" size={16} color="#666" />
-            <Text style={styles.infoText}>
-              Urutan: {materiItem.urutan}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.actionContainer}>
+      <View style={styles.cardFooter}>
+        <View style={styles.actionButtons}>
           {onMoveUp && (
-            <TouchableOpacity style={styles.actionButton} onPress={onMoveUp}>
-              <Ionicons name="arrow-up-outline" size={18} color="#3498db" />
-              <Text style={[styles.actionText, { color: '#3498db' }]}>Naik</Text>
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={onMoveUp}
+            >
+              <Ionicons name="chevron-up" size={16} color="#6c757d" />
             </TouchableOpacity>
           )}
-
+          
           {onMoveDown && (
-            <TouchableOpacity style={styles.actionButton} onPress={onMoveDown}>
-              <Ionicons name="arrow-down-outline" size={18} color="#3498db" />
-              <Text style={[styles.actionText, { color: '#3498db' }]}>Turun</Text>
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={onMoveDown}
+            >
+              <Ionicons name="chevron-down" size={16} color="#6c757d" />
             </TouchableOpacity>
           )}
-
+          
           {onEdit && (
-            <TouchableOpacity style={styles.actionButton} onPress={onEdit}>
-              <Ionicons name="create-outline" size={18} color="#f39c12" />
-              <Text style={[styles.actionText, { color: '#f39c12' }]}>Edit</Text>
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={onEdit}
+            >
+              <Ionicons name="create-outline" size={16} color="#007bff" />
             </TouchableOpacity>
           )}
-
+          
           {onDelete && (
-            <TouchableOpacity style={styles.actionButton} onPress={onDelete}>
-              <Ionicons name="trash-outline" size={18} color="#e74c3c" />
-              <Text style={[styles.actionText, { color: '#e74c3c' }]}>Hapus</Text>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.deleteButton]}
+              onPress={onDelete}
+            >
+              <Ionicons name="trash-outline" size={16} color="#dc3545" />
             </TouchableOpacity>
           )}
         </View>
@@ -152,108 +120,70 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  cardContent: {
-    padding: 16,
-  },
-  header: {
-    flexDirection: 'row',
     marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#e9ecef'
   },
-  urutanContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#2ecc71',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+  cardHeader: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f8f9fa'
   },
-  urutanText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  titleContainer: {
+  materiInfo: {
     flex: 1,
+    marginBottom: 8
   },
   materiTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
+    fontWeight: '600',
+    color: '#2c3e50',
+    lineHeight: 22
   },
-  mataPelajaranContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
+  hierarchyPath: {
+    fontSize: 12,
+    color: '#6c757d',
+    marginTop: 4
   },
-  kategoriBadge: {
+  kategoriTag: {
+    alignSelf: 'flex-start',
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginRight: 8,
-    marginBottom: 4,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 8
   },
   kategoriText: {
     color: '#fff',
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '500'
   },
-  hierarchyContainer: {
-    marginBottom: 12,
-    backgroundColor: '#f8f9fa',
-    padding: 8,
-    borderRadius: 6,
+  cardFooter: {
+    paddingHorizontal: 16,
+    paddingVertical: 12
   },
-  hierarchyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  hierarchyText: {
-    fontSize: 12,
-    color: '#555',
-    marginLeft: 8,
-    fontWeight: '500',
-    flex: 1,
-  },
-  infoContainer: {
-    marginBottom: 16,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 8,
-  },
-  actionContainer: {
+  actionButtons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    paddingTop: 12,
-    gap: 16,
-    flexWrap: 'wrap',
+    gap: 8
   },
   actionButton: {
-    flexDirection: 'row',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f8f9fa',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 4,
+    borderWidth: 1,
+    borderColor: '#e9ecef'
   },
-  actionText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
+  deleteButton: {
+    backgroundColor: '#fff5f5',
+    borderColor: '#fecaca'
+  }
 });
 
 export default MateriKurikulumCard;

@@ -20,8 +20,7 @@ import MateriKurikulumCard from '../components/MateriKurikulumCard';
 import {
   fetchKurikulumDetail,
   fetchKurikulumStatistics,
-  addMateri,
-  removeMateri,
+  deleteMateri,
   selectKurikulumDetail,
   selectKurikulumStatistics,
   selectKurikulumLoading,
@@ -59,7 +58,11 @@ const KurikulumDetailScreen = () => {
   };
 
   const navigateToMateriManagement = () => {
-    navigation.navigate('MateriKurikulum', { kurikulumId, kurikulum });
+    navigation.navigate('MateriKurikulum', { kurikulumId });
+  };
+
+  const handleEditKurikulum = () => {
+    navigation.navigate('KurikulumForm', { kurikulum });
   };
 
   const handleDeleteMateri = (materiItem) => {
@@ -73,13 +76,13 @@ const KurikulumDetailScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await dispatch(removeMateri({
-                id: kurikulumId,
+              await dispatch(deleteMateri({
+                kurikulumId,
                 materiId: materiItem.id
               })).unwrap();
               Alert.alert('Sukses', 'Materi berhasil dihapus dari kurikulum');
             } catch (err) {
-              Alert.alert('Error', 'Gagal menghapus materi');
+              Alert.alert('Error', err.message || 'Gagal menghapus materi');
             }
           }
         }
@@ -89,10 +92,19 @@ const KurikulumDetailScreen = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'aktif': return '#27ae60';
-      case 'draft': return '#95a5a6';
-      case 'nonaktif': return '#e74c3c';
-      default: return '#95a5a6';
+      case 'aktif': return '#28a745';
+      case 'draft': return '#ffc107';
+      case 'nonaktif': return '#dc3545';
+      default: return '#6c757d';
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'aktif': return 'Aktif';
+      case 'draft': return 'Draft';
+      case 'nonaktif': return 'Non Aktif';
+      default: return status;
     }
   };
 
@@ -120,24 +132,32 @@ const KurikulumDetailScreen = () => {
   const renderInfoTab = () => (
     <View style={styles.tabContent}>
       <View style={styles.infoCard}>
-        <View style={styles.infoHeader}>
-          <Text style={styles.kurikulumTitle}>{kurikulum?.nama_kurikulum}</Text>
+        <View style={styles.cardHeader}>
+          <View style={styles.headerInfo}>
+            <Text style={styles.kurikulumTitle}>{kurikulum?.nama_kurikulum}</Text>
+            <Text style={styles.tahunBerlaku}>Tahun Berlaku: {kurikulum?.tahun_berlaku}</Text>
+          </View>
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(kurikulum?.status) }]}>
-            <Text style={styles.statusText}>{kurikulum?.status}</Text>
+            <Text style={styles.statusText}>{getStatusText(kurikulum?.status)}</Text>
           </View>
         </View>
-        
-        <View style={styles.infoRow}>
-          <Ionicons name="calendar-outline" size={16} color="#666" />
-          <Text style={styles.infoText}>Tahun Berlaku: {kurikulum?.tahun_berlaku}</Text>
-        </View>
-        
+
         {kurikulum?.deskripsi && (
           <View style={styles.descriptionContainer}>
             <Text style={styles.descriptionLabel}>Deskripsi:</Text>
             <Text style={styles.descriptionText}>{kurikulum.deskripsi}</Text>
           </View>
         )}
+
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={handleEditKurikulum}
+          >
+            <Ionicons name="create-outline" size={18} color="#007bff" />
+            <Text style={styles.editButtonText}>Edit</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {statistics && (
@@ -151,10 +171,6 @@ const KurikulumDetailScreen = () => {
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{statistics.total_materi || 0}</Text>
               <Text style={styles.statLabel}>Total Materi</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{statistics.total_jam_pelajaran || 0}</Text>
-              <Text style={styles.statLabel}>Jam Pelajaran</Text>
             </View>
           </View>
         </View>
@@ -234,180 +250,189 @@ const KurikulumDetailScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f9fa'
   },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#e9ecef'
   },
   tab: {
     flex: 1,
     paddingVertical: 16,
     alignItems: 'center',
     borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    borderBottomColor: 'transparent'
   },
   activeTab: {
-    borderBottomColor: '#2ecc71',
+    borderBottomColor: '#007bff'
   },
   tabText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 14,
     fontWeight: '500',
+    color: '#6c757d'
   },
   activeTabText: {
-    color: '#2ecc71',
-    fontWeight: '600',
+    color: '#007bff'
   },
   content: {
-    flex: 1,
+    flex: 1
   },
   tabContent: {
-    padding: 16,
+    padding: 16
   },
   infoCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 20,
+    padding: 16,
     marginBottom: 16,
-    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
   },
-  infoHeader: {
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 16
+  },
+  headerInfo: {
+    flex: 1,
+    marginRight: 12
   },
   kurikulumTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    flex: 1,
-    marginRight: 12,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 4
+  },
+  tahunBerlaku: {
+    fontSize: 14,
+    color: '#6c757d'
   },
   statusBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
-    minWidth: 80,
-    alignItems: 'center',
+    borderRadius: 20
   },
   statusText: {
     color: '#fff',
     fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'capitalize',
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  infoText: {
-    fontSize: 16,
-    color: '#666',
-    marginLeft: 8,
+    fontWeight: '500'
   },
   descriptionContainer: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    marginBottom: 16
   },
   descriptionLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#495057',
+    marginBottom: 4
   },
   descriptionText: {
     fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
+    color: '#6c757d',
+    lineHeight: 20
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end'
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#007bff'
+  },
+  editButtonText: {
+    color: '#007bff',
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 4
   },
   statsCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 20,
-    elevation: 2,
+    padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 16,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 16
   },
   statsGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-around'
   },
   statItem: {
-    alignItems: 'center',
+    alignItems: 'center'
   },
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#2ecc71',
+    color: '#28a745'
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
+    color: '#6c757d',
     marginTop: 4,
-    textAlign: 'center',
+    textAlign: 'center'
   },
   actionHeader: {
-    marginBottom: 16,
+    marginBottom: 16
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2ecc71',
+    backgroundColor: '#28a745',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,
     justifyContent: 'center',
-    gap: 8,
+    gap: 8
   },
   addButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600'
   },
   materiList: {
-    paddingBottom: 16,
+    paddingBottom: 16
   },
   emptyContainer: {
     alignItems: 'center',
-    paddingVertical: 60,
+    paddingVertical: 60
   },
   emptyText: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#7f8c8d',
-    marginTop: 16,
+    marginTop: 16
   },
   emptySubText: {
     fontSize: 14,
     color: '#95a5a6',
     marginTop: 4,
-    textAlign: 'center',
+    textAlign: 'center'
   },
   errorText: {
     fontSize: 16,
     color: '#e74c3c',
     textAlign: 'center',
-    marginTop: 50,
-  },
+    marginTop: 50
+  }
 });
 
 export default KurikulumDetailScreen;
