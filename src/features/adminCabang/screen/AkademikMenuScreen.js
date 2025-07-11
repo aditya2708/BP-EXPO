@@ -1,344 +1,322 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-  Alert,
-} from 'react-native';
+// src/features/adminCabang/screens/AkademikMenuScreen.js
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { useSelector, useDispatch } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { useDispatch, useSelector } from 'react-redux';
+import SafeAreaWrapper from '../../../components/common/SafeAreaWrapper';
+import StatCard from '../../../components/common/StatCard';
+import LoadingSpinner from '../../../components/common/LoadingSpinner';
+import { fetchAkademikStats } from '../../redux/akademik/akademikSlice';
 
-const AkademikMenuScreen = () => {
-  const navigation = useNavigation();
+const AkademikMenuScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const [refreshing, setRefreshing] = useState(false);
-  const [statistics, setStatistics] = useState({
-    kurikulum: {
-      total: 0,
-      active: 0,
-      draft: 0,
-      published: 0,
-    },
-    totalMateri: 0,
-    avgMateriPerKurikulum: 0,
-  });
+  const { stats, loading } = useSelector(state => state.akademik);
+  const [refreshing, setRefreshing] = React.useState(false);
 
-  const loadStatistics = async () => {
-    try {
-      // TODO: Replace with actual API calls
-      // const kurikulumStats = await dispatch(fetchKurikulumStatistics()).unwrap();
-      
-      // Mock data - replace with actual API responses
-      setStatistics({
-        kurikulum: {
-          total: 8,
-          active: 6,
-          draft: 2,
-          published: 6,
-        },
-        totalMateri: 145,
-        avgMateriPerKurikulum: 18,
-      });
-    } catch (error) {
-      Alert.alert('Error', 'Gagal memuat statistik akademik');
-    }
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadStatistics();
-    setRefreshing(false);
+  const fetchStats = async (refresh = false) => {
+    if (refresh) setRefreshing(true);
+    await dispatch(fetchAkademikStats());
+    if (refresh) setRefreshing(false);
   };
 
   useEffect(() => {
-    loadStatistics();
+    fetchStats();
   }, []);
 
-  const handleCreateKurikulum = () => {
-    navigation.navigate('KurikulumForm');
-  };
-
-  const handleManageKurikulum = () => {
-    navigation.navigate('KurikulumManagement');
-  };
-
-  const quickActions = [
+  const menuItems = [
     {
-      id: 'create',
-      title: 'Buat Kurikulum',
-      icon: 'add-circle',
-      color: '#27ae60',
-      action: handleCreateKurikulum,
-    },
-    {
-      id: 'manage',
-      title: 'Kelola Kurikulum',
-      icon: 'settings',
-      color: '#3498db',
-      action: handleManageKurikulum,
-    },
+      title: 'Kurikulum',
+      subtitle: `${stats?.kurikulum || 0} kurikulum`,
+      icon: 'library',
+      color: '#8e44ad',
+      onPress: () => navigation.navigate('KurikulumList'),
+      description: 'Kelola kurikulum dan assignment materi'
+    }
   ];
 
-  const renderQuickAction = (action) => (
-    <TouchableOpacity
-      key={action.id}
-      style={[styles.quickActionCard, { borderColor: action.color }]}
-      onPress={action.action}
-      activeOpacity={0.7}
-    >
-      <View style={[styles.quickActionIcon, { backgroundColor: action.color }]}>
-        <Ionicons name={action.icon} size={24} color="#fff" />
-      </View>
-      <Text style={styles.quickActionTitle}>{action.title}</Text>
-    </TouchableOpacity>
-  );
+  const quickActions = [
+    { title: 'Buat Kurikulum', icon: 'add-circle', color: '#8e44ad', onPress: () => navigation.navigate('KurikulumForm') },
+    { title: 'Assign Materi', icon: 'link', color: '#3498db', onPress: () => navigation.navigate('KurikulumList') },
+    { title: 'Lihat Master Data', icon: 'library-outline', color: '#2ecc71', onPress: () => navigation.navigate('MasterData') }
+  ];
+
+  const recentKurikulum = stats?.recent_kurikulum || [];
+
+  if (loading && !refreshing) {
+    return <LoadingSpinner fullScreen message="Memuat statistik akademik..." />;
+  }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
+    <SafeAreaWrapper>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Akademik</Text>
-        <Text style={styles.headerSubtitle}>
-          Kelola kurikulum dengan menggabungkan materi dari Master Data
-        </Text>
+        <Text style={styles.title}>Akademik</Text>
+        <Text style={styles.subtitle}>Kelola kurikulum dan assignment materi</Text>
       </View>
 
-      <View style={styles.statsCard}>
-        <View style={styles.statsHeader}>
-          <View style={styles.statsIconContainer}>
-            <Ionicons name="school" size={28} color="#fff" />
-          </View>
-          <View style={styles.statsHeaderText}>
-            <Text style={styles.statsTitle}>Statistik Kurikulum</Text>
-            <Text style={styles.statsSubtitle}>Overview sistem kurikulum</Text>
-          </View>
-        </View>
-
-        <View style={styles.statsGrid}>
-          <View style={styles.statBox}>
-            <Text style={styles.statNumber}>{statistics.kurikulum.total}</Text>
-            <Text style={styles.statLabel}>Total Kurikulum</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={[styles.statNumber, { color: '#27ae60' }]}>
-              {statistics.kurikulum.published}
-            </Text>
-            <Text style={styles.statLabel}>Dipublikasi</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={[styles.statNumber, { color: '#f39c12' }]}>
-              {statistics.kurikulum.draft}
-            </Text>
-            <Text style={styles.statLabel}>Draft</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={[styles.statNumber, { color: '#9b59b6' }]}>
-              {statistics.totalMateri}
-            </Text>
-            <Text style={styles.statLabel}>Total Materi</Text>
+      <ScrollView 
+        style={styles.container}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => fetchStats(true)} />}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.statsSection}>
+          <Text style={styles.sectionTitle}>Ringkasan Akademik</Text>
+          <View style={styles.statsGrid}>
+            <StatCard
+              label="Total Kurikulum"
+              value={stats?.kurikulum || 0}
+              icon="library"
+              color="#8e44ad"
+            />
+            <StatCard
+              label="Materi Assigned"
+              value={stats?.assigned_materi || 0}
+              icon="link"
+              color="#3498db"
+            />
+            <StatCard
+              label="Semester Aktif"
+              value={stats?.active_semester || 0}
+              icon="calendar"
+              color="#2ecc71"
+            />
           </View>
         </View>
 
-        <View style={styles.additionalStats}>
-          <View style={styles.additionalStatItem}>
-            <Ionicons name="analytics" size={16} color="#7f8c8d" />
-            <Text style={styles.additionalStatText}>
-              Rata-rata {statistics.avgMateriPerKurikulum} materi per kurikulum
-            </Text>
+        <View style={styles.menuSection}>
+          <Text style={styles.sectionTitle}>Menu Utama</Text>
+          <View style={styles.menuGrid}>
+            {menuItems.map((item, index) => (
+              <TouchableOpacity key={index} style={styles.menuCard} onPress={item.onPress}>
+                <View style={[styles.iconContainer, { backgroundColor: item.color }]}>
+                  <Ionicons name={item.icon} size={32} color="#fff" />
+                </View>
+                <View style={styles.menuContent}>
+                  <Text style={styles.menuTitle}>{item.title}</Text>
+                  <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
+                  <Text style={styles.menuDescription}>{item.description}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#999" />
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
-      </View>
 
-      <View style={styles.quickActionsContainer}>
-        <Text style={styles.sectionTitle}>Aksi Cepat</Text>
-        <View style={styles.quickActionsGrid}>
-          {quickActions.map(renderQuickAction)}
-        </View>
-      </View>
+        {recentKurikulum.length > 0 && (
+          <View style={styles.recentSection}>
+            <Text style={styles.sectionTitle}>Kurikulum Terbaru</Text>
+            <View style={styles.recentGrid}>
+              {recentKurikulum.slice(0, 3).map((kurikulum, index) => (
+                <TouchableOpacity 
+                  key={index} 
+                  style={styles.recentCard}
+                  onPress={() => navigation.navigate('KurikulumDetail', { id: kurikulum.id })}
+                >
+                  <Text style={styles.recentTitle}>{kurikulum.nama}</Text>
+                  <Text style={styles.recentSubtitle}>
+                    {kurikulum.jenjang?.nama} • {kurikulum.materi_count || 0} materi
+                  </Text>
+                  <Text style={styles.recentDate}>
+                    {new Date(kurikulum.created_at).toLocaleDateString('id-ID')}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
 
-      <View style={styles.infoContainer}>
-        <View style={styles.infoCard}>
-          <Ionicons name="lightbulb" size={20} color="#f39c12" />
-          <View style={styles.infoTextContainer}>
-            <Text style={styles.infoTitle}>Tips Kurikulum</Text>
-            <Text style={styles.infoText}>
-              Gunakan materi dari Master Data untuk menyusun kurikulum yang terstruktur dan konsisten
-            </Text>
+        <View style={styles.quickSection}>
+          <Text style={styles.sectionTitle}>Aksi Cepat</Text>
+          <View style={styles.quickGrid}>
+            {quickActions.map((action, index) => (
+              <TouchableOpacity key={index} style={styles.quickButton} onPress={action.onPress}>
+                <Ionicons name={action.icon} size={24} color={action.color} />
+                <Text style={styles.quickText}>{action.title}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
-      </View>
-    </ScrollView>
+
+        <View style={styles.infoSection}>
+          <View style={styles.infoCard}>
+            <Ionicons name="information-circle" size={24} color="#3498db" />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoTitle}>Tentang Akademik</Text>
+              <Text style={styles.infoText}>
+                Bagian akademik fokus pada pengelolaan kurikulum dan assignment materi dari master data. 
+                Materi dibuat di Master Data, kemudian di-assign ke kurikulum di sini.
+              </Text>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaWrapper>
   );
 };
 
 const styles = StyleSheet.create({
+  header: {
+    padding: 20,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+  },
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
-  contentContainer: {
+  statsSection: {
     padding: 16,
   },
-  header: {
-    marginBottom: 24,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#7f8c8d',
-  },
-  statsCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  statsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  statsIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#3498db',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  statsHeaderText: {
-    flex: 1,
-  },
-  statsTitle: {
+  sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-  },
-  statsSubtitle: {
-    fontSize: 14,
-    color: '#7f8c8d',
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
   },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  statBox: {
-    width: '48%',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#7f8c8d',
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  additionalStats: {
-    borderTopWidth: 1,
-    borderTopColor: '#e9ecef',
-    paddingTop: 16,
-  },
-  additionalStatItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  additionalStatText: {
-    fontSize: 14,
-    color: '#7f8c8d',
-  },
-  quickActionsContainer: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 12,
-  },
-  quickActionsGrid: {
-    flexDirection: 'row',
     gap: 12,
   },
-  quickActionCard: {
-    flex: 1,
+  menuSection: {
+    padding: 16,
+    paddingTop: 0,
+  },
+  menuGrid: {
+    gap: 12,
+  },
+  menuCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowRadius: 2,
   },
-  quickActionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
+  iconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'center',
+    marginRight: 16,
   },
-  quickActionTitle: {
+  menuContent: {
+    flex: 1,
+  },
+  menuTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  menuSubtitle: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#666',
+    marginTop: 2,
+  },
+  menuDescription: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 4,
+  },
+  recentSection: {
+    padding: 16,
+    paddingTop: 0,
+  },
+  recentGrid: {
+    gap: 8,
+  },
+  recentCard: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#8e44ad',
+  },
+  recentTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  recentSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
+  recentDate: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 4,
+  },
+  quickSection: {
+    padding: 16,
+    paddingTop: 0,
+  },
+  quickGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  quickButton: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    flex: 1,
+    minWidth: '30%',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+  },
+  quickText: {
+    fontSize: 12,
+    color: '#333',
+    marginTop: 4,
     textAlign: 'center',
   },
-  infoContainer: {
-    marginBottom: 16,
+  infoSection: {
+    padding: 16,
+    paddingTop: 0,
+    paddingBottom: 32,
   },
   infoCard: {
-    backgroundColor: '#fff9e6',
+    backgroundColor: '#fff',
     borderRadius: 8,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#f39c12',
+    borderWidth: 1,
+    borderColor: '#e3f2fd',
   },
-  infoTextContainer: {
+  infoContent: {
     flex: 1,
+    marginLeft: 12,
   },
   infoTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#e67e22',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
     marginBottom: 4,
   },
   infoText: {
     fontSize: 14,
-    color: '#d68910',
+    color: '#666',
     lineHeight: 20,
   },
 });
