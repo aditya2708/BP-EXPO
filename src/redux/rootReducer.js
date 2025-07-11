@@ -1,9 +1,10 @@
 import { combineReducers } from '@reduxjs/toolkit';
 import authReducer from '../features/auth/redux/authSlice';
+
+// Admin Shelter
 import tutorReducer from '../features/adminShelter/redux/tutorSlice';
 import tutorCompetencyReducer from '../features/adminShelter/redux/tutorCompetencySlice';
 import tutorHonorReducer from '../features/adminShelter/redux/tutorHonorSlice';
-import tutorHonorSettingsReducer from '../features/adminPusat/redux/tutorHonorSettingsSlice';
 import qrTokenReducer from '../features/adminShelter/redux/qrTokenSlice';
 import attendanceReducer from '../features/adminShelter/redux/attendanceSlice';
 import aktivitasReducer from '../features/adminShelter/redux/aktivitasSlice';
@@ -19,18 +20,27 @@ import raportLaporanReducer from '../features/adminShelter/redux/raportLaporanSl
 import laporanSuratReducer from '../features/adminShelter/redux/laporanSuratSlice';
 import laporanAktivitasReducer from '../features/adminShelter/redux/laporanAktivitasSlice';
 import historiLaporanReducer from '../features/adminShelter/redux/historiLaporanSlice';
-import kurikulumReducer from '../features/adminCabang/redux/kurikulumSlice';
-import mataPelajaranReducer from '../features/adminCabang/redux/mataPelajaranSlice';
-import jenjangReducer from '../features/adminCabang/redux/jenjangSlice';
-import kelasReducer from '../features/adminCabang/redux/kelasSlice';
-import materiReducer from '../features/adminCabang/redux/materiSlice';
+
+// Admin Pusat
+import tutorHonorSettingsReducer from '../features/adminPusat/redux/tutorHonorSettingsSlice';
+
+// Admin Cabang - Master Data
+import jenjangReducer from '../features/adminCabang/redux/masterData/jenjangSlice';
+import mataPelajaranReducer from '../features/adminCabang/redux/masterData/mataPelajaranSlice';
+import kelasReducer from '../features/adminCabang/redux/masterData/kelasSlice';
+import materiReducer from '../features/adminCabang/redux/masterData/materiSlice';
+
+// Admin Cabang - Akademik
+import kurikulumReducer from '../features/adminCabang/redux/akademik/kurikulumSlice';
 
 const appReducer = combineReducers({
+  // Auth
   auth: authReducer,
+  
+  // Admin Shelter
   tutor: tutorReducer,
   tutorCompetency: tutorCompetencyReducer,
   tutorHonor: tutorHonorReducer,
-  tutorHonorSettings: tutorHonorSettingsReducer,
   qrToken: qrTokenReducer,
   attendance: attendanceReducer,
   aktivitas: aktivitasReducer,
@@ -46,18 +56,25 @@ const appReducer = combineReducers({
   laporanSurat: laporanSuratReducer,
   laporanAktivitas: laporanAktivitasReducer,
   historiLaporan: historiLaporanReducer,
-  kurikulum: kurikulumReducer,
-  mataPelajaran: mataPelajaranReducer,
+  
+  // Admin Pusat
+  tutorHonorSettings: tutorHonorSettingsReducer,
+  
+  // Admin Cabang - Master Data
   jenjang: jenjangReducer,
+  mataPelajaran: mataPelajaranReducer,
   kelas: kelasReducer,
   materi: materiReducer,
+  
+  // Admin Cabang - Akademik
+  kurikulum: kurikulumReducer,
 });
 
 const rootReducer = (state, action) => {
   if (action.type === 'auth/logout/fulfilled') {
-    return appReducer(undefined, action);
+    // Clear all state on logout
+    state = undefined;
   }
-  
   return appReducer(state, action);
 };
 
