@@ -2,7 +2,14 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const MateriKurikulumCard = ({ materiItem, onEdit, onDelete, onMoveUp, onMoveDown }) => {
+const MateriKurikulumCard = ({ kurikulumMateri, onEdit, onDelete, onMoveUp, onMoveDown }) => {
+  // Safe access with fallbacks
+  const materiItem = kurikulumMateri || {};
+  const materi = materiItem.materi || {};
+  const mataPelajaran = materiItem.mataPelajaran || materiItem.mata_pelajaran || {};
+  const kelas = materi.kelas || {};
+  const jenjang = mataPelajaran.jenjang || {};
+
   const getKategoriColor = (kategori) => {
     switch (kategori) {
       case 'wajib': return '#e74c3c';
@@ -19,7 +26,7 @@ const MateriKurikulumCard = ({ materiItem, onEdit, onDelete, onMoveUp, onMoveDow
       case 'pilihan': return 'Pilihan';
       case 'muatan_lokal': return 'Muatan Lokal';
       case 'ekstrakurikuler': return 'Ekstrakurikuler';
-      default: return kategori;
+      default: return kategori || 'Umum';
     }
   };
 
@@ -32,21 +39,20 @@ const MateriKurikulumCard = ({ materiItem, onEdit, onDelete, onMoveUp, onMoveDow
   };
 
   const getKelasDisplayName = () => {
-    if (!materiItem.materi?.kelas) return 'N/A';
+    if (!kelas) return 'N/A';
     
-    const kelas = materiItem.materi.kelas;
     if (kelas.jenis_kelas === 'standard' && kelas.tingkat) {
       return `Kelas ${getRomanNumeral(kelas.tingkat)}`;
     }
-    return kelas.nama_kelas;
+    return kelas.nama_kelas || 'N/A';
   };
 
   const getHierarchyPath = () => {
-    const jenjang = materiItem.mata_pelajaran?.jenjang?.nama_jenjang || 'N/A';
-    const mataPelajaran = materiItem.mata_pelajaran?.nama_mata_pelajaran || 'N/A';
-    const kelas = getKelasDisplayName();
+    const jenjangName = jenjang.nama_jenjang || 'N/A';
+    const mataPelajaranName = mataPelajaran.nama_mata_pelajaran || 'N/A';
+    const kelasName = getKelasDisplayName();
     
-    return `${jenjang} > ${mataPelajaran} > ${kelas}`;
+    return `${jenjangName} > ${mataPelajaranName} > ${kelasName}`;
   };
 
   return (
@@ -54,20 +60,23 @@ const MateriKurikulumCard = ({ materiItem, onEdit, onDelete, onMoveUp, onMoveDow
       <View style={styles.cardHeader}>
         <View style={styles.materiInfo}>
           <Text style={styles.materiTitle} numberOfLines={2}>
-            {materiItem.materi?.nama_materi || 'N/A'}
+            {materi.nama_materi || 'Materi Tidak Dikenal'}
           </Text>
           <Text style={styles.hierarchyPath} numberOfLines={1}>
             {getHierarchyPath()}
           </Text>
+          {materiItem.urutan && (
+            <Text style={styles.urutanText}>Urutan: {materiItem.urutan}</Text>
+          )}
         </View>
         
-        {materiItem.mata_pelajaran?.kategori && (
+        {mataPelajaran.kategori && (
           <View style={[
             styles.kategoriTag,
-            { backgroundColor: getKategoriColor(materiItem.mata_pelajaran.kategori) }
+            { backgroundColor: getKategoriColor(mataPelajaran.kategori) }
           ]}>
             <Text style={styles.kategoriText}>
-              {getKategoriText(materiItem.mata_pelajaran.kategori)}
+              {getKategoriText(mataPelajaran.kategori)}
             </Text>
           </View>
         )}
@@ -104,7 +113,7 @@ const MateriKurikulumCard = ({ materiItem, onEdit, onDelete, onMoveUp, onMoveDow
           
           {onDelete && (
             <TouchableOpacity 
-              style={[styles.actionButton, styles.deleteButton]}
+              style={styles.deleteButton}
               onPress={onDelete}
             >
               <Ionicons name="trash-outline" size={16} color="#dc3545" />
@@ -121,69 +130,72 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     marginBottom: 12,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#e9ecef'
+    shadowRadius: 2,
+    overflow: 'hidden',
   },
   cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f8f9fa'
   },
   materiInfo: {
     flex: 1,
-    marginBottom: 8
+    marginRight: 12,
   },
   materiTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#2c3e50',
-    lineHeight: 22
+    color: '#333',
+    marginBottom: 4,
   },
   hierarchyPath: {
     fontSize: 12,
     color: '#6c757d',
-    marginTop: 4
+    marginBottom: 4,
+  },
+  urutanText: {
+    fontSize: 11,
+    color: '#28a745',
+    fontWeight: '500',
   },
   kategoriTag: {
-    alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-    marginTop: 8
+    alignSelf: 'flex-start',
   },
   kategoriText: {
+    fontSize: 10,
     color: '#fff',
-    fontSize: 11,
-    fontWeight: '500'
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
   cardFooter: {
+    borderTopWidth: 1,
+    borderTopColor: '#f8f9fa',
     paddingHorizontal: 16,
-    paddingVertical: 12
+    paddingVertical: 8,
   },
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 8
+    gap: 8,
   },
   actionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    padding: 8,
+    borderRadius: 6,
     backgroundColor: '#f8f9fa',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e9ecef'
   },
   deleteButton: {
-    backgroundColor: '#fff5f5',
-    borderColor: '#fecaca'
-  }
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#ffeaea',
+  },
 });
 
 export default MateriKurikulumCard;

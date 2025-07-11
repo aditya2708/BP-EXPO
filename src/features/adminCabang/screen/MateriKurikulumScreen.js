@@ -8,7 +8,6 @@ import {
   RefreshControl,
   Alert,
   Modal,
-  TextInput,
   ActivityIndicator
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -48,8 +47,7 @@ const MateriKurikulumScreen = () => {
     jenjang: '',
     mataPelajaran: '',
     kelas: '',
-    materi: '',
-    jamPelajaran: '60'
+    materi: ''
   });
 
   useEffect(() => {
@@ -88,21 +86,14 @@ const MateriKurikulumScreen = () => {
       jenjang: '',
       mataPelajaran: '',
       kelas: '',
-      materi: '',
-      jamPelajaran: '60'
+      materi: ''
     });
     setShowAddModal(true);
   };
 
   const handleSubmitMateri = async () => {
-    if (!formData.mataPelajaran || !formData.materi || !formData.jamPelajaran) {
-      safeAlert('Error', 'Semua field wajib diisi');
-      return;
-    }
-
-    const jamPelajaran = parseInt(formData.jamPelajaran);
-    if (isNaN(jamPelajaran) || jamPelajaran < 1) {
-      safeAlert('Error', 'Jam pelajaran harus berupa angka positif');
+    if (!formData.mataPelajaran || !formData.materi) {
+      safeAlert('Error', 'Mata pelajaran dan materi wajib diisi');
       return;
     }
 
@@ -112,8 +103,7 @@ const MateriKurikulumScreen = () => {
         id: kurikulumId,
         materiData: {
           id_mata_pelajaran: formData.mataPelajaran,
-          id_materi: formData.materi,
-          jam_pelajaran: jamPelajaran
+          id_materi: formData.materi
         }
       })).unwrap();
       
@@ -126,10 +116,10 @@ const MateriKurikulumScreen = () => {
     }
   };
 
-  const handleDeleteMateri = (materiItem) => {
+  const handleDeleteMateri = (materiId) => {
     safeAlert(
-      'Hapus Materi',
-      `Hapus ${materiItem.materi?.nama_materi} dari kurikulum?`,
+      'Konfirmasi',
+      'Apakah Anda yakin ingin menghapus materi ini dari kurikulum?',
       [
         { text: 'Batal', style: 'cancel' },
         {
@@ -137,13 +127,10 @@ const MateriKurikulumScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await dispatch(removeMateri({
-                id: kurikulumId,
-                materiId: materiItem.id
-              })).unwrap();
+              await dispatch(removeMateri({ kurikulumId, materiId })).unwrap();
               safeAlert('Sukses', 'Materi berhasil dihapus dari kurikulum');
             } catch (err) {
-              safeAlert('Error', 'Gagal menghapus materi');
+              safeAlert('Error', err.message || 'Gagal menghapus materi');
             }
           }
         }
@@ -157,124 +144,123 @@ const MateriKurikulumScreen = () => {
 
   const renderMateriItem = ({ item }) => (
     <MateriKurikulumCard
-      materiItem={item}
-      onDelete={() => handleDeleteMateri(item)}
+      kurikulumMateri={item}
+      onDelete={() => handleDeleteMateri(item.id)}
     />
   );
 
-  const renderAddModal = () => (
-    <Modal
-      visible={showAddModal}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={() => setShowAddModal(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Tambah Materi</Text>
-            <TouchableOpacity onPress={() => setShowAddModal(false)}>
-              <Ionicons name="close" size={24} color="#666" />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.formContainer}>
-            <CascadeSelector
-              selectedJenjang={formData.jenjang}
-              selectedMataPelajaran={formData.mataPelajaran}
-              selectedKelas={formData.kelas}
-              selectedMateri={formData.materi}
-              onJenjangChange={(value) => updateFormField('jenjang', value)}
-              onMataPelajaranChange={(value) => updateFormField('mataPelajaran', value)}
-              onKelasChange={(value) => updateFormField('kelas', value)}
-              onMateriChange={(value) => updateFormField('materi', value)}
-            />
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Jam Pelajaran</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.jamPelajaran}
-                onChangeText={(value) => updateFormField('jamPelajaran', value)}
-                placeholder="Masukkan jam pelajaran"
-                keyboardType="numeric"
-              />
-              <Text style={styles.helpText}>Durasi dalam menit (contoh: 60 untuk 1 jam)</Text>
-            </View>
-          </View>
-
-          <View style={styles.modalActions}>
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
-              onPress={() => setShowAddModal(false)}
-            >
-              <Text style={styles.cancelButtonText}>Batal</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, styles.submitButton]}
-              onPress={handleSubmitMateri}
-              disabled={submitting}
-            >
-              {submitting ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.submitButtonText}>Tambah</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+      >
+        <Ionicons name="arrow-back" size={24} color="#333" />
+      </TouchableOpacity>
+      <View style={styles.headerContent}>
+        <Text style={styles.headerTitle}>Materi Kurikulum</Text>
+        <Text style={styles.headerSubtitle}>{kurikulum?.nama_kurikulum}</Text>
       </View>
-    </Modal>
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={handleAddMateri}
+      >
+        <Ionicons name="add" size={24} color="#fff" />
+      </TouchableOpacity>
+    </View>
   );
 
-  if (loading && !refreshing) {
-    return <LoadingSpinner fullScreen message="Memuat materi kurikulum..." />;
+  if (loading && !kurikulumDetail) {
+    return <LoadingSpinner />;
   }
 
-  if (error) {
+  if (error && !kurikulumDetail) {
     return (
-      <View style={styles.container}>
-        <ErrorMessage message={error} onRetry={loadData} />
-      </View>
+      <ErrorMessage
+        message={error}
+        onRetry={loadData}
+      />
     );
   }
 
+  const materiList = kurikulumDetail?.kurikulum_materi || [];
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{kurikulum?.nama_kurikulum}</Text>
-        <Text style={styles.headerSubtitle}>
-          {kurikulumDetail?.kurikulum_materi?.length || 0} Materi
-        </Text>
-      </View>
-
-      <View style={styles.actionContainer}>
-        <TouchableOpacity style={styles.addButton} onPress={handleAddMateri}>
-          <Ionicons name="add" size={20} color="#fff" />
-          <Text style={styles.addButtonText}>Tambah Materi</Text>
-        </TouchableOpacity>
-      </View>
-
+      {renderHeader()}
+      
       <FlatList
-        data={kurikulumDetail?.kurikulum_materi || []}
+        data={materiList}
         renderItem={renderMateriItem}
         keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={styles.listContainer}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['#2ecc71']}
+          />
         }
-        contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="book-outline" size={64} color="#bdc3c7" />
-            <Text style={styles.emptyText}>Belum ada materi</Text>
-            <Text style={styles.emptySubText}>
-              Tap "Tambah Materi" untuk menambah materi ke kurikulum
-            </Text>
+            <Ionicons name="document-outline" size={80} color="#bdc3c7" />
+            <Text style={styles.emptyText}>Belum ada materi dalam kurikulum</Text>
+            <Text style={styles.emptySubtext}>Tap tombol + untuk menambah materi</Text>
           </View>
         }
       />
 
-      {renderAddModal()}
+      <Modal
+        visible={showAddModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAddModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Tambah Materi</Text>
+              <TouchableOpacity onPress={() => setShowAddModal(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.formContainer}>
+              <CascadeSelector
+                selectedJenjang={formData.jenjang}
+                selectedMataPelajaran={formData.mataPelajaran}
+                selectedKelas={formData.kelas}
+                selectedMateri={formData.materi}
+                onJenjangChange={(value) => updateFormField('jenjang', value)}
+                onMataPelajaranChange={(value) => updateFormField('mataPelajaran', value)}
+                onKelasChange={(value) => updateFormField('kelas', value)}
+                onMateriChange={(value) => updateFormField('materi', value)}
+                disabled={submitting}
+              />
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.button, styles.cancelButton]}
+                onPress={() => setShowAddModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Batal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.submitButton]}
+                onPress={handleSubmitMateri}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.submitButtonText}>Tambah</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -282,13 +268,28 @@ const MateriKurikulumScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f9fa',
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#fff',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 12,
+  },
+  headerContent: {
+    flex: 1,
   },
   headerTitle: {
     fontSize: 18,
@@ -298,44 +299,37 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 14,
     color: '#666',
-    marginTop: 4,
-  },
-  actionContainer: {
-    padding: 16,
+    marginTop: 2,
   },
   addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#2ecc71',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
   },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  listContent: {
+  listContainer: {
     padding: 16,
-    paddingTop: 0,
+    flexGrow: 1,
   },
   emptyContainer: {
+    flex: 1,
     alignItems: 'center',
-    paddingVertical: 60,
+    justifyContent: 'center',
+    paddingTop: 100,
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#7f8c8d',
     marginTop: 16,
+    textAlign: 'center',
   },
-  emptySubText: {
+  emptySubtext: {
     fontSize: 14,
     color: '#95a5a6',
-    marginTop: 4,
+    marginTop: 8,
     textAlign: 'center',
   },
   modalOverlay: {
@@ -365,30 +359,6 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     marginBottom: 20,
-  },
-  inputGroup: {
-    marginBottom: 16,
-    marginTop: 16,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#fff',
-  },
-  helpText: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-    fontStyle: 'italic',
   },
   modalActions: {
     flexDirection: 'row',
