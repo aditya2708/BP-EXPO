@@ -48,9 +48,19 @@ const PengajuanDonaturStack = createStackNavigator();
 const DonaturStack = createStackNavigator();
 const ProfileStack = createStackNavigator();
 
+const defaultScreenOptions = {
+  headerStyle: {
+    backgroundColor: '#2ecc71',
+  },
+  headerTintColor: '#fff',
+  headerTitleStyle: {
+    fontWeight: 'bold',
+  },
+};
+
 const HomeStackNavigator = () => {
   return (
-    <HomeStack.Navigator>
+    <HomeStack.Navigator screenOptions={defaultScreenOptions}>
       <HomeStack.Screen 
         name="Dashboard" 
         component={AdminCabangDashboardScreen} 
@@ -60,6 +70,7 @@ const HomeStackNavigator = () => {
         name="SurveyDetail" 
         component={SurveyApprovalDetailScreen} 
         options={{ headerTitle: 'Survey Detail' }}
+        initialParams={{}}
       />
     </HomeStack.Navigator>
   );
@@ -67,7 +78,10 @@ const HomeStackNavigator = () => {
 
 const ManagementStackNavigator = () => {
   return (
-    <ManagementStack.Navigator>
+    <ManagementStack.Navigator 
+      screenOptions={defaultScreenOptions}
+      initialRouteName="SurveyStatusFilter"
+    >
       <ManagementStack.Screen 
         name="SurveyStatusFilter" 
         component={SurveyStatusFilterScreen} 
@@ -77,6 +91,7 @@ const ManagementStackNavigator = () => {
         name="SurveyApprovalDetail" 
         component={SurveyApprovalDetailScreen} 
         options={{ headerTitle: 'Detail Survei' }}
+        initialParams={{}}
       />
       
       {/* Kurikulum Management */}
@@ -91,16 +106,19 @@ const ManagementStackNavigator = () => {
         options={({ route }) => ({ 
           headerTitle: route.params?.kurikulum ? 'Edit Kurikulum' : 'Tambah Kurikulum'
         })}
+        initialParams={{}}
       />
       <ManagementStack.Screen 
         name="KurikulumDetail" 
         component={KurikulumDetailScreen} 
         options={{ headerTitle: 'Detail Kurikulum' }}
+        initialParams={{}}
       />
       <ManagementStack.Screen 
         name="MateriKurikulum" 
         component={MateriKurikulumScreen} 
         options={{ headerTitle: 'Materi Kurikulum' }}
+        initialParams={{}}
       />
 
       {/* Jenjang Management */}
@@ -115,11 +133,13 @@ const ManagementStackNavigator = () => {
         options={({ route }) => ({ 
           headerTitle: route.params?.jenjang ? 'Edit Jenjang' : 'Tambah Jenjang'
         })}
+        initialParams={{}}
       />
       <ManagementStack.Screen 
         name="JenjangDetail" 
         component={JenjangDetailScreen} 
         options={{ headerTitle: 'Detail Jenjang' }}
+        initialParams={{}}
       />
 
       {/* Kelas Management */}
@@ -134,11 +154,13 @@ const ManagementStackNavigator = () => {
         options={({ route }) => ({ 
           headerTitle: route.params?.kelas ? 'Edit Kelas' : 'Tambah Kelas'
         })}
+        initialParams={{}}
       />
       <ManagementStack.Screen 
         name="KelasDetail" 
         component={KelasDetailScreen} 
         options={{ headerTitle: 'Detail Kelas' }}
+        initialParams={{}}
       />
 
       {/* Mata Pelajaran Management */}
@@ -153,11 +175,13 @@ const ManagementStackNavigator = () => {
         options={({ route }) => ({ 
           headerTitle: route.params?.mataPelajaran ? 'Edit Mata Pelajaran' : 'Tambah Mata Pelajaran'
         })}
+        initialParams={{}}
       />
       <ManagementStack.Screen 
         name="MataPelajaranDetail" 
         component={MataPelajaranDetailScreen} 
         options={{ headerTitle: 'Detail Mata Pelajaran' }}
+        initialParams={{}}
       />
 
       {/* Materi Management */}
@@ -172,11 +196,13 @@ const ManagementStackNavigator = () => {
         options={({ route }) => ({ 
           headerTitle: route.params?.materi ? 'Edit Materi' : 'Tambah Materi'
         })}
+        initialParams={{}}
       />
       <ManagementStack.Screen 
         name="MateriDetail" 
         component={MateriDetailScreen} 
         options={{ headerTitle: 'Detail Materi' }}
+        initialParams={{}}
       />
     </ManagementStack.Navigator>
   );
@@ -184,7 +210,7 @@ const ManagementStackNavigator = () => {
 
 const PengajuanDonaturStackNavigator = () => {
   return (
-    <PengajuanDonaturStack.Navigator>
+    <PengajuanDonaturStack.Navigator screenOptions={defaultScreenOptions}>
       <PengajuanDonaturStack.Screen 
         name="PengajuanDonaturList" 
         component={AdminCabangPengajuanDonaturScreen} 
@@ -194,11 +220,13 @@ const PengajuanDonaturStackNavigator = () => {
         name="DonaturSelection" 
         component={DonaturSelectionScreen} 
         options={{ headerTitle: 'Pilih Donatur' }}
+        initialParams={{}}
       />
       <PengajuanDonaturStack.Screen 
         name="ChildDetail" 
         component={ChildDetailScreen} 
         options={{ headerTitle: 'Detail Anak' }}
+        initialParams={{}}
       />
     </PengajuanDonaturStack.Navigator>
   );
@@ -206,7 +234,7 @@ const PengajuanDonaturStackNavigator = () => {
 
 const DonaturStackNavigator = () => {
   return (
-    <DonaturStack.Navigator>
+    <DonaturStack.Navigator screenOptions={defaultScreenOptions}>
       <DonaturStack.Screen 
         name="DonaturList" 
         component={AdminCabangDonaturListScreen} 
@@ -218,11 +246,13 @@ const DonaturStackNavigator = () => {
         options={({ route }) => ({
           headerTitle: route.params?.donaturId ? 'Edit Donatur' : 'Tambah Donatur'
         })}
+        initialParams={{}}
       />
       <DonaturStack.Screen 
         name="DonaturDetail" 
         component={AdminCabangDonaturDetailScreen} 
         options={{ headerTitle: 'Detail Donatur' }}
+        initialParams={{}}
       />
       <DonaturStack.Screen 
         name="DonaturFilter" 
@@ -235,7 +265,7 @@ const DonaturStackNavigator = () => {
 
 const ProfileStackNavigator = () => {
   return (
-    <ProfileStack.Navigator>
+    <ProfileStack.Navigator screenOptions={defaultScreenOptions}>
       <ProfileStack.Screen 
         name="Profile" 
         component={AdminCabangProfileScreen} 
@@ -252,16 +282,24 @@ const AdminCabangNavigator = () => {
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
 
-          if (route.name === 'Home') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Management') {
-            iconName = focused ? 'document-text' : 'document-text-outline';
-          } else if (route.name === 'PengajuanDonatur') {
-            iconName = focused ? 'person-add' : 'person-add-outline';
-          } else if (route.name === 'DonaturManagement') {
-            iconName = focused ? 'people' : 'people-outline';
-          } else if (route.name === 'ProfileTab') {
-            iconName = focused ? 'person' : 'person-outline';
+          switch (route.name) {
+            case 'Home':
+              iconName = focused ? 'home' : 'home-outline';
+              break;
+            case 'Management':
+              iconName = focused ? 'document-text' : 'document-text-outline';
+              break;
+            case 'PengajuanDonatur':
+              iconName = focused ? 'person-add' : 'person-add-outline';
+              break;
+            case 'DonaturManagement':
+              iconName = focused ? 'people' : 'people-outline';
+              break;
+            case 'ProfileTab':
+              iconName = focused ? 'person' : 'person-outline';
+              break;
+            default:
+              iconName = 'help-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -271,8 +309,15 @@ const AdminCabangNavigator = () => {
         headerShown: false,
         tabBarLabelStyle: {
           fontSize: 11,
+          fontWeight: '500',
+        },
+        tabBarStyle: {
+          height: 60,
+          paddingBottom: 5,
+          paddingTop: 5,
         },
       })}
+      initialRouteName="Home"
     >
       <Tab.Screen 
         name="Home" 
