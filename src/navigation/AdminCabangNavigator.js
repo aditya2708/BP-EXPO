@@ -1,51 +1,60 @@
+// src/navigation/AdminCabangNavigator.js
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 
+// Dashboard and Core Screens
 import AdminCabangDashboardScreen from '../features/adminCabang/screen/AdminCabangDashboardScreen';
-import AdminCabangProfileScreen from '../features/adminCabang/screen/AdminCabangProfileScreen';
-import SurveyStatusFilterScreen from '../features/adminCabang/screen/SurveyStatusFilterScreen';
-import SurveyApprovalDetailScreen from '../features/adminCabang/screen/SurveyApprovalDetailScreen';
-import AdminCabangPengajuanDonaturScreen from '../features/adminCabang/screen/AdminCabangPengajuanDonaturScreen';
-import DonaturSelectionScreen from '../features/adminCabang/screen/DonaturSelectionScreen';
-import ChildDetailScreen from '../features/adminCabang/screen/ChildDetailScreen';
-import AdminCabangDonaturListScreen from '../features/adminCabang/screen/AdminCabangDonaturListScreen';
-import AdminCabangDonaturFormScreen from '../features/adminCabang/screen/AdminCabangDonaturFormScreen';
-import AdminCabangDonaturDetailScreen from '../features/adminCabang/screen/AdminCabangDonaturDetailScreen';
-import DonaturFilterScreen from '../features/adminCabang/screen/DonaturFilterScreen';
+import ProfileScreen from '../features/adminCabang/screen/ProfileScreen';
 
-// Kurikulum Management Screens
-import KurikulumManagementScreen from '../features/adminCabang/screen/KurikulumManagementScreen';
-import KurikulumFormScreen from '../features/adminCabang/screen/KurikulumFormScreen';
-import KurikulumDetailScreen from '../features/adminCabang/screen/KurikulumDetailScreen';
-import MateriKurikulumScreen from '../features/adminCabang/screen/MateriKurikulumScreen';
+// Landing Screens
+import MasterDataMenuScreen from '../features/adminCabang/screens/MasterDataMenuScreen';
+import AkademikMenuScreen from '../features/adminCabang/screens/AkademikMenuScreen';
 
-// Mata Pelajaran Management Screens
-import MataPelajaranManagementScreen from '../features/adminCabang/screen/MataPelajaranManagementScreen';
-import MataPelajaranFormScreen from '../features/adminCabang/screen/MataPelajaranFormScreen';
-import MataPelajaranDetailScreen from '../features/adminCabang/screen/MataPelajaranDetailScreen';
+// Master Data - Jenjang Screens
+import JenjangListScreen from '../features/adminCabang/screens/masterData/jenjang/JenjangListScreen';
+import JenjangFormScreen from '../features/adminCabang/screens/masterData/jenjang/JenjangFormScreen';
+import JenjangDetailScreen from '../features/adminCabang/screens/masterData/jenjang/JenjangDetailScreen';
 
-// Jenjang Management Screens
-import JenjangManagementScreen from '../features/adminCabang/screen/JenjangManagementScreen';
-import JenjangFormScreen from '../features/adminCabang/screen/JenjangFormScreen';
-import JenjangDetailScreen from '../features/adminCabang/screen/JenjangDetailScreen';
+// Master Data - Mata Pelajaran Screens
+import MataPelajaranListScreen from '../features/adminCabang/screens/masterData/mataPelajaran/MataPelajaranListScreen';
+import MataPelajaranFormScreen from '../features/adminCabang/screens/masterData/mataPelajaran/MataPelajaranFormScreen';
+import MataPelajaranDetailScreen from '../features/adminCabang/screens/masterData/mataPelajaran/MataPelajaranDetailScreen';
 
-// Kelas Management Screens
-import KelasManagementScreen from '../features/adminCabang/screen/KelasManagementScreen';
-import KelasFormScreen from '../features/adminCabang/screen/KelasFormScreen';
-import KelasDetailScreen from '../features/adminCabang/screen/KelasDetailScreen';
+// Master Data - Kelas Screens
+import KelasListScreen from '../features/adminCabang/screens/masterData/kelas/KelasListScreen';
+import KelasFormScreen from '../features/adminCabang/screens/masterData/kelas/KelasFormScreen';
+import KelasDetailScreen from '../features/adminCabang/screens/masterData/kelas/KelasDetailScreen';
 
-// Materi Management Screens
-import MateriManagementScreen from '../features/adminCabang/screen/MateriManagementScreen';
-import MateriFormScreen from '../features/adminCabang/screen/MateriFormScreen';
-import MateriDetailScreen from '../features/adminCabang/screen/MateriDetailScreen';
+// Master Data - Materi Screens
+import MateriListScreen from '../features/adminCabang/screens/masterData/materi/MateriListScreen';
+import MateriFormScreen from '../features/adminCabang/screens/masterData/materi/MateriFormScreen';
+import MateriDetailScreen from '../features/adminCabang/screens/masterData/materi/MateriDetailScreen';
+
+// Akademik - Kurikulum Screens
+import KurikulumListScreen from '../features/adminCabang/screens/akademik/kurikulum/KurikulumListScreen';
+import KurikulumFormScreen from '../features/adminCabang/screens/akademik/kurikulum/KurikulumFormScreen';
+import KurikulumDetailScreen from '../features/adminCabang/screens/akademik/kurikulum/KurikulumDetailScreen';
+
+// Management Screens (unchanged)
+import ManagementScreen from '../features/adminCabang/screen/ManagementScreen';
+import DonaturManagementScreen from '../features/adminCabang/screen/DonaturManagementScreen';
+import DonaturFormScreen from '../features/adminCabang/screen/DonaturFormScreen';
+import DonaturDetailScreen from '../features/adminCabang/screen/DonaturDetailScreen';
+import PengajuanDonaturScreen from '../features/adminCabang/screen/PengajuanDonaturScreen';
+import PengajuanDonaturDetailScreen from '../features/adminCabang/screen/PengajuanDonaturDetailScreen';
+
+// Survey Management Screens (if exists)
+import SurveyManagementScreen from '../features/adminCabang/screen/SurveyManagementScreen';
+import SurveyDetailScreen from '../features/adminCabang/screen/SurveyDetailScreen';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
+const MasterDataStack = createStackNavigator();
+const AkademikStack = createStackNavigator();
 const ManagementStack = createStackNavigator();
 const PengajuanDonaturStack = createStackNavigator();
-const DonaturStack = createStackNavigator();
 const ProfileStack = createStackNavigator();
 
 const defaultScreenOptions = {
@@ -58,294 +67,201 @@ const defaultScreenOptions = {
   },
 };
 
-const HomeStackNavigator = () => {
+// Home Stack Navigator
+function HomeStackNavigator() {
   return (
-    <HomeStack.Navigator screenOptions={defaultScreenOptions}>
-      <HomeStack.Screen 
-        name="Dashboard" 
-        component={AdminCabangDashboardScreen} 
-        options={{ headerTitle: 'Dashboard Admin Cabang' }}
-      />
-      <HomeStack.Screen 
-        name="SurveyDetail" 
-        component={SurveyApprovalDetailScreen} 
-        options={{ headerTitle: 'Survey Detail' }}
-        initialParams={{}}
-      />
+    <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+      <HomeStack.Screen name="Dashboard" component={AdminCabangDashboardScreen} />
     </HomeStack.Navigator>
   );
-};
+}
 
-const ManagementStackNavigator = () => {
+// Master Data Stack Navigator
+function MasterDataStackNavigator() {
   return (
-    <ManagementStack.Navigator 
-      screenOptions={defaultScreenOptions}
-      initialRouteName="SurveyStatusFilter"
-    >
+    <MasterDataStack.Navigator screenOptions={{ headerShown: false }}>
+      {/* Landing Screen */}
+      <MasterDataStack.Screen name="MasterDataMenu" component={MasterDataMenuScreen} />
+      
+      {/* Jenjang Screens */}
+      <MasterDataStack.Screen name="JenjangList" component={JenjangListScreen} />
+      <MasterDataStack.Screen name="JenjangForm" component={JenjangFormScreen} />
+      <MasterDataStack.Screen name="JenjangDetail" component={JenjangDetailScreen} />
+      
+      {/* Mata Pelajaran Screens */}
+      <MasterDataStack.Screen name="MataPelajaranList" component={MataPelajaranListScreen} />
+      <MasterDataStack.Screen name="MataPelajaranForm" component={MataPelajaranFormScreen} />
+      <MasterDataStack.Screen name="MataPelajaranDetail" component={MataPelajaranDetailScreen} />
+      
+      {/* Kelas Screens */}
+      <MasterDataStack.Screen name="KelasList" component={KelasListScreen} />
+      <MasterDataStack.Screen name="KelasForm" component={KelasFormScreen} />
+      <MasterDataStack.Screen name="KelasDetail" component={KelasDetailScreen} />
+      
+      {/* Materi Screens */}
+      <MasterDataStack.Screen name="MateriList" component={MateriListScreen} />
+      <MasterDataStack.Screen name="MateriForm" component={MateriFormScreen} />
+      <MasterDataStack.Screen name="MateriDetail" component={MateriDetailScreen} />
+    </MasterDataStack.Navigator>
+  );
+}
+
+// Akademik Stack Navigator
+function AkademikStackNavigator() {
+  return (
+    <AkademikStack.Navigator screenOptions={{ headerShown: false }}>
+      {/* Landing Screen */}
+      <AkademikStack.Screen name="AkademikMenu" component={AkademikMenuScreen} />
+      
+      {/* Kurikulum Screens */}
+      <AkademikStack.Screen name="KurikulumList" component={KurikulumListScreen} />
+      <AkademikStack.Screen name="KurikulumForm" component={KurikulumFormScreen} />
+      <AkademikStack.Screen name="KurikulumDetail" component={KurikulumDetailScreen} />
+    </AkademikStack.Navigator>
+  );
+}
+
+// Management Stack Navigator
+function ManagementStackNavigator() {
+  return (
+    <ManagementStack.Navigator screenOptions={defaultScreenOptions}>
       <ManagementStack.Screen 
-        name="SurveyStatusFilter" 
-        component={SurveyStatusFilterScreen} 
-        options={{ headerTitle: 'Manajemen Survei' }}
-      />
-      <ManagementStack.Screen 
-        name="SurveyApprovalDetail" 
-        component={SurveyApprovalDetailScreen} 
-        options={{ headerTitle: 'Detail Survei' }}
-        initialParams={{}}
+        name="ManagementMain" 
+        component={ManagementScreen} 
+        options={{ title: 'Manajemen' }}
       />
       
-      {/* Kurikulum Management */}
+      {/* Survey Management */}
       <ManagementStack.Screen 
-        name="KurikulumManagement" 
-        component={KurikulumManagementScreen} 
-        options={{ headerTitle: 'Manajemen Kurikulum' }}
+        name="SurveyManagement" 
+        component={SurveyManagementScreen} 
+        options={{ title: 'Survey Management' }}
       />
       <ManagementStack.Screen 
-        name="KurikulumForm" 
-        component={KurikulumFormScreen} 
-        options={({ route }) => ({ 
-          headerTitle: route.params?.kurikulum ? 'Edit Kurikulum' : 'Tambah Kurikulum'
-        })}
-        initialParams={{}}
+        name="SurveyDetail" 
+        component={SurveyDetailScreen} 
+        options={{ title: 'Detail Survey' }}
+      />
+      
+      {/* Donatur Management */}
+      <ManagementStack.Screen 
+        name="DonaturManagement" 
+        component={DonaturManagementScreen} 
+        options={{ title: 'Manajemen Donatur' }}
       />
       <ManagementStack.Screen 
-        name="KurikulumDetail" 
-        component={KurikulumDetailScreen} 
-        options={{ headerTitle: 'Detail Kurikulum' }}
-        initialParams={{}}
+        name="DonaturForm" 
+        component={DonaturFormScreen} 
+        options={{ title: 'Form Donatur' }}
       />
       <ManagementStack.Screen 
-        name="MateriKurikulum" 
-        component={MateriKurikulumScreen} 
-        options={{ headerTitle: 'Materi Kurikulum' }}
-        initialParams={{}}
-      />
-
-      {/* Jenjang Management */}
-      <ManagementStack.Screen 
-        name="JenjangManagement" 
-        component={JenjangManagementScreen} 
-        options={{ headerTitle: 'Manajemen Jenjang' }}
-      />
-      <ManagementStack.Screen 
-        name="JenjangForm" 
-        component={JenjangFormScreen} 
-        options={({ route }) => ({ 
-          headerTitle: route.params?.jenjang ? 'Edit Jenjang' : 'Tambah Jenjang'
-        })}
-        initialParams={{}}
-      />
-      <ManagementStack.Screen 
-        name="JenjangDetail" 
-        component={JenjangDetailScreen} 
-        options={{ headerTitle: 'Detail Jenjang' }}
-        initialParams={{}}
-      />
-
-      {/* Kelas Management */}
-      <ManagementStack.Screen 
-        name="KelasManagement" 
-        component={KelasManagementScreen} 
-        options={{ headerTitle: 'Manajemen Kelas' }}
-      />
-      <ManagementStack.Screen 
-        name="KelasForm" 
-        component={KelasFormScreen} 
-        options={({ route }) => ({ 
-          headerTitle: route.params?.kelas ? 'Edit Kelas' : 'Tambah Kelas'
-        })}
-        initialParams={{}}
-      />
-      <ManagementStack.Screen 
-        name="KelasDetail" 
-        component={KelasDetailScreen} 
-        options={{ headerTitle: 'Detail Kelas' }}
-        initialParams={{}}
-      />
-
-      {/* Mata Pelajaran Management */}
-      <ManagementStack.Screen 
-        name="MataPelajaranManagement" 
-        component={MataPelajaranManagementScreen} 
-        options={{ headerTitle: 'Manajemen Mata Pelajaran' }}
-      />
-      <ManagementStack.Screen 
-        name="MataPelajaranForm" 
-        component={MataPelajaranFormScreen} 
-        options={({ route }) => ({ 
-          headerTitle: route.params?.mataPelajaran ? 'Edit Mata Pelajaran' : 'Tambah Mata Pelajaran'
-        })}
-        initialParams={{}}
-      />
-      <ManagementStack.Screen 
-        name="MataPelajaranDetail" 
-        component={MataPelajaranDetailScreen} 
-        options={{ headerTitle: 'Detail Mata Pelajaran' }}
-        initialParams={{}}
-      />
-
-      {/* Materi Management */}
-      <ManagementStack.Screen 
-        name="MateriManagement" 
-        component={MateriManagementScreen} 
-        options={{ headerTitle: 'Manajemen Materi' }}
-      />
-      <ManagementStack.Screen 
-        name="MateriForm" 
-        component={MateriFormScreen} 
-        options={({ route }) => ({ 
-          headerTitle: route.params?.materi ? 'Edit Materi' : 'Tambah Materi'
-        })}
-        initialParams={{}}
-      />
-      <ManagementStack.Screen 
-        name="MateriDetail" 
-        component={MateriDetailScreen} 
-        options={{ headerTitle: 'Detail Materi' }}
-        initialParams={{}}
+        name="DonaturDetail" 
+        component={DonaturDetailScreen} 
+        options={{ title: 'Detail Donatur' }}
       />
     </ManagementStack.Navigator>
   );
-};
+}
 
-const PengajuanDonaturStackNavigator = () => {
+// Pengajuan Donatur Stack Navigator
+function PengajuanDonaturStackNavigator() {
   return (
     <PengajuanDonaturStack.Navigator screenOptions={defaultScreenOptions}>
       <PengajuanDonaturStack.Screen 
-        name="PengajuanDonaturList" 
-        component={AdminCabangPengajuanDonaturScreen} 
-        options={{ headerTitle: 'Pengajuan Donatur' }}
+        name="PengajuanDonaturMain" 
+        component={PengajuanDonaturScreen} 
+        options={{ title: 'Pengajuan Donatur' }}
       />
       <PengajuanDonaturStack.Screen 
-        name="DonaturSelection" 
-        component={DonaturSelectionScreen} 
-        options={{ headerTitle: 'Pilih Donatur' }}
-        initialParams={{}}
-      />
-      <PengajuanDonaturStack.Screen 
-        name="ChildDetail" 
-        component={ChildDetailScreen} 
-        options={{ headerTitle: 'Detail Anak' }}
-        initialParams={{}}
+        name="PengajuanDonaturDetail" 
+        component={PengajuanDonaturDetailScreen} 
+        options={{ title: 'Detail Pengajuan' }}
       />
     </PengajuanDonaturStack.Navigator>
   );
-};
+}
 
-const DonaturStackNavigator = () => {
-  return (
-    <DonaturStack.Navigator screenOptions={defaultScreenOptions}>
-      <DonaturStack.Screen 
-        name="DonaturList" 
-        component={AdminCabangDonaturListScreen} 
-        options={{ headerTitle: 'Manajemen Donatur' }}
-      />
-      <DonaturStack.Screen 
-        name="DonaturForm" 
-        component={AdminCabangDonaturFormScreen} 
-        options={({ route }) => ({
-          headerTitle: route.params?.donaturId ? 'Edit Donatur' : 'Tambah Donatur'
-        })}
-        initialParams={{}}
-      />
-      <DonaturStack.Screen 
-        name="DonaturDetail" 
-        component={AdminCabangDonaturDetailScreen} 
-        options={{ headerTitle: 'Detail Donatur' }}
-        initialParams={{}}
-      />
-      <DonaturStack.Screen 
-        name="DonaturFilter" 
-        component={DonaturFilterScreen} 
-        options={{ headerTitle: 'Filter Donatur' }}
-      />
-    </DonaturStack.Navigator>
-  );
-};
-
-const ProfileStackNavigator = () => {
+// Profile Stack Navigator
+function ProfileStackNavigator() {
   return (
     <ProfileStack.Navigator screenOptions={defaultScreenOptions}>
       <ProfileStack.Screen 
-        name="Profile" 
-        component={AdminCabangProfileScreen} 
-        options={{ headerTitle: 'Profil Saya' }}
+        name="ProfileMain" 
+        component={ProfileScreen} 
+        options={{ title: 'Profil' }}
       />
     </ProfileStack.Navigator>
   );
-};
+}
 
-const AdminCabangNavigator = () => {
+// Main Tab Navigator
+export default function AdminCabangNavigator() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
-
-          switch (route.name) {
-            case 'Home':
-              iconName = focused ? 'home' : 'home-outline';
-              break;
-            case 'Management':
-              iconName = focused ? 'document-text' : 'document-text-outline';
-              break;
-            case 'PengajuanDonatur':
-              iconName = focused ? 'person-add' : 'person-add-outline';
-              break;
-            case 'DonaturManagement':
-              iconName = focused ? 'people' : 'people-outline';
-              break;
-            case 'ProfileTab':
-              iconName = focused ? 'person' : 'person-outline';
-              break;
-            default:
-              iconName = 'help-outline';
+          
+          if (route.name === 'Home') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'MasterData') {
+            iconName = focused ? 'library' : 'library-outline';
+          } else if (route.name === 'Akademik') {
+            iconName = focused ? 'school' : 'school-outline';
+          } else if (route.name === 'Management') {
+            iconName = focused ? 'settings' : 'settings-outline';
+          } else if (route.name === 'PengajuanDonatur') {
+            iconName = focused ? 'document-text' : 'document-text-outline';
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'person' : 'person-outline';
           }
-
+          
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#2ecc71',
         tabBarInactiveTintColor: 'gray',
         headerShown: false,
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '500',
-        },
         tabBarStyle: {
-          height: 60,
           paddingBottom: 5,
           paddingTop: 5,
+          height: 60,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
         },
       })}
-      initialRouteName="Home"
     >
       <Tab.Screen 
         name="Home" 
         component={HomeStackNavigator} 
-        options={{ tabBarLabel: 'Home' }}
+        options={{ tabBarLabel: 'Dashboard' }} 
+      />
+      <Tab.Screen 
+        name="MasterData" 
+        component={MasterDataStackNavigator} 
+        options={{ tabBarLabel: 'Master Data' }} 
+      />
+      <Tab.Screen 
+        name="Akademik" 
+        component={AkademikStackNavigator} 
+        options={{ tabBarLabel: 'Akademik' }} 
       />
       <Tab.Screen 
         name="Management" 
         component={ManagementStackNavigator} 
-        options={{ tabBarLabel: 'Kurikulum' }}
+        options={{ tabBarLabel: 'Manajemen' }} 
       />
       <Tab.Screen 
         name="PengajuanDonatur" 
         component={PengajuanDonaturStackNavigator} 
-        options={{ tabBarLabel: 'Pengajuan' }}
+        options={{ tabBarLabel: 'Pengajuan' }} 
       />
       <Tab.Screen 
-        name="DonaturManagement" 
-        component={DonaturStackNavigator} 
-        options={{ tabBarLabel: 'Donatur' }}
-      />
-      <Tab.Screen 
-        name="ProfileTab" 
+        name="Profile" 
         component={ProfileStackNavigator} 
-        options={{ tabBarLabel: 'Profil' }}
+        options={{ tabBarLabel: 'Profil' }} 
       />
     </Tab.Navigator>
   );
-};
-
-export default AdminCabangNavigator;
+}
