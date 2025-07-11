@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -20,7 +20,8 @@ import MateriKurikulumCard from '../components/MateriKurikulumCard';
 import {
   fetchKurikulumDetail,
   fetchKurikulumStatistics,
-  deleteMateri,
+  addMateri,
+  removeMateri,
   selectKurikulumDetail,
   selectKurikulumStatistics,
   selectKurikulumLoading,
@@ -31,6 +32,7 @@ const KurikulumDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const dispatch = useDispatch();
+  const isMounted = useRef(true);
   
   const { kurikulumId } = route.params;
   
@@ -43,8 +45,23 @@ const KurikulumDetailScreen = () => {
   const [activeTab, setActiveTab] = useState('info');
 
   useEffect(() => {
+    isMounted.current = true;
     loadKurikulumDetail();
+    
+    return () => {
+      isMounted.current = false;
+    };
   }, [kurikulumId]);
+
+  const safeAlert = (title, message, buttons) => {
+    if (isMounted.current) {
+      setTimeout(() => {
+        if (isMounted.current) {
+          Alert.alert(title, message, buttons);
+        }
+      }, 100);
+    }
+  };
 
   const loadKurikulumDetail = async () => {
     dispatch(fetchKurikulumDetail(kurikulumId));
@@ -58,15 +75,11 @@ const KurikulumDetailScreen = () => {
   };
 
   const navigateToMateriManagement = () => {
-    navigation.navigate('MateriKurikulum', { kurikulumId });
-  };
-
-  const handleEditKurikulum = () => {
-    navigation.navigate('KurikulumForm', { kurikulum });
+    navigation.navigate('MateriKurikulum', { kurikulumId, kurikulum });
   };
 
   const handleDeleteMateri = (materiItem) => {
-    Alert.alert(
+    safeAlert(
       'Hapus Materi',
       `Hapus ${materiItem.materi?.nama_materi} dari kurikulum?`,
       [
@@ -76,13 +89,13 @@ const KurikulumDetailScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await dispatch(deleteMateri({
-                kurikulumId,
+              await dispatch(removeMateri({
+                id: kurikulumId,
                 materiId: materiItem.id
               })).unwrap();
-              Alert.alert('Sukses', 'Materi berhasil dihapus dari kurikulum');
+              safeAlert('Sukses', 'Materi berhasil dihapus dari kurikulum');
             } catch (err) {
-              Alert.alert('Error', err.message || 'Gagal menghapus materi');
+              safeAlert('Error', 'Gagal menghapus materi');
             }
           }
         }
@@ -92,19 +105,10 @@ const KurikulumDetailScreen = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'aktif': return '#28a745';
-      case 'draft': return '#ffc107';
-      case 'nonaktif': return '#dc3545';
-      default: return '#6c757d';
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'aktif': return 'Aktif';
-      case 'draft': return 'Draft';
-      case 'nonaktif': return 'Non Aktif';
-      default: return status;
+      case 'aktif': return '#27ae60';
+      case 'draft': return '#95a5a6';
+      case 'nonaktif': return '#e74c3c';
+      default: return '#95a5a6';
     }
   };
 
@@ -132,45 +136,41 @@ const KurikulumDetailScreen = () => {
   const renderInfoTab = () => (
     <View style={styles.tabContent}>
       <View style={styles.infoCard}>
-        <View style={styles.cardHeader}>
-          <View style={styles.headerInfo}>
-            <Text style={styles.kurikulumTitle}>{kurikulum?.nama_kurikulum}</Text>
-            <Text style={styles.tahunBerlaku}>Tahun Berlaku: {kurikulum?.tahun_berlaku}</Text>
-          </View>
+        <View style={styles.infoHeader}>
+          <Text style={styles.kurikulumTitle}>{kurikulum?.nama_kurikulum}</Text>
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(kurikulum?.status) }]}>
-            <Text style={styles.statusText}>{getStatusText(kurikulum?.status)}</Text>
+            <Text style={styles.statusText}>{kurikulum?.status}</Text>
           </View>
         </View>
-
+        
+        <View style={styles.infoRow}>
+          <Ionicons name="calendar-outline" size={16} color="#666" />
+          <Text style={styles.infoText}>Tahun Berlaku: {kurikulum?.tahun_berlaku}</Text>
+        </View>
+        
         {kurikulum?.deskripsi && (
           <View style={styles.descriptionContainer}>
             <Text style={styles.descriptionLabel}>Deskripsi:</Text>
             <Text style={styles.descriptionText}>{kurikulum.deskripsi}</Text>
           </View>
         )}
-
-        <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={handleEditKurikulum}
-          >
-            <Ionicons name="create-outline" size={18} color="#007bff" />
-            <Text style={styles.editButtonText}>Edit</Text>
-          </TouchableOpacity>
-        </View>
       </View>
 
       {statistics && (
         <View style={styles.statsCard}>
-          <Text style={styles.cardTitle}>Statistik Kurikulum</Text>
+          <Text style={styles.cardTitle}>Statistik</Text>
           <View style={styles.statsGrid}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{statistics.total_mata_pelajaran || 0}</Text>
-              <Text style={styles.statLabel}>Mata Pelajaran</Text>
-            </View>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{statistics.total_materi || 0}</Text>
               <Text style={styles.statLabel}>Total Materi</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{statistics.total_jam || 0}</Text>
+              <Text style={styles.statLabel}>Total Jam</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{statistics.mata_pelajaran_count || 0}</Text>
+              <Text style={styles.statLabel}>Mata Pelajaran</Text>
             </View>
           </View>
         </View>
@@ -188,29 +188,28 @@ const KurikulumDetailScreen = () => {
   const renderMateriTab = () => (
     <View style={styles.tabContent}>
       <View style={styles.actionHeader}>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={navigateToMateriManagement}
-        >
+        <TouchableOpacity style={styles.addButton} onPress={navigateToMateriManagement}>
           <Ionicons name="add" size={20} color="#fff" />
           <Text style={styles.addButtonText}>Kelola Materi</Text>
         </TouchableOpacity>
       </View>
 
-      {kurikulum?.kurikulum_materi?.length > 0 ? (
-        <FlatList
-          data={kurikulum.kurikulum_materi}
-          renderItem={renderMateriItem}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.materiList}
-        />
-      ) : (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="book-outline" size={64} color="#bdc3c7" />
-          <Text style={styles.emptyText}>Belum ada materi</Text>
-          <Text style={styles.emptySubText}>Tap "Kelola Materi" untuk menambah materi</Text>
-        </View>
-      )}
+      <FlatList
+        data={kurikulum?.kurikulum_materi || []}
+        renderItem={renderMateriItem}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={styles.materiList}
+        scrollEnabled={false}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Ionicons name="book-outline" size={64} color="#bdc3c7" />
+            <Text style={styles.emptyText}>Belum ada materi</Text>
+            <Text style={styles.emptySubText}>
+              Tap "Kelola Materi" untuk menambah materi ke kurikulum
+            </Text>
+          </View>
+        }
+      />
     </View>
   );
 
@@ -226,20 +225,14 @@ const KurikulumDetailScreen = () => {
     );
   }
 
-  if (!kurikulum) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Data kurikulum tidak ditemukan</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
       {renderTabBar()}
-      <ScrollView
+      <ScrollView 
         style={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
       >
         {activeTab === 'info' ? renderInfoTab() : renderMateriTab()}
       </ScrollView>
@@ -250,189 +243,180 @@ const KurikulumDetailScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa'
+    backgroundColor: '#f5f5f5',
   },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef'
+    borderBottomColor: '#eee',
   },
   tab: {
     flex: 1,
     paddingVertical: 16,
     alignItems: 'center',
     borderBottomWidth: 2,
-    borderBottomColor: 'transparent'
+    borderBottomColor: 'transparent',
   },
   activeTab: {
-    borderBottomColor: '#007bff'
+    borderBottomColor: '#2ecc71',
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 16,
+    color: '#666',
     fontWeight: '500',
-    color: '#6c757d'
   },
   activeTabText: {
-    color: '#007bff'
+    color: '#2ecc71',
+    fontWeight: '600',
   },
   content: {
-    flex: 1
+    flex: 1,
   },
   tabContent: {
-    padding: 16
+    padding: 16,
   },
   infoCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
+    padding: 20,
     marginBottom: 16,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
-  cardHeader: {
+  infoHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16
-  },
-  headerInfo: {
-    flex: 1,
-    marginRight: 12
+    marginBottom: 16,
   },
   kurikulumTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 4
-  },
-  tahunBerlaku: {
-    fontSize: 14,
-    color: '#6c757d'
+    fontWeight: 'bold',
+    color: '#333',
+    flex: 1,
+    marginRight: 12,
   },
   statusBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 20
+    borderRadius: 16,
+    minWidth: 80,
+    alignItems: 'center',
   },
   statusText: {
     color: '#fff',
     fontSize: 12,
-    fontWeight: '500'
+    fontWeight: '600',
+    textTransform: 'capitalize',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  infoText: {
+    fontSize: 16,
+    color: '#666',
+    marginLeft: 8,
   },
   descriptionContainer: {
-    marginBottom: 16
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
   },
   descriptionLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#495057',
-    marginBottom: 4
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
   },
   descriptionText: {
     fontSize: 14,
-    color: '#6c757d',
-    lineHeight: 20
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end'
-  },
-  editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#007bff'
-  },
-  editButtonText: {
-    color: '#007bff',
-    fontSize: 14,
-    fontWeight: '500',
-    marginLeft: 4
+    color: '#666',
+    lineHeight: 20,
   },
   statsCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 16,
+    padding: 20,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 16
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 16,
   },
   statsGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-around'
+    justifyContent: 'space-around',
   },
   statItem: {
-    alignItems: 'center'
+    alignItems: 'center',
   },
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#28a745'
+    color: '#2ecc71',
   },
   statLabel: {
     fontSize: 12,
-    color: '#6c757d',
+    color: '#666',
     marginTop: 4,
-    textAlign: 'center'
+    textAlign: 'center',
   },
   actionHeader: {
-    marginBottom: 16
+    marginBottom: 16,
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#28a745',
+    backgroundColor: '#2ecc71',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,
     justifyContent: 'center',
-    gap: 8
+    gap: 8,
   },
   addButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600'
+    fontWeight: '600',
   },
   materiList: {
-    paddingBottom: 16
+    paddingBottom: 16,
   },
   emptyContainer: {
     alignItems: 'center',
-    paddingVertical: 60
+    paddingVertical: 60,
   },
   emptyText: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#7f8c8d',
-    marginTop: 16
+    marginTop: 16,
   },
   emptySubText: {
     fontSize: 14,
     color: '#95a5a6',
     marginTop: 4,
-    textAlign: 'center'
+    textAlign: 'center',
   },
   errorText: {
     fontSize: 16,
     color: '#e74c3c',
     textAlign: 'center',
-    marginTop: 50
-  }
+    marginTop: 50,
+  },
 });
 
 export default KurikulumDetailScreen;

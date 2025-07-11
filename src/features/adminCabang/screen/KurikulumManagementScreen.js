@@ -1,5 +1,4 @@
-// 13. src/features/adminCabang/screens/KurikulumManagementScreen.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -30,6 +29,7 @@ import {
 const KurikulumManagementScreen = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
+  const isMounted = useRef(true);
   
   const kurikulumList = useSelector(selectKurikulumList);
   const loading = useSelector(selectKurikulumLoading);
@@ -40,8 +40,23 @@ const KurikulumManagementScreen = () => {
   const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
+    isMounted.current = true;
     loadKurikulum();
+    
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
+
+  const safeAlert = (title, message, buttons) => {
+    if (isMounted.current) {
+      setTimeout(() => {
+        if (isMounted.current) {
+          Alert.alert(title, message, buttons);
+        }
+      }, 100);
+    }
+  };
 
   const loadKurikulum = async (page = 1) => {
     dispatch(fetchKurikulumList({ page }));
@@ -62,23 +77,29 @@ const KurikulumManagementScreen = () => {
   };
 
   const navigateToForm = (kurikulum = null) => {
-    navigation.navigate('KurikulumForm', { kurikulum });
+    if (isMounted.current) {
+      navigation.navigate('KurikulumForm', { 
+        kurikulum: kurikulum || undefined 
+      });
+    }
   };
 
   const navigateToDetail = (kurikulum) => {
-    navigation.navigate('KurikulumDetail', { 
-      kurikulumId: kurikulum.id_kurikulum,
-      kurikulum 
-    });
+    if (isMounted.current && kurikulum?.id_kurikulum) {
+      navigation.navigate('KurikulumDetail', { 
+        kurikulumId: kurikulum.id_kurikulum,
+        kurikulum: kurikulum
+      });
+    }
   };
 
   const handleSetActive = (kurikulum) => {
     if (kurikulum.status === 'aktif') {
-      Alert.alert('Info', 'Kurikulum ini sudah aktif');
+      safeAlert('Info', 'Kurikulum ini sudah aktif');
       return;
     }
 
-    Alert.alert(
+    safeAlert(
       'Set Kurikulum Aktif',
       `Jadikan ${kurikulum.nama_kurikulum} sebagai kurikulum aktif?`,
       [
@@ -88,9 +109,9 @@ const KurikulumManagementScreen = () => {
           onPress: async () => {
             try {
               await dispatch(setActiveKurikulum(kurikulum.id_kurikulum)).unwrap();
-              Alert.alert('Sukses', 'Kurikulum berhasil diaktifkan');
+              safeAlert('Sukses', 'Kurikulum berhasil diaktifkan');
             } catch (err) {
-              Alert.alert('Error', 'Gagal mengaktifkan kurikulum');
+              safeAlert('Error', err.message || 'Gagal mengaktifkan kurikulum');
             }
           }
         }
@@ -100,11 +121,11 @@ const KurikulumManagementScreen = () => {
 
   const handleDelete = (kurikulum) => {
     if (kurikulum.status === 'aktif') {
-      Alert.alert('Error', 'Kurikulum aktif tidak dapat dihapus');
+      safeAlert('Error', 'Kurikulum aktif tidak dapat dihapus');
       return;
     }
 
-    Alert.alert(
+    safeAlert(
       'Hapus Kurikulum',
       `Hapus ${kurikulum.nama_kurikulum}?`,
       [
@@ -115,9 +136,9 @@ const KurikulumManagementScreen = () => {
           onPress: async () => {
             try {
               await dispatch(deleteKurikulum(kurikulum.id_kurikulum)).unwrap();
-              Alert.alert('Sukses', 'Kurikulum berhasil dihapus');
+              safeAlert('Sukses', 'Kurikulum berhasil dihapus');
             } catch (err) {
-              Alert.alert('Error', 'Gagal menghapus kurikulum');
+              safeAlert('Error', err.message || 'Gagal menghapus kurikulum');
             }
           }
         }
@@ -160,7 +181,7 @@ const KurikulumManagementScreen = () => {
       <FlatList
         data={kurikulumList}
         renderItem={renderKurikulum}
-        keyExtractor={(item) => item.id_kurikulum.toString()}
+        keyExtractor={(item) => item.id_kurikulum?.toString() || Math.random().toString()}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
