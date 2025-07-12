@@ -2,10 +2,20 @@
 
 /**
  * API Endpoints Constants
- * Organized by sections: Admin Cabang (Master Data + Akademik), Admin Shelter, Management
+ * Organized by sections: Auth, Admin Cabang, Admin Shelter, Management
  */
 
-const BASE_URL = '/api';
+const BASE_URL = '';
+
+// ============================================================================
+// AUTHENTICATION ENDPOINTS
+// ============================================================================
+
+export const AUTH_ENDPOINTS = {
+  LOGIN: `${BASE_URL}/auth/login`,
+  LOGOUT: `${BASE_URL}/auth/logout`,
+  USER: `${BASE_URL}/auth/user`
+};
 
 // ============================================================================
 // ADMIN CABANG ENDPOINTS
@@ -40,20 +50,14 @@ export const ADMIN_CABANG_ENDPOINTS = {
     KELAS_DROPDOWN: `${BASE_URL}/admin-cabang/master-data/kelas/dropdown`,
     KELAS_BY_JENJANG: (jenjangId) => `${BASE_URL}/admin-cabang/master-data/kelas/by-jenjang/${jenjangId}`,
     KELAS_STATISTICS: `${BASE_URL}/admin-cabang/master-data/kelas/statistics`,
-    KELAS_TINGKAT_OPTIONS: (jenjangId) => `${BASE_URL}/admin-cabang/master-data/kelas/tingkat-options/${jenjangId}`,
-    KELAS_VALIDATE: `${BASE_URL}/admin-cabang/master-data/kelas/validate`,
-    KELAS_CASCADE: `${BASE_URL}/admin-cabang/master-data/kelas/cascade`,
     KELAS_CHECK_DELETE: (id) => `${BASE_URL}/admin-cabang/master-data/kelas/${id}/check-can-delete`,
 
     // Materi
     MATERI: `${BASE_URL}/admin-cabang/master-data/materi`,
     MATERI_DETAIL: (id) => `${BASE_URL}/admin-cabang/master-data/materi/${id}`,
     MATERI_DROPDOWN: `${BASE_URL}/admin-cabang/master-data/materi/dropdown`,
-    MATERI_BY_KELAS: (kelasId) => `${BASE_URL}/admin-cabang/master-data/materi/by-kelas/${kelasId}`,
     MATERI_BY_MATA_PELAJARAN: (mataPelajaranId) => `${BASE_URL}/admin-cabang/master-data/materi/by-mata-pelajaran/${mataPelajaranId}`,
     MATERI_STATISTICS: `${BASE_URL}/admin-cabang/master-data/materi/statistics`,
-    MATERI_VALIDATE: `${BASE_URL}/admin-cabang/master-data/materi/validate`,
-    MATERI_CASCADE: `${BASE_URL}/admin-cabang/master-data/materi/cascade`,
     MATERI_CHECK_DELETE: (id) => `${BASE_URL}/admin-cabang/master-data/materi/${id}/check-can-delete`,
   },
 
@@ -62,6 +66,7 @@ export const ADMIN_CABANG_ENDPOINTS = {
     // Kurikulum
     KURIKULUM: `${BASE_URL}/admin-cabang/akademik/kurikulum`,
     KURIKULUM_DETAIL: (id) => `${BASE_URL}/admin-cabang/akademik/kurikulum/${id}`,
+    KURIKULUM_DROPDOWN: `${BASE_URL}/admin-cabang/akademik/kurikulum/dropdown`,
     KURIKULUM_ACTIVE: `${BASE_URL}/admin-cabang/akademik/kurikulum/active`,
     KURIKULUM_SET_ACTIVE: (id) => `${BASE_URL}/admin-cabang/akademik/kurikulum/${id}/set-active`,
     KURIKULUM_STATISTICS: `${BASE_URL}/admin-cabang/akademik/kurikulum/statistics`,
@@ -74,6 +79,15 @@ export const ADMIN_CABANG_ENDPOINTS = {
     KURIKULUM_REMOVE_MATERI: (id) => `${BASE_URL}/admin-cabang/akademik/kurikulum/${id}/remove-materi`,
     KURIKULUM_REORDER_MATERI: (id) => `${BASE_URL}/admin-cabang/akademik/kurikulum/${id}/reorder-materi`,
     KURIKULUM_CASCADE_DATA: `${BASE_URL}/admin-cabang/akademik/kurikulum/cascade-data`,
+  },
+
+  // Survey Approval
+  SURVEY_APPROVAL: {
+    LIST: `${BASE_URL}/admin-cabang/survey-approval`,
+    DETAIL: (id) => `${BASE_URL}/admin-cabang/survey-approval/${id}`,
+    APPROVE: (id) => `${BASE_URL}/admin-cabang/survey-approval/${id}/approve`,
+    REJECT: (id) => `${BASE_URL}/admin-cabang/survey-approval/${id}/reject`,
+    STATS: `${BASE_URL}/admin-cabang/survey-approval/stats`,
   }
 };
 
@@ -96,31 +110,61 @@ export const ADMIN_SHELTER_ENDPOINTS = {
   SEMESTER_DETAIL: (id) => `${BASE_URL}/admin-shelter/semester/${id}`,
   SEMESTER_ACTIVE: `${BASE_URL}/admin-shelter/semester/active`,
   SEMESTER_SET_ACTIVE: (id) => `${BASE_URL}/admin-shelter/semester/${id}/set-active`,
-  SEMESTER_STATISTICS: (id) => `${BASE_URL}/admin-shelter/semester/${id}/statistics`,
-  SEMESTER_TAHUN_AJARAN: `${BASE_URL}/admin-shelter/semester/tahun-ajaran`,
-  SEMESTER_BY_TAHUN: `${BASE_URL}/admin-shelter/semester/by-tahun-ajaran`,
-  SEMESTER_DUPLICATE: (id) => `${BASE_URL}/admin-shelter/semester/${id}/duplicate`,
-  SEMESTER_CHECK_DELETE: (id) => `${BASE_URL}/admin-shelter/semester/${id}/check-can-delete`,
 
-  // Donatur & Attendance
-  DONATUR: `${BASE_URL}/admin-shelter/donatur`,
-  DONATUR_DETAIL: (id) => `${BASE_URL}/admin-shelter/donatur/${id}`,
-  ATTENDANCE: `${BASE_URL}/admin-shelter/attendance`,
-  ATTENDANCE_DETAIL: (id) => `${BASE_URL}/admin-shelter/attendance/${id}`,
+  // Survey Management
+  SURVEY: {
+    LIST: (anakId) => `${BASE_URL}/admin-shelter/anak/${anakId}/survey`,
+    DETAIL: (anakId, surveyId) => `${BASE_URL}/admin-shelter/anak/${anakId}/survey/${surveyId}`,
+    CREATE: (anakId) => `${BASE_URL}/admin-shelter/anak/${anakId}/survey`,
+    UPDATE: (anakId, surveyId) => `${BASE_URL}/admin-shelter/anak/${anakId}/survey/${surveyId}`,
+    DELETE: (anakId, surveyId) => `${BASE_URL}/admin-shelter/anak/${anakId}/survey/${surveyId}`,
+  },
 
-  // Tutor & Kelompok
-  TUTOR: `${BASE_URL}/admin-shelter/tutor`,
-  TUTOR_DETAIL: (id) => `${BASE_URL}/admin-shelter/tutor/${id}`,
-  TUTOR_COMPETENCY: (tutorId) => `${BASE_URL}/admin-shelter/tutor/${tutorId}/competency`,
-  KELOMPOK: `${BASE_URL}/admin-shelter/kelompok`,
-  KELOMPOK_DETAIL: (id) => `${BASE_URL}/admin-shelter/kelompok/${id}`,
-  KELOMPOK_LEVELS: `${BASE_URL}/admin-shelter/kelompok-levels`,
-  KELOMPOK_AVAILABLE_CHILDREN: (shelterId) => `${BASE_URL}/admin-shelter/kelompok/available-children/${shelterId}`,
-  KELOMPOK_CHILDREN: (kelompokId) => `${BASE_URL}/admin-shelter/kelompok/${kelompokId}/children`,
+  // Raport Management
+  RAPORT: {
+    LIST: (anakId) => `${BASE_URL}/admin-shelter/anak/${anakId}/raport`,
+    DETAIL: (anakId, raportId) => `${BASE_URL}/admin-shelter/anak/${anakId}/raport/${raportId}`,
+    CREATE: (anakId) => `${BASE_URL}/admin-shelter/anak/${anakId}/raport`,
+    UPDATE: (anakId, raportId) => `${BASE_URL}/admin-shelter/anak/${anakId}/raport/${raportId}`,
+    DELETE: (anakId, raportId) => `${BASE_URL}/admin-shelter/anak/${anakId}/raport/${raportId}`,
+  },
 
-  // Letters & Documents
-  SURAT: (childId) => `${BASE_URL}/admin-shelter/anak/${childId}/surat`,
-  SURAT_DETAIL: (childId, suratId) => `${BASE_URL}/admin-shelter/anak/${childId}/surat/${suratId}`,
+  // Prestasi Management
+  PRESTASI: {
+    LIST: (anakId) => `${BASE_URL}/admin-shelter/anak/${anakId}/prestasi`,
+    DETAIL: (anakId, prestasiId) => `${BASE_URL}/admin-shelter/anak/${anakId}/prestasi/${prestasiId}`,
+    CREATE: (anakId) => `${BASE_URL}/admin-shelter/anak/${anakId}/prestasi`,
+    UPDATE: (anakId, prestasiId) => `${BASE_URL}/admin-shelter/anak/${anakId}/prestasi/${prestasiId}`,
+    DELETE: (anakId, prestasiId) => `${BASE_URL}/admin-shelter/anak/${anakId}/prestasi/${prestasiId}`,
+  },
+
+  // Riwayat Management
+  RIWAYAT: {
+    LIST: (anakId) => `${BASE_URL}/admin-shelter/anak/${anakId}/riwayat`,
+    DETAIL: (anakId, riwayatId) => `${BASE_URL}/admin-shelter/anak/${anakId}/riwayat/${riwayatId}`,
+    CREATE: (anakId) => `${BASE_URL}/admin-shelter/anak/${anakId}/riwayat`,
+    UPDATE: (anakId, riwayatId) => `${BASE_URL}/admin-shelter/anak/${anakId}/riwayat/${riwayatId}`,
+    DELETE: (anakId, riwayatId) => `${BASE_URL}/admin-shelter/anak/${anakId}/riwayat/${riwayatId}`,
+  }
+};
+
+// ============================================================================
+// DONATUR ENDPOINTS
+// ============================================================================
+
+export const DONATUR_ENDPOINTS = {
+  // Core endpoints
+  DASHBOARD: `${BASE_URL}/donatur/dashboard`,
+  PROFILE: `${BASE_URL}/donatur/profile`,
+
+  // Marketplace
+  MARKETPLACE: {
+    AVAILABLE_CHILDREN: `${BASE_URL}/donatur/marketplace/children`,
+    CHILD_PROFILE: (childId) => `${BASE_URL}/donatur/marketplace/children/${childId}`,
+    SPONSOR_CHILD: (childId) => `${BASE_URL}/donatur/marketplace/children/${childId}/sponsor`,
+    FILTERS: `${BASE_URL}/donatur/marketplace/filters`,
+    FEATURED_CHILDREN: `${BASE_URL}/donatur/marketplace/featured`,
+  }
 };
 
 // ============================================================================
@@ -128,7 +172,11 @@ export const ADMIN_SHELTER_ENDPOINTS = {
 // ============================================================================
 
 export const MANAGEMENT_ENDPOINTS = {
-  // Admin Shelter Management
+  // Admin Cabang Management
+  ADMIN_CABANG: `${BASE_URL}/admin-cabang`,
+  ADMIN_CABANG_DETAIL: (id) => `${BASE_URL}/admin-cabang/${id}`,
+
+  // Admin Shelter Management  
   ADMIN_SHELTER: `${BASE_URL}/admin-shelter`,
   ADMIN_SHELTER_DETAIL: (id) => `${BASE_URL}/admin-shelter/${id}`,
 
@@ -165,7 +213,7 @@ export const buildUrlWithParams = (baseUrl, params = {}) => {
 export const getMasterDataEndpoints = (section) => {
   const sectionMap = {
     jenjang: 'JENJANG',
-    mata_pelajaran: 'MATA_PELAJARAN',
+    mata_pelajaran: 'MATA_PELAJARAN', 
     kelas: 'KELAS',
     materi: 'MATERI'
   };
@@ -183,8 +231,10 @@ export const getMasterDataEndpoints = (section) => {
 
 // Export all endpoint categories
 export default {
+  AUTH_ENDPOINTS,
   ADMIN_CABANG_ENDPOINTS,
   ADMIN_SHELTER_ENDPOINTS,
+  DONATUR_ENDPOINTS,
   MANAGEMENT_ENDPOINTS,
   buildUrlWithParams,
   getMasterDataEndpoints
