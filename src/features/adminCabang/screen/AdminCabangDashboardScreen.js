@@ -35,21 +35,36 @@ const AdminCabangDashboardScreen = () => {
         kurikulumStatsResponse,
         mataPelajaranStatsResponse
       ] = await Promise.all([
-        adminCabangApi.getDashboard(),
-        adminCabangSurveyApi.getStats(),
-        adminCabangDonaturApi.getStats(),
-        kurikulumApi.getAll({ per_page: 1 }),
-        mataPelajaranApi.getStatistics().catch(() => ({ data: { data: {} } }))
+        adminCabangApi.getDashboard().catch(err => {
+          console.warn('Dashboard API failed:', err.message);
+          return { data: { data: {} } };
+        }),
+        adminCabangSurveyApi.getStats().catch(err => {
+          console.warn('Survey stats API failed:', err.message);
+          return { data: { data: {} } };
+        }),
+        adminCabangDonaturApi.getStats().catch(err => {
+          console.warn('Donatur stats API failed:', err.message);
+          return { data: { data: {} } };
+        }),
+        kurikulumApi.getAll({ per_page: 1 }).catch(err => {
+          console.warn('Kurikulum API failed:', err.message);
+          return { data: { data: { total: 0, data: [] } } };
+        }),
+        mataPelajaranApi.getStatistics().catch(err => {
+          console.warn('Mata pelajaran stats API failed:', err.message);
+          return { data: { data: {} } };
+        })
       ]);
       
-      setDashboardData(dashboardResponse.data.data);
-      setSurveyStats(statsResponse.data.data);
-      setDonaturStats(donaturStatsResponse.data.data);
+      setDashboardData(dashboardResponse.data.data || {});
+      setSurveyStats(statsResponse.data.data || {});
+      setDonaturStats(donaturStatsResponse.data.data || {});
       
       const kurikulumData = kurikulumStatsResponse.data.data;
       setKurikulumStats({
         total_kurikulum: kurikulumData?.total || 0,
-        active_kurikulum: kurikulumData?.data?.filter(k => k.status === 'aktif').length || 0
+        active_kurikulum: kurikulumData?.data?.filter(k => k.status === 'aktif' || k.is_active).length || 0
       });
       setMataPelajaranStats(mataPelajaranStatsResponse.data.data || {});
     } catch (err) {
@@ -61,216 +76,312 @@ const AdminCabangDashboardScreen = () => {
     }
   };
 
-  useEffect(() => { 
-    fetchDashboardData(); 
-  }, []);
-
-  const handleRefresh = () => { 
-    setRefreshing(true); 
-    fetchDashboardData(); 
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchDashboardData();
   };
 
-  const navigateToSurveyManagement = () => navigation.navigate('Management');
-  const navigateToDonaturManagement = () => navigation.navigate('DonaturManagement');
-  const navigateToKurikulumManagement = () => navigation.navigate('Management', { screen: 'KurikulumManagement' });
-  const navigateToMataPelajaranManagement = () => navigation.navigate('Management', { screen: 'MataPelajaranManagement' });
-  const navigateToProfile = () => navigation.navigate('ProfileTab');
+  const handleRetry = () => {
+    setLoading(true);
+    fetchDashboardData();
+  };
 
-  if (loading && !refreshing) return <LoadingSpinner fullScreen message="Memuat dashboard..." />;
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
-  const quickActions = [
-    { title: 'Manajemen Survey', description: 'Kelola semua persetujuan survey', icon: 'document-text', color: '#f39c12', onPress: navigateToSurveyManagement, badge: surveyStats.pending },
-    { title: 'Manajemen Donatur', description: 'Kelola data donatur cabang', icon: 'people', color: '#3498db', onPress: navigateToDonaturManagement, badge: donaturStats.total_donatur },
-    { title: 'Kurikulum', description: 'Kelola kurikulum dan mata pelajaran', icon: 'book', color: '#8e44ad', onPress: navigateToKurikulumManagement, badge: kurikulumStats.total_kurikulum },
-    { title: 'Mata Pelajaran', description: 'Kelola mata pelajaran', icon: 'library', color: '#16a085', onPress: navigateToMataPelajaranManagement, badge: mataPelajaranStats.total_mata_pelajaran },
-    { title: 'Laporan', description: 'Lihat statistik persetujuan', icon: 'stats-chart', color: '#9b59b6' },
-    { title: 'Bantuan', description: 'Dapatkan dukungan dan panduan', icon: 'help-circle', color: '#2ecc71' }
-  ];
+  if (loading && !refreshing) {
+    return <LoadingSpinner />;
+  }
 
-  const statsData = [
-    { icon: 'map-outline', color: '#2ecc71', value: dashboardData?.wilbin_count || 0, label: 'Wilayah Binaan' },
-    { icon: 'home-outline', color: '#e74c3c', value: dashboardData?.shelter_count || 0, label: 'Shelter' },
-    { icon: 'people-outline', color: '#3498db', value: donaturStats.total_donatur || 0, label: 'Donatur' },
-    { icon: 'book-outline', color: '#8e44ad', value: kurikulumStats.total_kurikulum || 0, label: 'Kurikulum' }
-  ];
-
-  const surveyStatsData = [
-    { icon: 'time-outline', color: '#f39c12', value: surveyStats.pending || 0, label: 'Tertunda' },
-    { icon: 'checkmark-circle-outline', color: '#27ae60', value: surveyStats.approved || 0, label: 'Disetujui' },
-    { icon: 'close-circle-outline', color: '#e74c3c', value: surveyStats.rejected || 0, label: 'Ditolak' }
-  ];
-
-  const donaturStatsData = [
-    { icon: 'people-outline', color: '#3498db', value: donaturStats.total_donatur || 0, label: 'Total Donatur' },
-    { icon: 'person-add-outline', color: '#27ae60', value: donaturStats.donatur_with_children || 0, label: 'Dengan Anak' },
-    { icon: 'person-outline', color: '#95a5a6', value: donaturStats.donatur_without_children || 0, label: 'Belum Memiliki' }
-  ];
-
-  const kurikulumStatsData = [
-    { icon: 'book-outline', color: '#8e44ad', value: kurikulumStats.total_kurikulum || 0, label: 'Total Kurikulum' },
-    { icon: 'checkmark-circle-outline', color: '#27ae60', value: kurikulumStats.active_kurikulum || 0, label: 'Aktif' },
-    { icon: 'library-outline', color: '#16a085', value: mataPelajaranStats.total_mata_pelajaran || 0, label: 'Mata Pelajaran' }
-  ];
-
-  const StatCard = ({ icon, color, value, label, horizontal = false }) => (
-    <View style={[styles.statCard, horizontal && styles.statCardHorizontal]}>
-      <Ionicons name={icon} size={horizontal ? 28 : 24} color={color} />
-      <View style={horizontal ? styles.statTextContainer : styles.statTextCenterContainer}>
-        <Text style={[styles.statNumber, !horizontal && styles.statNumberCenter]}>{value}</Text>
-        <Text style={[styles.statLabel, !horizontal && styles.statLabelCenter]}>{label}</Text>
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <ErrorMessage 
+          message={error}
+          onRetry={handleRetry}
+          retryText="Coba Lagi"
+        />
       </View>
-    </View>
-  );
-
-  const InfoItem = ({ label, value }) => (
-    <View style={styles.cabangInfoRow}>
-      <Text style={styles.cabangInfoLabel}>{label}:</Text>
-      <Text style={styles.cabangInfoValue}>{value || '-'}</Text>
-    </View>
-  );
+    );
+  }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
-      {error && <ErrorMessage message={error} onRetry={fetchDashboardData} />}
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          colors={['#007bff']}
+        />
+      }
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.welcomeSection}>
+          <Text style={styles.welcomeText}>Selamat Datang</Text>
+          <Text style={styles.userName}>{profile?.nama_lengkap || user?.email || 'Admin Cabang'}</Text>
+        </View>
+        <TouchableOpacity 
+          style={styles.profileButton}
+          onPress={() => navigation.navigate('AdminCabangProfile')}
+        >
+          <Ionicons name="person-circle-outline" size={30} color="#007bff" />
+        </TouchableOpacity>
+      </View>
 
-      <View style={styles.headerSection}>
-        <View style={styles.headerContent}>
-          <View>
-            <Text style={styles.welcomeText}>Selamat datang kembali,</Text>
-            <Text style={styles.nameText}>{profile?.nama_lengkap || user?.email || 'Admin Cabang'}</Text>
-            {dashboardData?.kacab && <Text style={styles.cabangText}>{dashboardData.kacab.nama_cabang || 'Cabang'}</Text>}
-          </View>
-          <TouchableOpacity style={styles.profileImageContainer} onPress={navigateToProfile}>
-            {profile?.foto ? (
-              <Image source={{ uri: `http://192.168.8.105:8000/storage/AdminCabang/${profile.id_admin_cabang}/${profile.foto}` }} style={styles.profileImage} />
-            ) : (
-              <View style={styles.profileImagePlaceholder}>
-                <Ionicons name="person" size={24} color="#ffffff" />
-              </View>
-            )}
-          </TouchableOpacity>
+      {/* Quick Stats Cards */}
+      <View style={styles.statsContainer}>
+        <View style={styles.statsRow}>
+          <StatCard
+            title="Survey"
+            value={surveyStats.total_surveys || 0}
+            subtitle={`${surveyStats.pending_surveys || 0} Pending`}
+            color="#ff6b6b"
+            icon="document-text"
+            onPress={() => navigation.navigate('AdminCabangSurveyList')}
+          />
+          <StatCard
+            title="Donatur"
+            value={donaturStats.total_donatur || 0}
+            subtitle={`${donaturStats.donatur_with_children || 0} Aktif`}
+            color="#4ecdc4"
+            icon="people"
+            onPress={() => navigation.navigate('AdminCabangDonaturList')}
+          />
+        </View>
+        
+        <View style={styles.statsRow}>
+          <StatCard
+            title="Kurikulum"
+            value={kurikulumStats.total_kurikulum || 0}
+            subtitle={`${kurikulumStats.active_kurikulum || 0} Aktif`}
+            color="#45b7d1"
+            icon="book"
+            onPress={() => navigation.navigate('AdminCabangKurikulumList')}
+          />
+          <StatCard
+            title="Mata Pelajaran"
+            value={mataPelajaranStats.total_mata_pelajaran || 0}
+            subtitle={`${mataPelajaranStats.active_mata_pelajaran || 0} Aktif`}
+            color="#f9ca24"
+            icon="library"
+            onPress={() => navigation.navigate('AdminCabangMataPelajaranList')}
+          />
         </View>
       </View>
 
-      <View style={styles.statsOverview}>
-        {statsData.map((stat, index) => <StatCard key={index} {...stat} horizontal />)}
-      </View>
-
-      <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>Statistik Survey</Text>
-        <View style={styles.surveyStatsGrid}>
-          {surveyStatsData.map((stat, index) => <StatCard key={index} {...stat} />)}
-        </View>
-      </View>
-
-      <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>Statistik Donatur</Text>
-        <View style={styles.surveyStatsGrid}>
-          {donaturStatsData.map((stat, index) => <StatCard key={index} {...stat} />)}
-        </View>
-      </View>
-
-      <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>Statistik Kurikulum</Text>
-        <View style={styles.surveyStatsGrid}>
-          {kurikulumStatsData.map((stat, index) => <StatCard key={index} {...stat} />)}
-        </View>
-      </View>
-
-      <View style={styles.sectionContainer}>
+      {/* Quick Actions */}
+      <View style={styles.quickActionsContainer}>
         <Text style={styles.sectionTitle}>Aksi Cepat</Text>
-        <View style={styles.quickActionsGrid}>
-          {quickActions.map((action, index) => (
-            <TouchableOpacity key={index} style={styles.actionCard} onPress={action.onPress}>
-              <View style={[styles.actionIconContainer, { backgroundColor: action.color }]}>
-                <Ionicons name={action.icon} size={26} color="#fff" />
-              </View>
-              <Text style={styles.actionTitle}>{action.title}</Text>
-              <Text style={styles.actionDescription}>{action.description}</Text>
-              {action.badge > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{action.badge}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
+        <View style={styles.actionsGrid}>
+          <ActionButton
+            title="Master Data"
+            subtitle="Kelola data master"
+            icon="settings"
+            color="#6c5ce7"
+            onPress={() => navigation.navigate('AdminCabangMasterData')}
+          />
+          <ActionButton
+            title="Akademik"
+            subtitle="Kurikulum & Materi"
+            icon="school"
+            color="#a29bfe"
+            onPress={() => navigation.navigate('AdminCabangAkademik')}
+          />
+          <ActionButton
+            title="Survey Validasi"
+            subtitle="Approve survey"
+            icon="checkmark-circle"
+            color="#00b894"
+            onPress={() => navigation.navigate('AdminCabangSurveyList')}
+          />
+          <ActionButton
+            title="Donatur"
+            subtitle="Kelola donatur"
+            icon="heart"
+            color="#e17055"
+            onPress={() => navigation.navigate('AdminCabangDonaturList')}
+          />
         </View>
-      </View>
-
-      {dashboardData?.kacab && (
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Informasi Cabang</Text>
-          <View style={styles.cabangInfoCard}>
-            <InfoItem label="Nama Cabang" value={dashboardData.kacab.nama_cabang} />
-            <InfoItem label="Alamat" value={dashboardData.kacab.alamat} />
-            <InfoItem label="Telepon" value={dashboardData.kacab.no_telp} />
-            <InfoItem label="Email" value={dashboardData.kacab.email} />
-          </View>
-        </View>
-      )}
-
-      <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>Aktivitas Terkini</Text>
-        {dashboardData?.recent_activities?.length > 0 ? (
-          dashboardData.recent_activities.map((activity, index) => (
-            <View key={index} style={styles.activityItem}>
-              <View style={styles.activityIcon}>
-                <Ionicons name="time-outline" size={20} color="#2ecc71" />
-              </View>
-              <View style={styles.activityContent}>
-                <Text style={styles.activityText}>{activity.description}</Text>
-                <Text style={styles.activityTime}>{activity.time}</Text>
-              </View>
-            </View>
-          ))
-        ) : (
-          <Text style={styles.emptyText}>Tidak ada aktivitas terkini ditemukan</Text>
-        )}
       </View>
     </ScrollView>
   );
 };
 
+// Stat Card Component
+const StatCard = ({ title, value, subtitle, color, icon, onPress }) => (
+  <TouchableOpacity style={[styles.statCard, { borderLeftColor: color }]} onPress={onPress}>
+    <View style={styles.statContent}>
+      <View style={styles.statHeader}>
+        <Text style={styles.statTitle}>{title}</Text>
+        <Ionicons name={icon} size={24} color={color} />
+      </View>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statSubtitle}>{subtitle}</Text>
+    </View>
+  </TouchableOpacity>
+);
+
+// Action Button Component
+const ActionButton = ({ title, subtitle, icon, color, onPress }) => (
+  <TouchableOpacity style={styles.actionButton} onPress={onPress}>
+    <View style={[styles.actionIcon, { backgroundColor: color }]}>
+      <Ionicons name={icon} size={24} color="#fff" />
+    </View>
+    <Text style={styles.actionTitle}>{title}</Text>
+    <Text style={styles.actionSubtitle}>{subtitle}</Text>
+  </TouchableOpacity>
+);
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  contentContainer: { padding: 16 },
-  headerSection: { backgroundColor: '#2ecc71', borderRadius: 12, padding: 20, marginBottom: 20, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2 }, android: { elevation: 2 } }) },
-  headerContent: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  welcomeText: { fontSize: 14, color: '#fff', opacity: 0.8 },
-  nameText: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
-  cabangText: { fontSize: 16, color: '#fff', opacity: 0.9, marginTop: 4 },
-  profileImageContainer: { width: 50, height: 50, borderRadius: 25, overflow: 'hidden', borderWidth: 2, borderColor: '#fff' },
-  profileImage: { width: '100%', height: '100%' },
-  profileImagePlaceholder: { width: '100%', height: '100%', backgroundColor: '#27ae60', justifyContent: 'center', alignItems: 'center' },
-  statsOverview: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-  statCard: { backgroundColor: '#fff', padding: 15, borderRadius: 12, marginHorizontal: 4, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2 }, android: { elevation: 2 } }) },
-  statCardHorizontal: { flex: 1, flexDirection: 'row', alignItems: 'center' },
-  statTextContainer: { marginLeft: 10 },
-  statTextCenterContainer: { alignItems: 'center', marginTop: 8 },
-  statNumber: { fontSize: 18, fontWeight: 'bold', color: '#333' },
-  statNumberCenter: { fontSize: 20 },
-  statLabel: { fontSize: 12, color: '#666' },
-  statLabelCenter: { marginTop: 4 },
-  sectionContainer: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginBottom: 20, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2 }, android: { elevation: 2 } }) },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 16, color: '#333' },
-  surveyStatsGrid: { flexDirection: 'row', justifyContent: 'space-between' },
-  quickActionsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  actionCard: { width: (width - 64) / 2, backgroundColor: '#f8f8f8', borderRadius: 12, padding: 16, marginBottom: 16, position: 'relative' },
-  actionIconContainer: { width: 50, height: 50, borderRadius: 25, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-  actionTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 8 },
-  actionDescription: { fontSize: 12, color: '#666' },
-  badge: { position: 'absolute', top: 8, right: 8, backgroundColor: '#e74c3c', borderRadius: 10, minWidth: 20, height: 20, justifyContent: 'center', alignItems: 'center' },
-  badgeText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
-  cabangInfoCard: { backgroundColor: '#f8f8f8', borderRadius: 8, padding: 16 },
-  cabangInfoRow: { flexDirection: 'row', marginBottom: 10 },
-  cabangInfoLabel: { width: 100, fontSize: 14, fontWeight: '500', color: '#666' },
-  cabangInfoValue: { flex: 1, fontSize: 14, color: '#333' },
-  activityItem: { flexDirection: 'row', marginBottom: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#eee' },
-  activityIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#e8f8f5', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  activityContent: { flex: 1 },
-  activityText: { fontSize: 14, color: '#333' },
-  activityTime: { fontSize: 12, color: '#999', marginTop: 4 },
-  emptyText: { color: '#999', fontStyle: 'italic', textAlign: 'center', padding: 16 }
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#fff',
+    marginBottom: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  welcomeSection: {
+    flex: 1,
+  },
+  welcomeText: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 4,
+  },
+  userName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  profileButton: {
+    padding: 8,
+  },
+  statsContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 4,
+    borderLeftWidth: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  statContent: {
+    alignItems: 'flex-start',
+  },
+  statHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 8,
+  },
+  statTitle: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  statSubtitle: {
+    fontSize: 12,
+    color: '#999',
+  },
+  quickActionsContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 16,
+  },
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  actionButton: {
+    width: (width - 60) / 2,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  actionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  actionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  actionSubtitle: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+  },
 });
 
 export default AdminCabangDashboardScreen;
