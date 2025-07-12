@@ -38,7 +38,7 @@ const AdminCabangDashboardScreen = () => {
         adminCabangApi.getDashboard(),
         adminCabangSurveyApi.getStats(),
         adminCabangDonaturApi.getStats(),
-        kurikulumApi.getAllKurikulum({ per_page: 1 }),
+        kurikulumApi.getAll({ per_page: 1 }),
         mataPelajaranApi.getStatistics().catch(() => ({ data: { data: {} } }))
       ]);
       
