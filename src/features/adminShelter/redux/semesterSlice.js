@@ -1,101 +1,182 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { semesterApi } from '../api/semesterApi';
+import api from '../../../common/api/api';
 
-// Async thunks
-export const fetchSemesterList = createAsyncThunk(
-  'semester/fetchList',
-  async (params) => {
-    const response = await semesterApi.getAllSemesters(params);
-    return response.data;
+// Async Thunks
+export const fetchSemesters = createAsyncThunk(
+  'adminShelter/semester/fetchSemesters',
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/admin-shelter/semester', { params });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
 export const fetchSemesterDetail = createAsyncThunk(
-  'semester/fetchDetail',
-  async (id) => {
-    const response = await semesterApi.getSemesterDetail(id);
-    return response.data;
+  'adminShelter/semester/fetchSemesterDetail',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/admin-shelter/semester/${id}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
 export const fetchActiveSemester = createAsyncThunk(
-  'semester/fetchActive',
-  async () => {
-    const response = await semesterApi.getActive();
-    return response.data;
+  'adminShelter/semester/fetchActiveSemester',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/admin-shelter/semester/active');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
 export const createSemester = createAsyncThunk(
-  'semester/create',
-  async (semesterData) => {
-    const response = await semesterApi.createSemester(semesterData);
-    return response.data;
+  'adminShelter/semester/createSemester',
+  async (semesterData, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/admin-shelter/semester', semesterData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
 export const updateSemester = createAsyncThunk(
-  'semester/update',
-  async ({ id, semesterData }) => {
-    const response = await semesterApi.updateSemester(id, semesterData);
-    return response.data;
+  'adminShelter/semester/updateSemester',
+  async ({ id, semesterData }, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`/admin-shelter/semester/${id}`, semesterData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
 export const deleteSemester = createAsyncThunk(
-  'semester/delete',
-  async (id) => {
-    await semesterApi.deleteSemester(id);
-    return id;
+  'adminShelter/semester/deleteSemester',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.delete(`/admin-shelter/semester/${id}`);
+      return { id, message: response.data.message };
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
 export const setActiveSemester = createAsyncThunk(
-  'semester/setActive',
-  async (id) => {
-    const response = await semesterApi.setActive(id);
-    return response.data;
-  }
-);
-
-export const fetchSemesterStatistics = createAsyncThunk(
-  'semester/fetchStatistics',
-  async (id) => {
-    const response = await semesterApi.getStatistics(id);
-    return response.data;
+  'adminShelter/semester/setActiveSemester',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.post(`/admin-shelter/semester/${id}/set-active`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
 export const fetchTahunAjaran = createAsyncThunk(
-  'semester/fetchTahunAjaran',
-  async () => {
-    const response = await semesterApi.getTahunAjaran();
-    return response.data;
+  'adminShelter/semester/fetchTahunAjaran',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/admin-shelter/semester/tahun-ajaran');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 
-// Slice
-const semesterSlice = createSlice({
-  name: 'semester',
-  initialState: {
-    list: [],
-    detail: null,
-    activeSemester: null,
-    statistics: null,
-    tahunAjaran: [],
-    loading: false,
-    error: null,
-    pagination: {
-      current_page: 1,
-      last_page: 1,
-      per_page: 20,
-      total: 0
-    },
-    selectedKurikulumForSemester: null
+export const fetchSemesterStatistics = createAsyncThunk(
+  'adminShelter/semester/fetchSemesterStatistics',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/admin-shelter/semester/${id}/statistics`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+// Kurikulum related thunks
+export const fetchKurikulumDropdown = createAsyncThunk(
+  'adminShelter/semester/fetchKurikulumDropdown',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/admin-shelter/kurikulum-dropdown');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const fetchKurikulumDetail = createAsyncThunk(
+  'adminShelter/semester/fetchKurikulumDetail',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/admin-shelter/kurikulum/${id}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+const initialState = {
+  list: [],
+  detail: null,
+  activeSemester: null,
+  kurikulumList: [],
+  selectedKurikulum: null,
+  tahunAjaranList: [],
+  statistics: null,
+  loading: false,
+  error: null,
+  pagination: {
+    current_page: 1,
+    last_page: 1,
+    per_page: 20,
+    total: 0
   },
+  filters: {
+    search: '',
+    tahun_ajaran: '',
+    periode: '',
+    page: 1
+  }
+};
+
+const semesterSlice = createSlice({
+  name: 'adminShelter/semester',
+  initialState,
   reducers: {
     clearError: (state) => {
       state.error = null;
+    },
+    setFilters: (state, action) => {
+      state.filters = { ...state.filters, ...action.payload };
+    },
+    clearFilters: (state) => {
+      state.filters = initialState.filters;
+    },
+    setSelectedKurikulum: (state, action) => {
+      state.selectedKurikulum = action.payload;
+    },
+    clearSelectedKurikulum: (state) => {
+      state.selectedKurikulum = null;
     },
     clearDetail: (state) => {
       state.detail = null;
@@ -103,42 +184,36 @@ const semesterSlice = createSlice({
     clearStatistics: (state) => {
       state.statistics = null;
     },
-    updateSemesterLocally: (state, action) => {
+    updateSemesterInList: (state, action) => {
       const index = state.list.findIndex(s => s.id_semester === action.payload.id_semester);
       if (index !== -1) {
         state.list[index] = action.payload;
       }
-    },
-    setSelectedKurikulumForSemester: (state, action) => {
-      state.selectedKurikulumForSemester = action.payload;
-    },
-    clearSelectedKurikulumForSemester: (state) => {
-      state.selectedKurikulumForSemester = null;
     }
   },
   extraReducers: (builder) => {
     builder
-      // Fetch list
-      .addCase(fetchSemesterList.pending, (state) => {
+      // Fetch semesters
+      .addCase(fetchSemesters.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchSemesterList.fulfilled, (state, action) => {
+      .addCase(fetchSemesters.fulfilled, (state, action) => {
         state.loading = false;
-        const responseData = action.payload.data || {};
-        state.list = responseData.data || [];
+        state.list = action.payload.data.data;
         state.pagination = {
-          current_page: responseData.current_page || 1,
-          last_page: responseData.last_page || 1,
-          per_page: responseData.per_page || 20,
-          total: responseData.total || 0
+          current_page: action.payload.data.current_page,
+          last_page: action.payload.data.last_page,
+          per_page: action.payload.data.per_page,
+          total: action.payload.data.total
         };
       })
-      .addCase(fetchSemesterList.rejected, (state, action) => {
+      .addCase(fetchSemesters.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message;
+        state.error = action.payload?.message || action.error.message;
       })
-      // Fetch detail
+      
+      // Fetch semester detail
       .addCase(fetchSemesterDetail.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -149,9 +224,10 @@ const semesterSlice = createSlice({
       })
       .addCase(fetchSemesterDetail.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message;
+        state.error = action.payload?.message || action.error.message;
       })
-      // Fetch active
+      
+      // Fetch active semester
       .addCase(fetchActiveSemester.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -162,37 +238,45 @@ const semesterSlice = createSlice({
       })
       .addCase(fetchActiveSemester.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message;
+        state.error = action.payload?.message || action.error.message;
       })
-      // Create
+      
+      // Create semester
       .addCase(createSemester.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(createSemester.fulfilled, (state, action) => {
         state.loading = false;
-        if (!state.list) {
-          state.list = [];
+        if (Array.isArray(state.list)) {
+          state.list.unshift(action.payload.data);
+        } else {
+          state.list = [action.payload.data];
         }
-        state.list.unshift(action.payload.data);
-        // Update active semester if the new one is set as active
+        // Update active semester if new one is active
         if (action.payload.data.is_active) {
           state.activeSemester = action.payload.data;
-          // Deactivate others
+          // Deactivate others in list
           state.list = state.list.map(s => ({
             ...s,
             is_active: s.id_semester === action.payload.data.id_semester
           }));
         }
-        // Clear selected kurikulum after successful creation
-        state.selectedKurikulumForSemester = null;
+        // Clear selected kurikulum after creation
+        state.selectedKurikulum = null;
       })
       .addCase(createSemester.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message;
+        state.error = action.payload?.message || action.error.message;
       })
-      // Update
+      
+      // Update semester
+      .addCase(updateSemester.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(updateSemester.fulfilled, (state, action) => {
+        state.loading = false;
         const index = state.list.findIndex(s => s.id_semester === action.payload.data.id_semester);
         if (index !== -1) {
           state.list[index] = action.payload.data;
@@ -203,21 +287,39 @@ const semesterSlice = createSlice({
         // Update active semester if changed
         if (action.payload.data.is_active) {
           state.activeSemester = action.payload.data;
-          // Deactivate others
+          // Deactivate others in list
           state.list = state.list.map(s => ({
             ...s,
             is_active: s.id_semester === action.payload.data.id_semester
           }));
         }
       })
-      // Delete
+      .addCase(updateSemester.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || action.error.message;
+      })
+      
+      // Delete semester
+      .addCase(deleteSemester.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(deleteSemester.fulfilled, (state, action) => {
-        state.list = state.list.filter(s => s.id_semester !== action.payload);
-        if (state.activeSemester?.id_semester === action.payload) {
+        state.loading = false;
+        state.list = state.list.filter(s => s.id_semester !== action.payload.id);
+        if (state.detail?.id_semester === action.payload.id) {
+          state.detail = null;
+        }
+        if (state.activeSemester?.id_semester === action.payload.id) {
           state.activeSemester = null;
         }
       })
-      // Set active
+      .addCase(deleteSemester.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || action.error.message;
+      })
+      
+      // Set active semester
       .addCase(setActiveSemester.fulfilled, (state, action) => {
         state.activeSemester = action.payload.data;
         // Update list to reflect active status
@@ -225,8 +327,17 @@ const semesterSlice = createSlice({
           ...s,
           is_active: s.id_semester === action.payload.data.id_semester
         }));
+        if (state.detail?.id_semester === action.payload.data.id_semester) {
+          state.detail = { ...state.detail, is_active: true };
+        }
       })
-      // Fetch statistics
+      
+      // Fetch tahun ajaran
+      .addCase(fetchTahunAjaran.fulfilled, (state, action) => {
+        state.tahunAjaranList = action.payload.data;
+      })
+      
+      // Fetch semester statistics
       .addCase(fetchSemesterStatistics.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -237,33 +348,63 @@ const semesterSlice = createSlice({
       })
       .addCase(fetchSemesterStatistics.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message;
+        state.error = action.payload?.message || action.error.message;
       })
-      // Fetch tahun ajaran
-      .addCase(fetchTahunAjaran.fulfilled, (state, action) => {
-        state.tahunAjaran = action.payload.data || [];
+      
+      // Fetch kurikulum dropdown
+      .addCase(fetchKurikulumDropdown.fulfilled, (state, action) => {
+        state.kurikulumList = action.payload.data || [];
+      })
+      
+      // Fetch kurikulum detail
+      .addCase(fetchKurikulumDetail.fulfilled, (state, action) => {
+        state.selectedKurikulum = action.payload.data;
       });
   }
 });
 
-export const { 
-  clearError, 
-  clearDetail, 
+export const {
+  clearError,
+  setFilters,
+  clearFilters,
+  setSelectedKurikulum,
+  clearSelectedKurikulum,
+  clearDetail,
   clearStatistics,
-  updateSemesterLocally,
-  setSelectedKurikulumForSemester,
-  clearSelectedKurikulumForSemester
+  updateSemesterInList
 } = semesterSlice.actions;
 
-export default semesterSlice.reducer;
-
 // Selectors
-export const selectSemesterList = (state) => state.semester.list;
-export const selectSemesterDetail = (state) => state.semester.detail;
-export const selectActiveSemester = (state) => state.semester.activeSemester;
-export const selectSemesterStatistics = (state) => state.semester.statistics;
-export const selectTahunAjaran = (state) => state.semester.tahunAjaran;
-export const selectSemesterLoading = (state) => state.semester.loading;
-export const selectSemesterError = (state) => state.semester.error;
-export const selectSemesterPagination = (state) => state.semester.pagination;
-export const selectSelectedKurikulumForSemester = (state) => state.semester.selectedKurikulumForSemester;
+export const selectSemesterList = (state) => state.adminShelter.semester.list;
+export const selectSemesterDetail = (state) => state.adminShelter.semester.detail;
+export const selectActiveSemester = (state) => state.adminShelter.semester.activeSemester;
+export const selectSemesterLoading = (state) => state.adminShelter.semester.loading;
+export const selectSemesterError = (state) => state.adminShelter.semester.error;
+export const selectSemesterPagination = (state) => state.adminShelter.semester.pagination;
+export const selectSemesterFilters = (state) => state.adminShelter.semester.filters;
+export const selectKurikulumList = (state) => state.adminShelter.semester.kurikulumList;
+export const selectSelectedKurikulum = (state) => state.adminShelter.semester.selectedKurikulum;
+export const selectTahunAjaranList = (state) => state.adminShelter.semester.tahunAjaranList;
+export const selectSemesterStatistics = (state) => state.adminShelter.semester.statistics;
+
+// Derived selectors
+export const selectActiveSemesterExists = (state) => 
+  !!state.adminShelter.semester.activeSemester;
+
+export const selectSemesterById = (id) => (state) =>
+  state.adminShelter.semester.list.find(s => s.id_semester === parseInt(id));
+
+export const selectSemestersByTahunAjaran = (tahun) => (state) =>
+  state.adminShelter.semester.list.filter(s => s.tahun_ajaran === tahun);
+
+export const selectSemestersByPeriode = (periode) => (state) =>
+  state.adminShelter.semester.list.filter(s => s.periode === periode);
+
+export const selectKurikulumOptions = (state) => 
+  state.adminShelter.semester.kurikulumList.map(k => ({
+    label: `${k.nama_kurikulum} (${k.tahun_berlaku})`,
+    value: k.id_kurikulum,
+    disabled: !k.is_active
+  }));
+
+export default semesterSlice.reducer;
