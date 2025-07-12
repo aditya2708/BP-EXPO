@@ -20,7 +20,7 @@ import raportLaporanReducer from '../features/adminShelter/redux/raportLaporanSl
 import laporanSuratReducer from '../features/adminShelter/redux/laporanSuratSlice';
 import laporanAktivitasReducer from '../features/adminShelter/redux/laporanAktivitasSlice';
 import historiLaporanReducer from '../features/adminShelter/redux/historiLaporanSlice';
-
+import masterDataReducer from '../features/adminCabang/redux/masterData/masterDataSlice';
 // Admin Pusat
 import tutorHonorSettingsReducer from '../features/adminPusat/redux/tutorHonorSettingsSlice';
 
@@ -32,6 +32,7 @@ import materiReducer from '../features/adminCabang/redux/masterData/materiSlice'
 
 // Admin Cabang - Akademik
 import kurikulumReducer from '../features/adminCabang/redux/akademik/kurikulumSlice';
+import akademikReducer from '../features/adminCabang/redux/akademik/akademikSlice';
 
 const appReducer = combineReducers({
   // Auth
@@ -56,6 +57,7 @@ const appReducer = combineReducers({
   laporanSurat: laporanSuratReducer,
   laporanAktivitas: laporanAktivitasReducer,
   historiLaporan: historiLaporanReducer,
+  masterData: masterDataReducer,
   
   // Admin Pusat
   tutorHonorSettings: tutorHonorSettingsReducer,
@@ -68,6 +70,7 @@ const appReducer = combineReducers({
   
   // Admin Cabang - Akademik
   kurikulum: kurikulumReducer,
+  akademik: akademikReducer,
 });
 
 const rootReducer = (state, action) => {
