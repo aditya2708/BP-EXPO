@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,24 +8,22 @@ import {
   Alert,
   RefreshControl
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 
-// Import components
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
-import ErrorMessage from '../../../common/components/ErrorMessage';
-import Button from '../../../common/components/Button';
-
-// Import Redux
+import ConfirmDialog from '../../../common/components/ConfirmDialog';
 import {
   fetchSemesterDetail,
   fetchSemesterStatistics,
-  setActiveSemester,
   deleteSemester,
+  setActiveSemester,
+  clearDetail,
+  clearStatistics,
   selectSemesterDetail,
-  selectSemesterStatistics,
   selectSemesterLoading,
+  selectSemesterStatistics,
   selectSemesterError
 } from '../redux/semesterSlice';
 
@@ -33,269 +31,285 @@ const SemesterDetailScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const dispatch = useDispatch();
-  const { semesterId, semester: initialSemester } = route.params || {};
   
-  const semesterDetail = useSelector(selectSemesterDetail);
-  const statistics = useSelector(selectSemesterStatistics);
+  const { semesterId } = route.params;
+  
+  const semester = useSelector(selectSemesterDetail);
   const loading = useSelector(selectSemesterLoading);
+  const statistics = useSelector(selectSemesterStatistics);
   const error = useSelector(selectSemesterError);
   
   const [refreshing, setRefreshing] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  useEffect(() => {
-    if (semesterId) {
+  useFocusEffect(
+    React.useCallback(() => {
       loadData();
-    }
-  }, [semesterId]);
-
-  useEffect(() => {
-    const semester = semesterDetail || initialSemester;
-    if (semester) {
-      navigation.setOptions({
-        title: `${semester.nama_semester} ${semester.tahun_ajaran}`,
-        headerRight: () => (
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() => navigateToEdit()}
-          >
-            <Ionicons name="create-outline" size={24} color="#ffffff" />
-          </TouchableOpacity>
-        )
-      });
-    }
-  }, [semesterDetail, initialSemester]);
+      
+      return () => {
+        dispatch(clearDetail());
+        dispatch(clearStatistics());
+      };
+    }, [semesterId])
+  );
 
   const loadData = async () => {
-    dispatch(fetchSemesterDetail(semesterId));
-    dispatch(fetchSemesterStatistics(semesterId));
+    try {
+      await Promise.all([
+        dispatch(fetchSemesterDetail(semesterId)),
+        dispatch(fetchSemesterStatistics(semesterId))
+      ]);
+    } catch (error) {
+      console.error('Error loading semester data:', error);
+    }
   };
 
-  const handleRefresh = async () => {
+  const onRefresh = async () => {
     setRefreshing(true);
     await loadData();
     setRefreshing(false);
   };
 
-  const navigateToEdit = () => {
-    const semester = semesterDetail || initialSemester;
+  const handleEdit = () => {
     navigation.navigate('SemesterForm', { semester });
   };
 
-  const handleSetActive = () => {
-    const semester = semesterDetail || initialSemester;
-    if (semester.is_active) {
-      Alert.alert('Info', 'Semester ini sudah aktif');
-      return;
+  const handleSetActive = async () => {
+    try {
+      await dispatch(setActiveSemester(semesterId)).unwrap();
+      Alert.alert('Sukses', 'Semester berhasil diaktifkan');
+      loadData();
+    } catch (error) {
+      Alert.alert('Error', error.message || 'Gagal mengaktifkan semester');
     }
-
-    Alert.alert(
-      'Set Semester Aktif',
-      `Jadikan ${semester.nama_semester} ${semester.tahun_ajaran} sebagai semester aktif?`,
-      [
-        { text: 'Batal', style: 'cancel' },
-        {
-          text: 'Ya',
-          onPress: async () => {
-            try {
-              await dispatch(setActiveSemester(semesterId)).unwrap();
-              Alert.alert('Sukses', 'Semester berhasil diaktifkan');
-              loadData();
-            } catch (err) {
-              Alert.alert('Error', 'Gagal mengaktifkan semester');
-            }
-          }
-        }
-      ]
-    );
   };
 
-  const handleDelete = () => {
-    const semester = semesterDetail || initialSemester;
-    if (semester.is_active) {
-      Alert.alert('Error', 'Semester aktif tidak dapat dihapus');
-      return;
+  const handleDelete = async () => {
+    try {
+      await dispatch(deleteSemester(semesterId)).unwrap();
+      Alert.alert('Sukses', 'Semester berhasil dihapus');
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert('Error', error.message || 'Gagal menghapus semester');
     }
-
-    Alert.alert(
-      'Hapus Semester',
-      `Hapus ${semester.nama_semester} ${semester.tahun_ajaran}?\n\nPerhatian: Tindakan ini akan menghapus semua data terkait.`,
-      [
-        { text: 'Batal', style: 'cancel' },
-        {
-          text: 'Hapus',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await dispatch(deleteSemester(semesterId)).unwrap();
-              Alert.alert(
-                'Sukses',
-                'Semester berhasil dihapus',
-                [{ text: 'OK', onPress: () => navigation.goBack() }]
-              );
-            } catch (err) {
-              Alert.alert('Error', 'Gagal menghapus semester');
-            }
-          }
-        }
-      ]
-    );
   };
 
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('id-ID', {
+  const handleKurikulumPreview = () => {
+    if (semester?.kurikulum) {
+      navigation.navigate('KurikulumPreview', { 
+        kurikulumId: semester.kurikulum.id_kurikulum 
+      });
+    }
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('id-ID', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
-  const semester = semesterDetail || initialSemester;
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'ongoing': return '#27ae60';
+      case 'finished': return '#7f8c8d';
+      case 'upcoming': return '#3498db';
+      default: return '#95a5a6';
+    }
+  };
 
-  if (loading && !refreshing && !semester) {
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'ongoing': return 'Berlangsung';
+      case 'finished': return 'Selesai';
+      case 'upcoming': return 'Akan Datang';
+      default: return 'Tidak Diketahui';
+    }
+  };
+
+  if (loading && !semester) {
     return <LoadingSpinner fullScreen message="Memuat detail semester..." />;
   }
 
-  if (!semester) {
+  if (error && !semester) {
     return (
       <View style={styles.errorContainer}>
-        <ErrorMessage 
-          message="Data semester tidak ditemukan" 
-          onRetry={loadData}
-        />
+        <Ionicons name="alert-circle" size={64} color="#e74c3c" />
+        <Text style={styles.errorText}>Gagal memuat data semester</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={loadData}>
+          <Text style={styles.retryButtonText}>Coba Lagi</Text>
+        </TouchableOpacity>
       </View>
     );
   }
+
+  if (!semester) return null;
 
   return (
     <ScrollView 
       style={styles.container}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      {error && <ErrorMessage message={error} onRetry={loadData} />}
-
-      {/* Header Card */}
-      <View style={styles.headerCard}>
-        <View style={styles.headerTop}>
+      {/* Header Section */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
           <Text style={styles.semesterName}>{semester.nama_semester}</Text>
-          <View style={[
-            styles.statusBadge,
-            { backgroundColor: semester.is_active ? '#2ecc71' : '#95a5a6' }
-          ]}>
-            <Text style={styles.statusText}>
-              {semester.is_active ? 'AKTIF' : 'NON-AKTIF'}
+          <View style={styles.headerRow}>
+            <Text style={styles.tahunAjaran}>{semester.tahun_ajaran}</Text>
+            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(semester.status) }]}>
+              <Text style={styles.statusText}>{getStatusLabel(semester.status)}</Text>
+            </View>
+          </View>
+          {semester.is_active && (
+            <View style={styles.activeBadge}>
+              <Ionicons name="checkmark-circle" size={16} color="#ffffff" />
+              <Text style={styles.activeText}>Semester Aktif</Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      {/* Basic Info Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Informasi Dasar</Text>
+        
+        <View style={styles.infoRow}>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoLabel}>Periode</Text>
+            <Text style={styles.infoValue}>
+              {semester.periode === 'ganjil' ? 'Ganjil' : 'Genap'}
             </Text>
           </View>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoLabel}>Tahun Ajaran</Text>
+            <Text style={styles.infoValue}>{semester.tahun_ajaran}</Text>
+          </View>
         </View>
-        <Text style={styles.tahunAjaran}>Tahun Ajaran {semester.tahun_ajaran}</Text>
-        <Text style={styles.periode}>
-          {semester.periode === 'ganjil' ? 'Semester Ganjil' : 'Semester Genap'}
-        </Text>
+
+        <View style={styles.infoRow}>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoLabel}>Tanggal Mulai</Text>
+            <Text style={styles.infoValue}>{formatDate(semester.tanggal_mulai)}</Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoLabel}>Tanggal Selesai</Text>
+            <Text style={styles.infoValue}>{formatDate(semester.tanggal_selesai)}</Text>
+          </View>
+        </View>
       </View>
 
-      {/* Period Info */}
+      {/* Kurikulum Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Periode Semester</Text>
-        <View style={styles.infoCard}>
-          <View style={styles.infoRow}>
-            <Ionicons name="calendar-outline" size={20} color="#3498db" />
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Tanggal Mulai</Text>
-              <Text style={styles.infoValue}>{formatDate(semester.tanggal_mulai)}</Text>
+        <Text style={styles.sectionTitle}>Kurikulum</Text>
+        
+        {semester.kurikulum ? (
+          <TouchableOpacity 
+            style={styles.kurikulumCard}
+            onPress={handleKurikulumPreview}
+          >
+            <View style={styles.kurikulumContent}>
+              <View style={styles.kurikulumHeader}>
+                <Ionicons name="book" size={24} color="#27ae60" />
+                <View style={styles.kurikulumInfo}>
+                  <Text style={styles.kurikulumName}>
+                    {semester.kurikulum.nama_kurikulum}
+                  </Text>
+                  <Text style={styles.kurikulumYear}>
+                    Tahun: {semester.kurikulum.tahun_berlaku}
+                  </Text>
+                  {semester.kurikulum.deskripsi && (
+                    <Text style={styles.kurikulumDesc}>
+                      {semester.kurikulum.deskripsi}
+                    </Text>
+                  )}
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#7f8c8d" />
+              </View>
             </View>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.noKurikulumCard}>
+            <Ionicons name="book-outline" size={32} color="#bdc3c7" />
+            <Text style={styles.noKurikulumText}>Belum ada kurikulum dipilih</Text>
+            <Text style={styles.noKurikulumSubtext}>
+              Edit semester untuk menambahkan kurikulum
+            </Text>
           </View>
-          
-          <View style={styles.divider} />
-          
-          <View style={styles.infoRow}>
-            <Ionicons name="calendar-outline" size={20} color="#e74c3c" />
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Tanggal Selesai</Text>
-              <Text style={styles.infoValue}>{formatDate(semester.tanggal_selesai)}</Text>
-            </View>
-          </View>
-        </View>
+        )}
       </View>
 
-      {/* Statistics */}
+      {/* Statistics Section */}
       {statistics && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Statistik</Text>
+          
           <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <Ionicons name="document-text-outline" size={32} color="#3498db" />
-              <Text style={styles.statValue}>{statistics.total_anak_with_raport}</Text>
-              <Text style={styles.statLabel}>Raport</Text>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{statistics.total_kelas}</Text>
+              <Text style={styles.statLabel}>Total Kelas</Text>
             </View>
-            
-            <View style={styles.statCard}>
-              <Ionicons name="heart-outline" size={32} color="#e74c3c" />
-              <Text style={styles.statValue}>{statistics.total_anak_with_nilai_sikap}</Text>
-              <Text style={styles.statLabel}>Nilai Sikap</Text>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{statistics.total_siswa}</Text>
+              <Text style={styles.statLabel}>Total Siswa</Text>
             </View>
-            
-            <View style={styles.statCard}>
-              <Ionicons name="star-outline" size={32} color="#f39c12" />
-              <Text style={styles.statValue}>{statistics.total_penilaian}</Text>
-              <Text style={styles.statLabel}>Penilaian</Text>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{statistics.total_jadwal}</Text>
+              <Text style={styles.statLabel}>Total Jadwal</Text>
             </View>
-            
-            <View style={styles.statCard}>
-              <Ionicons name="checkmark-circle-outline" size={32} color="#2ecc71" />
-              <Text style={styles.statValue}>{statistics.published_raport}</Text>
-              <Text style={styles.statLabel}>Raport Published</Text>
-            </View>
-          </View>
-        </View>
-      )}
-
-      {/* Attendance Average */}
-      {statistics && statistics.average_attendance > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Kehadiran</Text>
-          <View style={styles.attendanceCard}>
-            <Ionicons name="bar-chart-outline" size={48} color="#3498db" />
-            <View style={styles.attendanceInfo}>
-              <Text style={styles.attendanceValue}>
-                {statistics.average_attendance.toFixed(1)}%
+            <View style={styles.statItem}>
+              <View style={[
+                styles.statusIndicator,
+                { backgroundColor: statistics.periode_aktif ? '#27ae60' : '#e74c3c' }
+              ]} />
+              <Text style={styles.statLabel}>
+                {statistics.periode_aktif ? 'Periode Aktif' : 'Periode Tidak Aktif'}
               </Text>
-              <Text style={styles.attendanceLabel}>Rata-rata Kehadiran</Text>
             </View>
           </View>
         </View>
       )}
 
-      {/* Actions */}
+      {/* Action Buttons */}
       <View style={styles.actions}>
-        {!semester.is_active && (
-          <Button
-            title="Set Sebagai Aktif"
-            onPress={handleSetActive}
-            leftIcon={<Ionicons name="power" size={20} color="#ffffff" />}
-            style={styles.actionButton}
-          />
-        )}
-        
-        <Button
-          title="Edit Semester"
-          onPress={navigateToEdit}
-          type="outline"
-          leftIcon={<Ionicons name="create" size={20} color="#3498db" />}
-          style={styles.actionButton}
-        />
+        <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+          <Ionicons name="create" size={20} color="#ffffff" />
+          <Text style={styles.editButtonText}>Edit Semester</Text>
+        </TouchableOpacity>
         
         {!semester.is_active && (
-          <Button
-            title="Hapus Semester"
-            onPress={handleDelete}
-            type="danger"
-            leftIcon={<Ionicons name="trash" size={20} color="#ffffff" />}
-            style={styles.actionButton}
-          />
+          <TouchableOpacity style={styles.activateButton} onPress={handleSetActive}>
+            <Ionicons name="checkmark-circle" size={20} color="#ffffff" />
+            <Text style={styles.activateButtonText}>Aktifkan</Text>
+          </TouchableOpacity>
         )}
+        
+        <TouchableOpacity 
+          style={styles.deleteButton} 
+          onPress={() => setShowDeleteDialog(true)}
+        >
+          <Ionicons name="trash" size={20} color="#ffffff" />
+          <Text style={styles.deleteButtonText}>Hapus</Text>
+        </TouchableOpacity>
       </View>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        visible={showDeleteDialog}
+        title="Hapus Semester"
+        message={`Yakin ingin menghapus semester "${semester.nama_semester}"? Tindakan ini tidak dapat dibatalkan.`}
+        confirmText="Hapus"
+        cancelText="Batal"
+        onConfirm={() => {
+          setShowDeleteDialog(false);
+          handleDelete();
+        }}
+        onCancel={() => setShowDeleteDialog(false)}
+        confirmButtonStyle={{ backgroundColor: '#e74c3c' }}
+      />
     </ScrollView>
   );
 };
@@ -303,33 +317,32 @@ const SemesterDetailScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f9fa',
   },
-  errorContainer: {
-    flex: 1,
-    padding: 16,
-  },
-  headerButton: {
-    marginRight: 16,
-  },
-  headerCard: {
+  header: {
     backgroundColor: '#e74c3c',
-    margin: 16,
-    borderRadius: 12,
     padding: 20,
+    paddingBottom: 24,
   },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
+  headerContent: {
+    marginTop: 8,
   },
   semesterName: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#ffffff',
-    flex: 1,
-    marginRight: 12,
+    marginBottom: 8,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  tahunAjaran: {
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: '500',
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -338,112 +351,213 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 12,
-    fontWeight: 'bold',
     color: '#ffffff',
+    fontWeight: '600',
   },
-  tahunAjaran: {
-    fontSize: 18,
+  activeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    alignSelf: 'flex-start',
+  },
+  activeText: {
+    fontSize: 12,
     color: '#ffffff',
-    marginBottom: 4,
-  },
-  periode: {
-    fontSize: 14,
-    color: '#ffebee',
+    fontWeight: '600',
+    marginLeft: 4,
   },
   section: {
-    marginHorizontal: 16,
-    marginBottom: 20,
+    backgroundColor: '#ffffff',
+    margin: 16,
+    marginBottom: 0,
+    borderRadius: 12,
+    padding: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#2c3e50',
-    marginBottom: 12,
-  },
-  infoCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 16,
-    elevation: 2,
+    marginBottom: 16,
   },
   infoRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
+    marginBottom: 12,
   },
-  infoContent: {
-    marginLeft: 16,
+  infoItem: {
     flex: 1,
+    marginRight: 12,
   },
   infoLabel: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#7f8c8d',
+    fontWeight: '500',
     marginBottom: 4,
   },
   infoValue: {
     fontSize: 16,
-    fontWeight: '500',
     color: '#2c3e50',
+    fontWeight: '600',
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#ecf0f1',
-    marginVertical: 8,
+  kurikulumCard: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#27ae60',
+    backgroundColor: '#f8fff8',
+  },
+  kurikulumContent: {
+    padding: 16,
+  },
+  kurikulumHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  kurikulumInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  kurikulumName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#27ae60',
+    marginBottom: 4,
+  },
+  kurikulumYear: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginBottom: 4,
+  },
+  kurikulumDesc: {
+    fontSize: 12,
+    color: '#95a5a6',
+  },
+  noKurikulumCard: {
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderStyle: 'dashed',
+  },
+  noKurikulumText: {
+    fontSize: 16,
+    color: '#7f8c8d',
+    fontWeight: '600',
+    marginTop: 8,
+  },
+  noKurikulumSubtext: {
+    fontSize: 12,
+    color: '#95a5a6',
+    textAlign: 'center',
+    marginTop: 4,
   },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  statCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
+  statItem: {
     width: '48%',
-    marginBottom: 12,
-    elevation: 2,
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    marginBottom: 8,
   },
-  statValue: {
+  statNumber: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginTop: 8,
+    fontWeight: '700',
+    color: '#e74c3c',
+    marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
     color: '#7f8c8d',
-    marginTop: 4,
     textAlign: 'center',
+    fontWeight: '500',
   },
-  attendanceCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    elevation: 2,
-  },
-  attendanceInfo: {
-    marginLeft: 20,
-    flex: 1,
-  },
-  attendanceValue: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#3498db',
-  },
-  attendanceLabel: {
-    fontSize: 14,
-    color: '#7f8c8d',
-    marginTop: 4,
+  statusIndicator: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginBottom: 8,
   },
   actions: {
     padding: 16,
-    paddingBottom: 32,
+    gap: 12,
   },
-  actionButton: {
-    marginBottom: 12,
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#3498db',
+    padding: 16,
+    borderRadius: 8,
+    gap: 8,
+  },
+  editButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  activateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#27ae60',
+    padding: 16,
+    borderRadius: 8,
+    gap: 8,
+  },
+  activateButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#e74c3c',
+    padding: 16,
+    borderRadius: 8,
+    gap: 8,
+  },
+  deleteButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  errorText: {
+    fontSize: 18,
+    color: '#7f8c8d',
+    textAlign: 'center',
+    marginVertical: 16,
+  },
+  retryButton: {
+    backgroundColor: '#e74c3c',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });
 
