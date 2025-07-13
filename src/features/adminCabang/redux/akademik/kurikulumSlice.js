@@ -2,127 +2,101 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { adminCabangApi } from '../../api/adminCabangApi';
 
-// Async Thunks - Aligned with AkademikKurikulumController
+// Async Thunks
 export const fetchKurikulumList = createAsyncThunk(
   'kurikulum/fetchList',
-  async ({ search = '', is_active = null, tahun_berlaku = null, page = 1, per_page = 15 } = {}, { rejectWithValue }) => {
-    try {
-      const response = await adminCabangApi.akademik.kurikulum.getAll({ 
-        search, 
-        is_active, 
-        tahun_berlaku, 
-        page, 
-        per_page 
-      });
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
+  async (params = {}) => {
+    const response = await adminCabangApi.akademik.kurikulum.getAll(params);
+    return response.data;
   }
 );
 
-export const fetchKurikulumDetail = createAsyncThunk(
-  'kurikulum/fetchDetail',
-  async (id, { rejectWithValue }) => {
-    try {
-      const response = await adminCabangApi.akademik.kurikulum.getDetail(id);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
+export const fetchKurikulumById = createAsyncThunk(
+  'kurikulum/fetchById',
+  async (id) => {
+    const response = await adminCabangApi.akademik.kurikulum.getDetail(id);
+    return response.data;
+  }
+);
+
+export const fetchKurikulumDropdown = createAsyncThunk(
+  'kurikulum/fetchDropdown',
+  async (params = {}) => {
+    const response = await adminCabangApi.akademik.kurikulum.getAll(params);
+    return response.data;
   }
 );
 
 export const createKurikulum = createAsyncThunk(
   'kurikulum/create',
-  async (data, { rejectWithValue }) => {
-    try {
-      const response = await adminCabangApi.akademik.kurikulum.create(data);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
+  async (data) => {
+    const response = await adminCabangApi.akademik.kurikulum.create(data);
+    return response.data;
   }
 );
 
 export const updateKurikulum = createAsyncThunk(
   'kurikulum/update',
-  async ({ id, data }, { rejectWithValue }) => {
-    try {
-      const response = await adminCabangApi.akademik.kurikulum.update(id, data);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
+  async ({ id, data }) => {
+    const response = await adminCabangApi.akademik.kurikulum.update(id, data);
+    return response.data;
   }
 );
 
 export const deleteKurikulum = createAsyncThunk(
   'kurikulum/delete',
-  async (id, { rejectWithValue }) => {
-    try {
-      await adminCabangApi.akademik.kurikulum.delete(id);
-      return id;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
-
-export const assignMateriToKurikulum = createAsyncThunk(
-  'kurikulum/assignMateri',
-  async ({ id, materi_ids }, { rejectWithValue }) => {
-    try {
-      const response = await adminCabangApi.akademik.kurikulum.assignMateri(id, { materi_ids });
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
-  }
-);
-
-export const removeMateriFromKurikulum = createAsyncThunk(
-  'kurikulum/removeMateri',
-  async ({ id, materi_id }, { rejectWithValue }) => {
-    try {
-      await adminCabangApi.akademik.kurikulum.removeMateri(id, materi_id);
-      return { id, materi_id };
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
+  async (id) => {
+    await adminCabangApi.akademik.kurikulum.delete(id);
+    return id;
   }
 );
 
 export const setActiveKurikulum = createAsyncThunk(
   'kurikulum/setActive',
-  async (id, { rejectWithValue }) => {
-    try {
-      const response = await adminCabangApi.akademik.kurikulum.setActive(id);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
+  async (id) => {
+    const response = await adminCabangApi.akademik.kurikulum.setActive(id);
+    return response.data;
+  }
+);
+
+export const assignMateri = createAsyncThunk(
+  'kurikulum/assignMateri',
+  async ({ kurikulumId, materiIds, orders = {} }) => {
+    const response = await adminCabangApi.akademik.kurikulum.assignMateri(kurikulumId, materiIds, orders);
+    return response.data;
+  }
+);
+
+export const removeMateri = createAsyncThunk(
+  'kurikulum/removeMateri',
+  async ({ kurikulumId, materiId }) => {
+    const response = await adminCabangApi.akademik.kurikulum.removeMateri(kurikulumId, materiId);
+    return { kurikulumId, materiId, ...response.data };
+  }
+);
+
+export const reorderMateri = createAsyncThunk(
+  'kurikulum/reorderMateri',
+  async ({ kurikulumId, materiOrders }) => {
+    const response = await adminCabangApi.akademik.kurikulum.reorderMateri(kurikulumId, materiOrders);
+    return response.data;
   }
 );
 
 export const fetchKurikulumStats = createAsyncThunk(
   'kurikulum/fetchStats',
-  async (id, { rejectWithValue }) => {
-    try {
-      const response = await adminCabangApi.akademik.kurikulum.getStatistics(id);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
-    }
+  async () => {
+    const response = await adminCabangApi.akademik.kurikulum.getStats();
+    return response.data;
   }
 );
 
 // Initial State
 const initialState = {
   list: [],
-  detail: null,
-  statistics: null,
+  currentKurikulum: null,
   dropdownData: [],
+  statistics: null,
   pagination: {
     current_page: 1,
     last_page: 1,
@@ -140,8 +114,8 @@ const kurikulumSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
-    clearDetail: (state) => {
-      state.detail = null;
+    clearCurrentKurikulum: (state) => {
+      state.currentKurikulum = null;
     },
     clearStatistics: (state) => {
       state.statistics = null;
@@ -162,7 +136,7 @@ const kurikulumSlice = createSlice({
       })
       .addCase(fetchKurikulumList.fulfilled, (state, action) => {
         state.loading = false;
-        const responseData = action.payload.data || {};
+        const responseData = action.payload || {};
         state.list = responseData.data || [];
         state.pagination = {
           current_page: responseData.current_page || 1,
@@ -173,22 +147,28 @@ const kurikulumSlice = createSlice({
       })
       .addCase(fetchKurikulumList.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || action.error.message;
+        state.error = action.error.message;
         state.list = [];
       })
       
-      // Detail
-      .addCase(fetchKurikulumDetail.pending, (state) => {
+      // Detail/ById
+      .addCase(fetchKurikulumById.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchKurikulumDetail.fulfilled, (state, action) => {
+      .addCase(fetchKurikulumById.fulfilled, (state, action) => {
         state.loading = false;
-        state.detail = action.payload.data;
+        state.currentKurikulum = action.payload;
       })
-      .addCase(fetchKurikulumDetail.rejected, (state, action) => {
+      .addCase(fetchKurikulumById.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || action.error.message;
+        state.error = action.error.message;
+        state.currentKurikulum = null;
+      })
+      
+      // Dropdown
+      .addCase(fetchKurikulumDropdown.fulfilled, (state, action) => {
+        state.dropdownData = action.payload?.data || [];
       })
       
       // Create
@@ -198,13 +178,14 @@ const kurikulumSlice = createSlice({
       })
       .addCase(createKurikulum.fulfilled, (state, action) => {
         state.loading = false;
-        if (!Array.isArray(state.list)) state.list = [];
-        state.list.unshift(action.payload.data);
-        state.pagination.total += 1;
+        if (action.payload) {
+          state.list.unshift(action.payload);
+          state.pagination.total += 1;
+        }
       })
       .addCase(createKurikulum.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || action.error.message;
+        state.error = action.error.message;
       })
       
       // Update
@@ -214,115 +195,73 @@ const kurikulumSlice = createSlice({
       })
       .addCase(updateKurikulum.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.list.findIndex(k => k.id_kurikulum === action.payload.data.id_kurikulum);
-        if (index !== -1) {
-          state.list[index] = action.payload.data;
-        }
-        if (state.detail?.id_kurikulum === action.payload.data.id_kurikulum) {
-          state.detail = action.payload.data;
+        const updatedData = action.payload;
+        if (updatedData) {
+          const index = state.list.findIndex(k => k.id_kurikulum === updatedData.id_kurikulum);
+          if (index !== -1) {
+            state.list[index] = updatedData;
+          }
+          if (state.currentKurikulum?.id_kurikulum === updatedData.id_kurikulum) {
+            state.currentKurikulum = updatedData;
+          }
         }
       })
       .addCase(updateKurikulum.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || action.error.message;
+        state.error = action.error.message;
       })
       
       // Delete
-      .addCase(deleteKurikulum.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
       .addCase(deleteKurikulum.fulfilled, (state, action) => {
-        state.loading = false;
         state.list = state.list.filter(k => k.id_kurikulum !== action.payload);
-        if (state.detail?.id_kurikulum === action.payload) {
-          state.detail = null;
-        }
         state.pagination.total = Math.max(0, state.pagination.total - 1);
-      })
-      .addCase(deleteKurikulum.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.message || action.error.message;
+        if (state.currentKurikulum?.id_kurikulum === action.payload) {
+          state.currentKurikulum = null;
+        }
       })
       
       // Assign Materi
-      .addCase(assignMateriToKurikulum.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(assignMateriToKurikulum.fulfilled, (state, action) => {
-        state.loading = false;
-        if (state.detail) {
-          state.detail.kurikulum_materi = action.payload.data.kurikulum_materi || [];
-          state.detail.kurikulum_materi_count = action.payload.data.kurikulum_materi_count || 0;
+      .addCase(assignMateri.fulfilled, (state, action) => {
+        if (state.currentKurikulum && action.payload?.data) {
+          state.currentKurikulum = { ...state.currentKurikulum, ...action.payload.data };
         }
-      })
-      .addCase(assignMateriToKurikulum.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.message || action.error.message;
       })
       
       // Remove Materi
-      .addCase(removeMateriFromKurikulum.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(removeMateriFromKurikulum.fulfilled, (state, action) => {
-        state.loading = false;
-        if (state.detail && state.detail.kurikulum_materi) {
-          state.detail.kurikulum_materi = state.detail.kurikulum_materi.filter(
-            km => km.id_materi !== action.payload.materi_id
+      .addCase(removeMateri.fulfilled, (state, action) => {
+        if (state.currentKurikulum?.materi) {
+          state.currentKurikulum.materi = state.currentKurikulum.materi.filter(
+            m => m.id !== action.payload.materiId
           );
-          state.detail.kurikulum_materi_count = Math.max(0, (state.detail.kurikulum_materi_count || 0) - 1);
+          state.currentKurikulum.materi_count = Math.max(0, (state.currentKurikulum.materi_count || 0) - 1);
         }
-      })
-      .addCase(removeMateriFromKurikulum.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.message || action.error.message;
       })
       
       // Set Active
-      .addCase(setActiveKurikulum.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
       .addCase(setActiveKurikulum.fulfilled, (state, action) => {
-        state.loading = false;
-        // Set all other kurikulum to inactive
         state.list.forEach(k => k.is_active = false);
-        // Set selected kurikulum to active
-        const index = state.list.findIndex(k => k.id_kurikulum === action.payload.data.id_kurikulum);
-        if (index !== -1) {
-          state.list[index] = { ...state.list[index], is_active: true };
+        const activeData = action.payload?.data;
+        if (activeData) {
+          const index = state.list.findIndex(k => k.id_kurikulum === activeData.id_kurikulum);
+          if (index !== -1) {
+            state.list[index] = { ...state.list[index], is_active: true };
+          }
+          if (state.currentKurikulum?.id_kurikulum === activeData.id_kurikulum) {
+            state.currentKurikulum = { ...state.currentKurikulum, is_active: true };
+          }
         }
-        if (state.detail?.id_kurikulum === action.payload.data.id_kurikulum) {
-          state.detail = { ...state.detail, is_active: true };
-        }
-      })
-      .addCase(setActiveKurikulum.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.message || action.error.message;
       })
       
       // Statistics
-      .addCase(fetchKurikulumStats.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
       .addCase(fetchKurikulumStats.fulfilled, (state, action) => {
-        state.loading = false;
-        state.statistics = action.payload.data;
-      })
-      .addCase(fetchKurikulumStats.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.message || action.error.message;
+        state.statistics = action.payload?.data;
       });
-  },
+  }
 });
 
 export const { 
   clearError, 
-  clearDetail, 
+  clearCurrentKurikulum, 
   clearStatistics,
   updateKurikulumLocally 
 } = kurikulumSlice.actions;
@@ -331,7 +270,7 @@ export default kurikulumSlice.reducer;
 
 // Selectors
 export const selectKurikulumList = (state) => state.kurikulum?.list || [];
-export const selectKurikulumDetail = (state) => state.kurikulum?.detail || null;
+export const selectCurrentKurikulum = (state) => state.kurikulum?.currentKurikulum || null;
 export const selectKurikulumStatistics = (state) => state.kurikulum?.statistics || null;
 export const selectKurikulumDropdownData = (state) => state.kurikulum?.dropdownData || [];
 export const selectKurikulumLoading = (state) => state.kurikulum?.loading || false;

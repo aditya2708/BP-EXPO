@@ -9,12 +9,22 @@ import FormDropdown from '../../../../../common/components/FormDropdown';
 import FormToggle from '../../../../../common/components/FormToggle';
 import FormSubmitButton from '../../../../../common/components/FormSubmitButton';
 import LoadingSpinner from '../../../../../common/components/LoadingSpinner';
-import { createKurikulum, updateKurikulum, fetchKurikulumById, clearForm } from '../../../redux/akademik/kurikulumSlice';
+import { 
+  createKurikulum, 
+  updateKurikulum, 
+  fetchKurikulumById, 
+  clearCurrentKurikulum,
+  selectCurrentKurikulum,
+  selectKurikulumLoading,
+  selectKurikulumError
+} from '../../../redux/akademik/kurikulumSlice';
 import { fetchJenjang } from '../../../redux/masterData/jenjangSlice';
 
 const KurikulumFormScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
-  const { currentKurikulum, loading, error } = useSelector(state => state.kurikulum);
+  const currentKurikulum = useSelector(selectCurrentKurikulum);
+  const loading = useSelector(selectKurikulumLoading);
+  const error = useSelector(selectKurikulumError);
   const { jenjang } = useSelector(state => state.jenjang);
   const { id } = route.params || {};
   const isEdit = !!id;
@@ -34,7 +44,7 @@ const KurikulumFormScreen = ({ navigation, route }) => {
     if (isEdit && id) {
       dispatch(fetchKurikulumById(id));
     } else {
-      dispatch(clearForm());
+      dispatch(clearCurrentKurikulum());
     }
   }, [dispatch, id, isEdit]);
 
@@ -49,17 +59,34 @@ const KurikulumFormScreen = ({ navigation, route }) => {
         is_active: currentKurikulum.is_active ?? true
       });
     }
-  }, [currentKurikulum, isEdit]);
+  }, [isEdit, currentKurikulum]);
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: null }));
+    }
+  };
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.nama.trim()) newErrors.nama = 'Nama kurikulum wajib diisi';
-    if (formData.nama.length > 100) newErrors.nama = 'Nama maksimal 100 karakter';
-    if (!formData.jenjang_id) newErrors.jenjang_id = 'Jenjang wajib dipilih';
-    if (!formData.tahun_ajaran) newErrors.tahun_ajaran = 'Tahun ajaran wajib diisi';
-    if (!formData.semester) newErrors.semester = 'Semester wajib dipilih';
-    if (formData.deskripsi.length > 500) newErrors.deskripsi = 'Deskripsi maksimal 500 karakter';
     
+    if (!formData.nama.trim()) {
+      newErrors.nama = 'Nama kurikulum harus diisi';
+    }
+    
+    if (!formData.jenjang_id) {
+      newErrors.jenjang_id = 'Jenjang harus dipilih';
+    }
+    
+    if (!formData.tahun_ajaran.trim()) {
+      newErrors.tahun_ajaran = 'Tahun ajaran harus diisi';
+    }
+    
+    if (!formData.semester.trim()) {
+      newErrors.semester = 'Semester harus diisi';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -70,35 +97,37 @@ const KurikulumFormScreen = ({ navigation, route }) => {
     try {
       if (isEdit) {
         await dispatch(updateKurikulum({ id, data: formData })).unwrap();
-        Alert.alert('Sukses', 'Kurikulum berhasil diupdate');
+        Alert.alert('Sukses', 'Kurikulum berhasil diperbarui');
       } else {
         await dispatch(createKurikulum(formData)).unwrap();
-        Alert.alert('Sukses', 'Kurikulum berhasil dibuat. Selanjutnya assign materi dari master data.');
+        Alert.alert('Sukses', 'Kurikulum berhasil dibuat');
       }
       navigation.goBack();
     } catch (err) {
-      Alert.alert('Error', err.message || 'Terjadi kesalahan');
+      Alert.alert('Error', err.message || `Gagal ${isEdit ? 'memperbarui' : 'membuat'} kurikulum`);
     }
   };
 
-  const updateField = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: null }));
-    }
-  };
+  // Generate dropdown options
+  const jenjangOptions = Array.isArray(jenjang) ? jenjang.map(j => ({
+    label: j.nama_jenjang,
+    value: j.id_jenjang
+  })) : [];
 
-  const jenjangOptions = jenjang.map(j => ({ label: j.nama, value: j.id }));
   const semesterOptions = [
-    { label: 'Ganjil', value: 'ganjil' },
-    { label: 'Genap', value: 'genap' }
+    { label: 'Ganjil', value: 'Ganjil' },
+    { label: 'Genap', value: 'Genap' }
   ];
 
+  // Generate tahun ajaran options (current year ± 5 years)
   const currentYear = new Date().getFullYear();
-  const tahunAjaranOptions = Array.from({ length: 5 }, (_, i) => {
-    const year = currentYear + i - 2;
-    return { label: `${year}/${year + 1}`, value: `${year}/${year + 1}` };
-  });
+  const tahunAjaranOptions = [];
+  for (let i = currentYear - 2; i <= currentYear + 3; i++) {
+    tahunAjaranOptions.push({
+      label: `${i}/${i + 1}`,
+      value: `${i}/${i + 1}`
+    });
+  }
 
   if (loading && isEdit && !currentKurikulum) {
     return <LoadingSpinner fullScreen message="Memuat data kurikulum..." />;
@@ -107,7 +136,8 @@ const KurikulumFormScreen = ({ navigation, route }) => {
   return (
     <SafeAreaWrapper>
       <FormHeader
-        title={isEdit ? 'Edit Kurikulum' : 'Buat Kurikulum'}
+        title={isEdit ? 'Edit Kurikulum' : 'Tambah Kurikulum'}
+        subtitle={isEdit ? 'Perbarui informasi kurikulum' : 'Buat kurikulum baru'}
         onBack={() => navigation.goBack()}
         error={error}
       />
@@ -117,69 +147,69 @@ const KurikulumFormScreen = ({ navigation, route }) => {
           <FormInput
             label="Nama Kurikulum"
             value={formData.nama}
-            onChangeText={(value) => updateField('nama', value)}
-            placeholder="Contoh: Kurikulum Merdeka SD 2024"
+            onChangeText={(value) => handleInputChange('nama', value)}
+            placeholder="Masukkan nama kurikulum"
             error={errors.nama}
             required
-            maxLength={100}
           />
-          
+
           <FormDropdown
             label="Jenjang"
             value={formData.jenjang_id}
-            onValueChange={(value) => updateField('jenjang_id', value)}
+            onSelect={(value) => handleInputChange('jenjang_id', value)}
             options={jenjangOptions}
             placeholder="Pilih jenjang"
             error={errors.jenjang_id}
             required
           />
-          
+
           <FormDropdown
             label="Tahun Ajaran"
             value={formData.tahun_ajaran}
-            onValueChange={(value) => updateField('tahun_ajaran', value)}
+            onSelect={(value) => handleInputChange('tahun_ajaran', value)}
             options={tahunAjaranOptions}
             placeholder="Pilih tahun ajaran"
             error={errors.tahun_ajaran}
             required
           />
-          
+
           <FormDropdown
             label="Semester"
             value={formData.semester}
-            onValueChange={(value) => updateField('semester', value)}
+            onSelect={(value) => handleInputChange('semester', value)}
             options={semesterOptions}
             placeholder="Pilih semester"
             error={errors.semester}
             required
           />
-          
-          <FormToggle
-            label="Status Aktif"
-            value={formData.is_active}
-            onValueChange={(value) => updateField('is_active', value)}
-            description="Kurikulum aktif dapat digunakan untuk semester baru"
-          />
-          
+
           <FormInput
             label="Deskripsi"
             value={formData.deskripsi}
-            onChangeText={(value) => updateField('deskripsi', value)}
-            placeholder="Deskripsi kurikulum..."
+            onChangeText={(value) => handleInputChange('deskripsi', value)}
+            placeholder="Masukkan deskripsi kurikulum"
             multiline
             numberOfLines={4}
             error={errors.deskripsi}
-            maxLength={500}
+          />
+
+          <FormToggle
+            label="Status Aktif"
+            description="Kurikulum aktif dapat digunakan untuk semester baru"
+            value={formData.is_active}
+            onValueChange={(value) => handleInputChange('is_active', value)}
           />
         </View>
       </ScrollView>
       
-      <FormSubmitButton
-        title={isEdit ? 'Update Kurikulum' : 'Buat Kurikulum'}
-        onPress={handleSubmit}
-        loading={loading}
-        disabled={!formData.nama.trim() || !formData.jenjang_id || !formData.tahun_ajaran || !formData.semester}
-      />
+      <View style={styles.buttonContainer}>
+        <FormSubmitButton
+          title={isEdit ? 'Perbarui Kurikulum' : 'Simpan Kurikulum'}
+          onPress={handleSubmit}
+          loading={loading}
+          disabled={loading}
+        />
+      </View>
     </SafeAreaWrapper>
   );
 };
@@ -191,6 +221,10 @@ const styles = StyleSheet.create({
   form: {
     padding: 16,
     gap: 16,
+  },
+  buttonContainer: {
+    padding: 16,
+    paddingTop: 0,
   },
 });
 
