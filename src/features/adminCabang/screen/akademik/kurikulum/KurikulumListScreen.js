@@ -1,5 +1,4 @@
-// src/features/adminCabang/screens/akademik/kurikulum/KurikulumListScreen.js
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, RefreshControl, Alert } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { useFocusEffect } from '@react-navigation/native';
@@ -10,22 +9,37 @@ import EmptyState from '../../../../../common/components/EmptyState';
 import LoadingSpinner from '../../../../../common/components/LoadingSpinner';
 import FloatingActionButton from '../../../../../common/components/FloatingActionButton';
 import FilterChips from '../../../../../common/components/FilterChips';
-import { fetchKurikulum, deleteKurikulum, clearError } from '../../../redux/akademik/kurikulumSlice';
-import { fetchJenjang } from '../../../redux/masterData/jenjangSlice';
+import { 
+  fetchKurikulumList, 
+  deleteKurikulum, 
+  clearError 
+} from '../../../redux/akademik/kurikulumSlice';
+import { fetchJenjangForDropdown } from '../../../redux/masterData/jenjangSlice';
 
 const KurikulumListScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { kurikulum, loading, error, pagination } = useSelector(state => state.kurikulum);
-  const { jenjang } = useSelector(state => state.jenjang);
+  
+  // Fixed selectors
+  const { 
+    list: kurikulum = [], 
+    loading = false, 
+    error = null, 
+    pagination = {} 
+  } = useSelector(state => state.kurikulum || {});
+  
+  const { 
+    dropdownData: jenjang = [] 
+  } = useSelector(state => state.jenjang || {});
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedJenjang, setSelectedJenjang] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchData = useCallback(async (refresh = false) => {
     if (refresh) setRefreshing(true);
-    await dispatch(fetchKurikulum({ 
+    await dispatch(fetchKurikulumList({ 
       search: searchTerm, 
-      jenjang_id: selectedJenjang?.id,
+      jenjang_id: selectedJenjang?.id_jenjang,
       page: 1 
     }));
     if (refresh) setRefreshing(false);
@@ -33,25 +47,25 @@ const KurikulumListScreen = ({ navigation }) => {
 
   useFocusEffect(
     useCallback(() => {
-      dispatch(fetchJenjang());
+      dispatch(fetchJenjangForDropdown());
       fetchData();
     }, [fetchData])
   );
 
   const handleSearch = (term) => {
     setSearchTerm(term);
-    dispatch(fetchKurikulum({ 
+    dispatch(fetchKurikulumList({ 
       search: term, 
-      jenjang_id: selectedJenjang?.id,
+      jenjang_id: selectedJenjang?.id_jenjang,
       page: 1 
     }));
   };
 
   const handleJenjangFilter = (jenjang) => {
     setSelectedJenjang(jenjang);
-    dispatch(fetchKurikulum({ 
+    dispatch(fetchKurikulumList({ 
       search: searchTerm, 
-      jenjang_id: jenjang?.id,
+      jenjang_id: jenjang?.id_jenjang,
       page: 1 
     }));
   };
@@ -59,23 +73,23 @@ const KurikulumListScreen = ({ navigation }) => {
   const handleDelete = (item) => {
     Alert.alert(
       'Hapus Kurikulum',
-      `Yakin hapus "${item.nama}"? Semester yang menggunakan kurikulum ini akan terpengaruh.`,
+      `Yakin hapus "${item.nama_kurikulum}"?\nSemester yang menggunakan kurikulum ini akan terpengaruh.`,
       [
         { text: 'Batal', style: 'cancel' },
         {
           text: 'Hapus',
           style: 'destructive',
-          onPress: () => dispatch(deleteKurikulum(item.id))
+          onPress: () => dispatch(deleteKurikulum(item.id_kurikulum))
         }
       ]
     );
   };
 
   const renderItem = ({ item }) => ({
-    title: item.nama,
-    subtitle: `${item.jenjang?.nama || 'Tanpa Jenjang'} • ${item.materi_count || 0} Materi • ${item.semester_count || 0} Semester`,
-    onPress: () => navigation.navigate('KurikulumDetail', { id: item.id }),
-    onEdit: () => navigation.navigate('KurikulumForm', { id: item.id }),
+    title: item.nama_kurikulum,
+    subtitle: `${item.tahun_berlaku} • ${item.kurikulum_materi_count || 0} Materi • ${item.semester_count || 0} Semester`,
+    onPress: () => navigation.navigate('KurikulumDetail', { id: item.id_kurikulum }),
+    onEdit: () => navigation.navigate('KurikulumForm', { id: item.id_kurikulum }),
     onDelete: () => handleDelete(item),
     icon: 'library',
     iconColor: '#8e44ad',
@@ -83,9 +97,13 @@ const KurikulumListScreen = ({ navigation }) => {
     badgeColor: item.is_active ? '#2ecc71' : null
   });
 
+  // Fixed filter options with proper null safety
   const filterOptions = [
     { label: 'Semua Jenjang', value: null },
-    ...jenjang.map(j => ({ label: j.nama, value: j }))
+    ...(Array.isArray(jenjang) ? jenjang.map(j => ({ 
+      label: j.nama_jenjang, 
+      value: j 
+    })) : [])
   ];
 
   if (loading && !refreshing) {
@@ -108,12 +126,12 @@ const KurikulumListScreen = ({ navigation }) => {
           options={filterOptions}
           selected={selectedJenjang}
           onSelect={handleJenjangFilter}
-          keyExtractor={(item) => item?.id || 'all'}
+          keyExtractor={(item) => item?.id_jenjang || 'all'}
           labelExtractor={(item) => item?.label || 'Semua'}
         />
       </View>
       
-      {kurikulum.length === 0 ? (
+      {Array.isArray(kurikulum) && kurikulum.length === 0 ? (
         <EmptyState
           icon="library"
           title="Belum ada kurikulum"
@@ -130,9 +148,9 @@ const KurikulumListScreen = ({ navigation }) => {
           }
           onEndReached={() => {
             if (pagination.current_page < pagination.last_page) {
-              dispatch(fetchKurikulum({ 
+              dispatch(fetchKurikulumList({ 
                 search: searchTerm,
-                jenjang_id: selectedJenjang?.id,
+                jenjang_id: selectedJenjang?.id_jenjang,
                 page: pagination.current_page + 1 
               }));
             }

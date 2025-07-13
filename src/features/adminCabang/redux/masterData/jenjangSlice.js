@@ -1,10 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import jenjangApi from '../../api/masterData/jenjangApi';
 
-// Async thunks
+// Async Thunks
 export const fetchJenjangList = createAsyncThunk(
   'jenjang/fetchList',
-  async (params = {}) => jenjangApi.getList(params)
+  async ({ search = '', page = 1, per_page = 20 } = {}) => 
+    jenjangApi.getAll({ search, page, per_page })
 );
 
 export const fetchJenjangDetail = createAsyncThunk(
@@ -30,33 +31,28 @@ export const deleteJenjang = createAsyncThunk(
   }
 );
 
-export const fetchJenjangKelas = createAsyncThunk(
-  'jenjang/fetchKelas',
-  async (jenjangId) => jenjangApi.getKelas(jenjangId)
-);
-
-export const fetchJenjangMataPelajaran = createAsyncThunk(
-  'jenjang/fetchMataPelajaran',
-  async (jenjangId) => jenjangApi.getMataPelajaran(jenjangId)
-);
-
-export const fetchJenjangForDropdown = createAsyncThunk(
-  'jenjang/fetchForDropdown',
-  async () => jenjangApi.getForDropdown()
-);
-
-export const fetchJenjangStatistics = createAsyncThunk(
-  'jenjang/fetchStatistics',
+export const fetchJenjangStats = createAsyncThunk(
+  'jenjang/fetchStats',
   async () => jenjangApi.getStatistics()
 );
 
+export const fetchJenjangForDropdown = createAsyncThunk(
+  'jenjang/fetchDropdown',
+  async () => jenjangApi.getForDropdown()
+);
+
+// Initial State
 const initialState = {
   list: [],
   detail: null,
-  kelas: [],
-  mataPelajaran: [],
-  dropdownData: [],
   statistics: null,
+  dropdownData: [],
+  pagination: {
+    current_page: 1,
+    last_page: 1,
+    per_page: 20,
+    total: 0
+  },
   loading: false,
   error: null,
 };
@@ -71,14 +67,14 @@ const jenjangSlice = createSlice({
     clearDetail: (state) => {
       state.detail = null;
     },
-    clearKelas: (state) => {
-      state.kelas = [];
-    },
-    clearMataPelajaran: (state) => {
-      state.mataPelajaran = [];
-    },
     clearStatistics: (state) => {
       state.statistics = null;
+    },
+    updateJenjangLocally: (state, action) => {
+      const index = state.list.findIndex(j => j.id_jenjang === action.payload.id_jenjang);
+      if (index !== -1) {
+        state.list[index] = action.payload;
+      }
     }
   },
   extraReducers: (builder) => {
@@ -90,12 +86,21 @@ const jenjangSlice = createSlice({
       })
       .addCase(fetchJenjangList.fulfilled, (state, action) => {
         state.loading = false;
-        state.list = action.payload.data || [];
+        const responseData = action.payload.data || {};
+        state.list = responseData.data || [];
+        state.pagination = {
+          current_page: responseData.current_page || 1,
+          last_page: responseData.last_page || 1,
+          per_page: responseData.per_page || 20,
+          total: responseData.total || 0
+        };
       })
       .addCase(fetchJenjangList.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
+        state.list = [];
       })
+      
       // Detail
       .addCase(fetchJenjangDetail.pending, (state) => {
         state.loading = true;
@@ -109,10 +114,14 @@ const jenjangSlice = createSlice({
         state.loading = false;
         state.error = action.error.message;
       })
+      
       // Create
       .addCase(createJenjang.fulfilled, (state, action) => {
+        if (!Array.isArray(state.list)) state.list = [];
         state.list.unshift(action.payload.data);
+        state.pagination.total += 1;
       })
+      
       // Update
       .addCase(updateJenjang.fulfilled, (state, action) => {
         const index = state.list.findIndex(j => j.id_jenjang === action.payload.data.id_jenjang);
@@ -123,37 +132,24 @@ const jenjangSlice = createSlice({
           state.detail = action.payload.data;
         }
       })
+      
       // Delete
       .addCase(deleteJenjang.fulfilled, (state, action) => {
         state.list = state.list.filter(j => j.id_jenjang !== action.payload);
         if (state.detail?.id_jenjang === action.payload) {
           state.detail = null;
         }
+        state.pagination.total = Math.max(0, state.pagination.total - 1);
       })
-      // Kelas
-      .addCase(fetchJenjangKelas.fulfilled, (state, action) => {
-        state.kelas = action.payload.data.kelas_standard || [];
+      
+      // Statistics
+      .addCase(fetchJenjangStats.fulfilled, (state, action) => {
+        state.statistics = action.payload.data;
       })
-      // Mata Pelajaran
-      .addCase(fetchJenjangMataPelajaran.fulfilled, (state, action) => {
-        state.mataPelajaran = action.payload.data.mata_pelajaran || [];
-      })
+      
       // Dropdown
       .addCase(fetchJenjangForDropdown.fulfilled, (state, action) => {
         state.dropdownData = action.payload.data || [];
-      })
-      // Statistics
-      .addCase(fetchJenjangStatistics.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchJenjangStatistics.fulfilled, (state, action) => {
-        state.loading = false;
-        state.statistics = action.payload.data;
-      })
-      .addCase(fetchJenjangStatistics.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message;
       });
   }
 });
@@ -161,19 +157,17 @@ const jenjangSlice = createSlice({
 export const { 
   clearError, 
   clearDetail, 
-  clearKelas,
-  clearMataPelajaran,
-  clearStatistics
+  clearStatistics,
+  updateJenjangLocally 
 } = jenjangSlice.actions;
 
 export default jenjangSlice.reducer;
 
 // Selectors
-export const selectJenjangList = (state) => state.jenjang.list;
-export const selectJenjangDetail = (state) => state.jenjang.detail;
-export const selectJenjangKelas = (state) => state.jenjang.kelas;
-export const selectJenjangMataPelajaran = (state) => state.jenjang.mataPelajaran;
-export const selectJenjangDropdownData = (state) => state.jenjang.dropdownData;
-export const selectJenjangStatistics = (state) => state.jenjang.statistics;
-export const selectJenjangLoading = (state) => state.jenjang.loading;
-export const selectJenjangError = (state) => state.jenjang.error;
+export const selectJenjangList = (state) => state.jenjang?.list || [];
+export const selectJenjangDetail = (state) => state.jenjang?.detail || null;
+export const selectJenjangStatistics = (state) => state.jenjang?.statistics || null;
+export const selectJenjangDropdownData = (state) => state.jenjang?.dropdownData || [];
+export const selectJenjangLoading = (state) => state.jenjang?.loading || false;
+export const selectJenjangError = (state) => state.jenjang?.error || null;
+export const selectJenjangPagination = (state) => state.jenjang?.pagination || {};
