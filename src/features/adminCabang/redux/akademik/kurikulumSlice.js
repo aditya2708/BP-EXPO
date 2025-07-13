@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import kurikulumApi from '../../api/akademik/kurikulumApi';
+import { kurikulumApi } from '../../api/akademik/kurikulumApi'; 
 
 // Async Thunks - Aligned with AkademikKurikulumController
 export const fetchKurikulumList = createAsyncThunk(

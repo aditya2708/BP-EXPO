@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import jenjangApi from '../../api/masterData/jenjangApi';
+import { jenjangApi } from '../../api/masterData/jenjangApi';
 
 // Async Thunks
 export const fetchJenjangList = createAsyncThunk(

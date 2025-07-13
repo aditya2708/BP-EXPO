@@ -7,7 +7,7 @@ export const fetchAkademikStats = createAsyncThunk(
   'akademik/fetchStats',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await adminCabangApi.get('/akademik/statistics');
+      const response = await adminCabangApi.akademik.getStatistics();
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -19,7 +19,7 @@ export const fetchRecentKurikulum = createAsyncThunk(
   'akademik/fetchRecentKurikulum',
   async (limit = 5, { rejectWithValue }) => {
     try {
-      const response = await adminCabangApi.get(`/akademik/kurikulum/recent?limit=${limit}`);
+      const response = await adminCabangApi.akademik.getRecentKurikulum(limit);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -31,7 +31,7 @@ export const fetchSemesterData = createAsyncThunk(
   'akademik/fetchSemesterData',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await adminCabangApi.get('/akademik/semester');
+      const response = await adminCabangApi.akademik.getSemesterData();
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -96,17 +96,35 @@ const akademikSlice = createSlice({
       })
       
       // Recent Kurikulum
+      .addCase(fetchRecentKurikulum.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(fetchRecentKurikulum.fulfilled, (state, action) => {
+        state.loading = false;
         state.recent_kurikulum = action.payload.data || [];
+      })
+      .addCase(fetchRecentKurikulum.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || action.error.message;
       })
       
       // Semester Data
+      .addCase(fetchSemesterData.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(fetchSemesterData.fulfilled, (state, action) => {
+        state.loading = false;
         const data = action.payload.data || {};
         state.semester_data = {
           current: data.current || null,
           available: data.available || [],
         };
+      })
+      .addCase(fetchSemesterData.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || action.error.message;
       });
   },
 });
