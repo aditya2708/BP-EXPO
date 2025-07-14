@@ -3,57 +3,34 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 
-// Existing screens
-import AdminCabangDashboardScreen from '../features/adminCabang/screen/AdminCabangDashboardScreen';
-import AdminCabangProfileScreen from '../features/adminCabang/screen/AdminCabangProfileScreen';
-import SurveyStatusFilterScreen from '../features/adminCabang/screen/SurveyStatusFilterScreen';
-import SurveyApprovalDetailScreen from '../features/adminCabang/screen/SurveyApprovalDetailScreen';
-import AdminCabangPengajuanDonaturScreen from '../features/adminCabang/screen/AdminCabangPengajuanDonaturScreen';
-import DonaturSelectionScreen from '../features/adminCabang/screen/DonaturSelectionScreen';
-import ChildDetailScreen from '../features/adminCabang/screen/ChildDetailScreen';
-import AdminCabangDonaturListScreen from '../features/adminCabang/screen/AdminCabangDonaturListScreen';
-import AdminCabangDonaturFormScreen from '../features/adminCabang/screen/AdminCabangDonaturFormScreen';
-import AdminCabangDonaturDetailScreen from '../features/adminCabang/screen/AdminCabangDonaturDetailScreen';
-import DonaturFilterScreen from '../features/adminCabang/screen/DonaturFilterScreen';
+// Dashboard screens
+import AdminCabangDashboardScreen from '../features/adminCabang/screens/AdminCabangDashboardScreen';
+import AdminCabangProfileScreen from '../features/adminCabang/screens/AdminCabangProfileScreen';
+import SurveyStatusFilterScreen from '../features/adminCabang/screens/SurveyStatusFilterScreen';
+import SurveyApprovalDetailScreen from '../features/adminCabang/screens/SurveyApprovalDetailScreen';
+import AdminCabangPengajuanDonaturScreen from '../features/adminCabang/screens/AdminCabangPengajuanDonaturScreen';
+import DonaturSelectionScreen from '../features/adminCabang/screens/DonaturSelectionScreen';
+import ChildDetailScreen from '../features/adminCabang/screens/ChildDetailScreen';
+import AdminCabangDonaturListScreen from '../features/adminCabang/screens/AdminCabangDonaturListScreen';
+import AdminCabangDonaturFormScreen from '../features/adminCabang/screens/AdminCabangDonaturFormScreen';
+import AdminCabangDonaturDetailScreen from '../features/adminCabang/screens/AdminCabangDonaturDetailScreen';
+import DonaturFilterScreen from '../features/adminCabang/screens/DonaturFilterScreen';
 
-// New landing screens (to be created)
-import MasterDataMenuScreen from '../features/adminCabang/screen/MasterDataMenuScreen';
-import AkademikMenuScreen from '../features/adminCabang/screen/AkademikMenuScreen';
+// Master Data screens
+import MasterDataMenuScreen from '../features/adminCabang/screens/MasterDataMenuScreen';
+import JenjangListScreen from '../features/adminCabang/screens/masterData/jenjang/JenjangListScreen';
+import JenjangFormScreen from '../features/adminCabang/screens/masterData/jenjang/JenjangFormScreen';
+import JenjangDetailScreen from '../features/adminCabang/screens/masterData/jenjang/JenjangDetailScreen';
+
+// Akademik screens
+import AkademikMenuScreen from '../features/adminCabang/screens/AkademikMenuScreen';
 
 const Tab = createBottomTabNavigator();
+const DashboardStack = createStackNavigator();
 const MasterDataStack = createStackNavigator();
 const AkademikStack = createStackNavigator();
-const DashboardStack = createStackNavigator();
 
-// Master Data Stack Navigator
-const MasterDataStackNavigator = () => {
-  return (
-    <MasterDataStack.Navigator>
-      <MasterDataStack.Screen 
-        name="MasterDataMenu" 
-        component={MasterDataMenuScreen} 
-        options={{ headerTitle: 'Master Data' }}
-      />
-      {/* TODO: Add Jenjang, MataPelajaran, Kelas, Materi stacks */}
-    </MasterDataStack.Navigator>
-  );
-};
-
-// Akademik Stack Navigator
-const AkademikStackNavigator = () => {
-  return (
-    <AkademikStack.Navigator>
-      <AkademikStack.Screen 
-        name="AkademikMenu" 
-        component={AkademikMenuScreen} 
-        options={{ headerTitle: 'Akademik' }}
-      />
-      {/* TODO: Add Kurikulum stack */}
-    </AkademikStack.Navigator>
-  );
-};
-
-// Dashboard Stack Navigator (consolidating existing functionality)
+// Dashboard Stack Navigator
 const DashboardStackNavigator = () => {
   return (
     <DashboardStack.Navigator>
@@ -124,6 +101,52 @@ const DashboardStackNavigator = () => {
   );
 };
 
+// Master Data Stack Navigator
+const MasterDataStackNavigator = () => {
+  return (
+    <MasterDataStack.Navigator>
+      <MasterDataStack.Screen 
+        name="MasterDataMenu" 
+        component={MasterDataMenuScreen} 
+        options={{ headerTitle: 'Master Data' }}
+      />
+      
+      {/* Jenjang Screens */}
+      <MasterDataStack.Screen 
+        name="JenjangList" 
+        component={JenjangListScreen} 
+        options={{ headerTitle: 'Jenjang' }}
+      />
+      <MasterDataStack.Screen 
+        name="JenjangForm" 
+        component={JenjangFormScreen} 
+        options={({ route }) => ({ 
+          headerTitle: route.params?.isEdit ? 'Edit Jenjang' : 'Tambah Jenjang' 
+        })}
+      />
+      <MasterDataStack.Screen 
+        name="JenjangDetail" 
+        component={JenjangDetailScreen} 
+        options={{ headerTitle: 'Detail Jenjang' }}
+      />
+    </MasterDataStack.Navigator>
+  );
+};
+
+// Akademik Stack Navigator
+const AkademikStackNavigator = () => {
+  return (
+    <AkademikStack.Navigator>
+      <AkademikStack.Screen 
+        name="AkademikMenu" 
+        component={AkademikMenuScreen} 
+        options={{ headerTitle: 'Akademik' }}
+      />
+      {/* TODO: Add Kurikulum screens */}
+    </AkademikStack.Navigator>
+  );
+};
+
 const AdminCabangNavigator = () => {
   return (
     <Tab.Navigator
@@ -141,28 +164,34 @@ const AdminCabangNavigator = () => {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#2ecc71',
+        tabBarActiveTintColor: '#007bff',
         tabBarInactiveTintColor: 'gray',
         headerShown: false,
-        tabBarLabelStyle: {
-          fontSize: 12,
-        },
       })}
     >
       <Tab.Screen 
         name="Home" 
         component={DashboardStackNavigator} 
-        options={{ tabBarLabel: 'Dashboard' }}
+        options={{ 
+          tabBarLabel: 'Dashboard',
+          title: 'Dashboard'
+        }}
       />
       <Tab.Screen 
         name="MasterData" 
         component={MasterDataStackNavigator} 
-        options={{ tabBarLabel: 'Master Data' }}
+        options={{ 
+          tabBarLabel: 'Master Data',
+          title: 'Master Data'
+        }}
       />
       <Tab.Screen 
         name="Akademik" 
         component={AkademikStackNavigator} 
-        options={{ tabBarLabel: 'Akademik' }}
+        options={{ 
+          tabBarLabel: 'Akademik',
+          title: 'Akademik'
+        }}
       />
     </Tab.Navigator>
   );
