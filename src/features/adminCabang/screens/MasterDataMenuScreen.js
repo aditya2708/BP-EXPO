@@ -12,8 +12,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   selectJenjangLoading,
-  selectJenjangError
-} from '../redux/masterData/jenjangSlice';
+  selectJenjangError,
+  selectJenjangStatistics // 1. Import the statistics selector
+} from '../redux/masterData/jenjangSlice'; // 2. Correct the import path
 import {
   fetchJenjangStatistics
 } from '../redux/masterData/jenjangThunks';
@@ -25,6 +26,7 @@ const MasterDataMenuScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const loading = useSelector(selectJenjangLoading);
   const error = useSelector(selectJenjangError);
+  const statistics = useSelector(selectJenjangStatistics); // 3. Use the selector to get statistics data
 
   useFocusEffect(
     React.useCallback(() => {
@@ -77,6 +79,7 @@ const MasterDataMenuScreen = ({ navigation }) => {
       <Text style={styles.cardTitle}>{title}</Text>
       
       <View style={styles.statsContainer}>
+        {/* 4. Display the count from statistics, provide a fallback */}
         <Text style={styles.countText}>{count || '0'}</Text>
         <Text style={styles.countLabel}>Total Data</Text>
       </View>
@@ -100,7 +103,7 @@ const MasterDataMenuScreen = ({ navigation }) => {
           {renderMasterDataCard(
             'Jenjang',
             'school-outline',
-            0, // TODO: Get from jenjang stats when selector fixed
+            statistics?.jenjang?.total, // 5. Use the fetched jenjang statistics
             handleJenjangPress,
             handleAddJenjang,
             '#007bff'
@@ -109,7 +112,7 @@ const MasterDataMenuScreen = ({ navigation }) => {
           {renderMasterDataCard(
             'Mata Pelajaran',
             'book-outline',
-            0, // TODO: Get from mataPelajaran stats
+            statistics?.mata_pelajaran?.total, // Use mata pelajaran statistics
             handleMataPelajaranPress,
             () => console.log('Add Mata Pelajaran'),
             '#28a745'
@@ -118,7 +121,7 @@ const MasterDataMenuScreen = ({ navigation }) => {
           {renderMasterDataCard(
             'Kelas',
             'library-outline',
-            0, // TODO: Get from kelas stats
+            statistics?.kelas?.total, // Use kelas statistics
             handleKelasPress,
             () => console.log('Add Kelas'),
             '#ffc107'
@@ -127,30 +130,31 @@ const MasterDataMenuScreen = ({ navigation }) => {
           {renderMasterDataCard(
             'Materi',
             'document-text-outline',
-            0, // TODO: Get from materi stats
+            statistics?.materi?.total, // Use materi statistics
             handleMateriPress,
             () => console.log('Add Materi'),
             '#dc3545'
           )}
         </View>
 
+        {/* You can also populate the summary card with the statistics */}
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>Ringkasan Master Data</Text>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Total Jenjang Aktif:</Text>
-            <Text style={styles.summaryValue}>0</Text>
+            <Text style={styles.summaryValue}>{statistics?.jenjang?.active || 0}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Total Mata Pelajaran:</Text>
-            <Text style={styles.summaryValue}>0</Text>
+            <Text style={styles.summaryValue}>{statistics?.mata_pelajaran?.total || 0}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Total Kelas:</Text>
-            <Text style={styles.summaryValue}>0</Text>
+            <Text style={styles.summaryValue}>{statistics?.kelas?.total || 0}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Total Materi:</Text>
-            <Text style={styles.summaryValue}>0</Text>
+            <Text style={styles.summaryValue}>{statistics?.materi?.total || 0}</Text>
           </View>
         </View>
 
@@ -182,6 +186,7 @@ const MasterDataMenuScreen = ({ navigation }) => {
     </View>
   );
 };
+// ... rest of the styles
 
 const styles = StyleSheet.create({
   container: {

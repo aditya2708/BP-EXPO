@@ -11,10 +11,10 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import {
-  selectJenjangDetail,
+  selectCurrentJenjang,
   selectJenjangLoading,
   selectJenjangError,
-  clearJenjangError
+  clearError
 } from '../../../redux/masterData/jenjangSlice';
 import {
   fetchJenjangDetail,
@@ -25,7 +25,7 @@ const JenjangDetailScreen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const { jenjangId } = route.params;
   
-  const jenjang = useSelector(selectJenjangDetail);
+  const jenjang = useSelector(selectCurrentJenjang);
   const loading = useSelector(selectJenjangLoading);
   const error = useSelector(selectJenjangError);
 
@@ -38,7 +38,7 @@ const JenjangDetailScreen = ({ navigation, route }) => {
   useEffect(() => {
     if (error) {
       Alert.alert('Error', error);
-      dispatch(clearJenjangError());
+      dispatch(clearError());
     }
   }, [error, dispatch]);
 

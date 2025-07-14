@@ -13,10 +13,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import {
-  selectJenjangList,
+  selectJenjangItems,
   selectJenjangLoading,
   selectJenjangError,
-  clearJenjangError
+  clearError
 } from '../../../redux/masterData/jenjangSlice';
 import {
   fetchJenjangList,
@@ -25,7 +25,7 @@ import {
 
 const JenjangListScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const jenjangList = useSelector(selectJenjangList);
+  const jenjangList = useSelector(selectJenjangItems);
   const loading = useSelector(selectJenjangLoading);
   const error = useSelector(selectJenjangError);
 
@@ -56,7 +56,7 @@ const JenjangListScreen = ({ navigation }) => {
   };
 
   const handleDetail = (jenjang) => {
-    navigation.navigate('JenjangDetail', { jenjangId: jenjang.id });
+    navigation.navigate('JenjangDetail', { jenjangId: jenjang.id_jenjang });
   };
 
   const handleDelete = (jenjang) => {
@@ -68,7 +68,7 @@ const JenjangListScreen = ({ navigation }) => {
         {
           text: 'Hapus',
           style: 'destructive',
-          onPress: () => confirmDelete(jenjang.id)
+          onPress: () => confirmDelete(jenjang.id_jenjang)
         }
       ]
     );
@@ -144,7 +144,7 @@ const JenjangListScreen = ({ navigation }) => {
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => {
-              dispatch(clearJenjangError());
+              dispatch(clearError());
               loadJenjangData();
             }}
           >
@@ -155,7 +155,7 @@ const JenjangListScreen = ({ navigation }) => {
 
       <FlatList
         data={jenjangList}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item.id_jenjang.toString()}
         renderItem={renderJenjangItem}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
