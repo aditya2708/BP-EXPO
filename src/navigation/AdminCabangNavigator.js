@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 
+// Existing screens
 import AdminCabangDashboardScreen from '../features/adminCabang/screen/AdminCabangDashboardScreen';
 import AdminCabangProfileScreen from '../features/adminCabang/screen/AdminCabangProfileScreen';
 import SurveyStatusFilterScreen from '../features/adminCabang/screen/SurveyStatusFilterScreen';
@@ -15,107 +16,111 @@ import AdminCabangDonaturFormScreen from '../features/adminCabang/screen/AdminCa
 import AdminCabangDonaturDetailScreen from '../features/adminCabang/screen/AdminCabangDonaturDetailScreen';
 import DonaturFilterScreen from '../features/adminCabang/screen/DonaturFilterScreen';
 
-const Tab = createBottomTabNavigator();
-const HomeStack = createStackNavigator();
-const ManagementStack = createStackNavigator();
-const PengajuanDonaturStack = createStackNavigator();
-const DonaturStack = createStackNavigator();
-const ProfileStack = createStackNavigator();
+// New landing screens (to be created)
+import MasterDataMenuScreen from '../features/adminCabang/screen/MasterDataMenuScreen';
+import AkademikMenuScreen from '../features/adminCabang/screen/AkademikMenuScreen';
 
-const HomeStackNavigator = () => {
+const Tab = createBottomTabNavigator();
+const MasterDataStack = createStackNavigator();
+const AkademikStack = createStackNavigator();
+const DashboardStack = createStackNavigator();
+
+// Master Data Stack Navigator
+const MasterDataStackNavigator = () => {
   return (
-    <HomeStack.Navigator>
-      <HomeStack.Screen 
+    <MasterDataStack.Navigator>
+      <MasterDataStack.Screen 
+        name="MasterDataMenu" 
+        component={MasterDataMenuScreen} 
+        options={{ headerTitle: 'Master Data' }}
+      />
+      {/* TODO: Add Jenjang, MataPelajaran, Kelas, Materi stacks */}
+    </MasterDataStack.Navigator>
+  );
+};
+
+// Akademik Stack Navigator
+const AkademikStackNavigator = () => {
+  return (
+    <AkademikStack.Navigator>
+      <AkademikStack.Screen 
+        name="AkademikMenu" 
+        component={AkademikMenuScreen} 
+        options={{ headerTitle: 'Akademik' }}
+      />
+      {/* TODO: Add Kurikulum stack */}
+    </AkademikStack.Navigator>
+  );
+};
+
+// Dashboard Stack Navigator (consolidating existing functionality)
+const DashboardStackNavigator = () => {
+  return (
+    <DashboardStack.Navigator>
+      <DashboardStack.Screen 
         name="Dashboard" 
         component={AdminCabangDashboardScreen} 
         options={{ headerTitle: 'Dashboard Admin Cabang' }}
       />
-      <HomeStack.Screen 
-        name="SurveyDetail" 
-        component={SurveyApprovalDetailScreen} 
-        options={{ headerTitle: 'Survey Detail' }}
+      <DashboardStack.Screen 
+        name="Profile" 
+        component={AdminCabangProfileScreen} 
+        options={{ headerTitle: 'Profil Saya' }}
       />
-    </HomeStack.Navigator>
-  );
-};
-
-const ManagementStackNavigator = () => {
-  return (
-    <ManagementStack.Navigator>
-      <ManagementStack.Screen 
+      
+      {/* Survey Management */}
+      <DashboardStack.Screen 
         name="SurveyStatusFilter" 
         component={SurveyStatusFilterScreen} 
         options={{ headerTitle: 'Manajemen Survei' }}
       />
-      <ManagementStack.Screen 
+      <DashboardStack.Screen 
         name="SurveyApprovalDetail" 
         component={SurveyApprovalDetailScreen} 
         options={{ headerTitle: 'Detail Survei' }}
       />
-    </ManagementStack.Navigator>
-  );
-};
-
-const PengajuanDonaturStackNavigator = () => {
-  return (
-    <PengajuanDonaturStack.Navigator>
-      <PengajuanDonaturStack.Screen 
+      
+      {/* Pengajuan Donatur */}
+      <DashboardStack.Screen 
         name="PengajuanDonaturList" 
         component={AdminCabangPengajuanDonaturScreen} 
         options={{ headerTitle: 'Pengajuan Donatur' }}
       />
-      <PengajuanDonaturStack.Screen 
+      <DashboardStack.Screen 
         name="DonaturSelection" 
         component={DonaturSelectionScreen} 
         options={{ headerTitle: 'Pilih Donatur' }}
       />
-      <PengajuanDonaturStack.Screen 
+      <DashboardStack.Screen 
         name="ChildDetail" 
         component={ChildDetailScreen} 
         options={{ headerTitle: 'Detail Anak' }}
       />
-    </PengajuanDonaturStack.Navigator>
-  );
-};
-
-const DonaturStackNavigator = () => {
-  return (
-    <DonaturStack.Navigator>
-      <DonaturStack.Screen 
+      
+      {/* Donatur Management */}
+      <DashboardStack.Screen 
         name="DonaturList" 
         component={AdminCabangDonaturListScreen} 
         options={{ headerTitle: 'Manajemen Donatur' }}
       />
-      <DonaturStack.Screen 
+      <DashboardStack.Screen 
         name="DonaturForm" 
         component={AdminCabangDonaturFormScreen} 
         options={({ route }) => ({
           headerTitle: route.params?.donaturId ? 'Edit Donatur' : 'Tambah Donatur'
         })}
       />
-      <DonaturStack.Screen 
+      <DashboardStack.Screen 
         name="DonaturDetail" 
         component={AdminCabangDonaturDetailScreen} 
         options={{ headerTitle: 'Detail Donatur' }}
       />
-      <DonaturStack.Screen 
+      <DashboardStack.Screen 
         name="DonaturFilter" 
         component={DonaturFilterScreen} 
         options={{ headerTitle: 'Filter Donatur' }}
       />
-    </DonaturStack.Navigator>
-  );
-};
-
-const ProfileStackNavigator = () => {
-  return (
-    <ProfileStack.Navigator>
-      <ProfileStack.Screen 
-        name="Profile" 
-        component={AdminCabangProfileScreen} 
-        options={{ headerTitle: 'Profil Saya' }}
-      />
-    </ProfileStack.Navigator>
+    </DashboardStack.Navigator>
   );
 };
 
@@ -127,15 +132,11 @@ const AdminCabangNavigator = () => {
           let iconName;
 
           if (route.name === 'Home') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Management') {
-            iconName = focused ? 'document-text' : 'document-text-outline';
-          } else if (route.name === 'PengajuanDonatur') {
-            iconName = focused ? 'person-add' : 'person-add-outline';
-          } else if (route.name === 'DonaturManagement') {
-            iconName = focused ? 'people' : 'people-outline';
-          } else if (route.name === 'ProfileTab') {
-            iconName = focused ? 'person' : 'person-outline';
+            iconName = focused ? 'grid' : 'grid-outline';
+          } else if (route.name === 'MasterData') {
+            iconName = focused ? 'library' : 'library-outline';
+          } else if (route.name === 'Akademik') {
+            iconName = focused ? 'school' : 'school-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -144,34 +145,24 @@ const AdminCabangNavigator = () => {
         tabBarInactiveTintColor: 'gray',
         headerShown: false,
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 12,
         },
       })}
     >
       <Tab.Screen 
         name="Home" 
-        component={HomeStackNavigator} 
-        options={{ tabBarLabel: 'Home' }}
+        component={DashboardStackNavigator} 
+        options={{ tabBarLabel: 'Dashboard' }}
       />
       <Tab.Screen 
-        name="Management" 
-        component={ManagementStackNavigator} 
-        options={{ tabBarLabel: 'Survei' }}
+        name="MasterData" 
+        component={MasterDataStackNavigator} 
+        options={{ tabBarLabel: 'Master Data' }}
       />
       <Tab.Screen 
-        name="PengajuanDonatur" 
-        component={PengajuanDonaturStackNavigator} 
-        options={{ tabBarLabel: 'Pengajuan' }}
-      />
-      <Tab.Screen 
-        name="DonaturManagement" 
-        component={DonaturStackNavigator} 
-        options={{ tabBarLabel: 'Donatur' }}
-      />
-      <Tab.Screen 
-        name="ProfileTab" 
-        component={ProfileStackNavigator} 
-        options={{ tabBarLabel: 'Profil' }}
+        name="Akademik" 
+        component={AkademikStackNavigator} 
+        options={{ tabBarLabel: 'Akademik' }}
       />
     </Tab.Navigator>
   );
