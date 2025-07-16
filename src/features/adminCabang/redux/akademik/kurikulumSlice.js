@@ -199,7 +199,8 @@ const kurikulumSlice = createSlice({
       .addCase(getKurikulumById.fulfilled, (state, action) => {
         state.loading = false;
         state.currentItem = action.payload.data;
-        state.assignedMateri = action.payload.data.materi || [];
+        // Extract materi from kurikulum_materi
+        state.assignedMateri = action.payload.data.kurikulum_materi?.map(km => km.materi) || [];
       })
       .addCase(getKurikulumById.rejected, (state, action) => {
         state.loading = false;
@@ -255,10 +256,10 @@ const kurikulumSlice = createSlice({
       })
       .addCase(assignMateri.fulfilled, (state, action) => {
         state.loading = false;
-        state.assignedMateri = action.payload.materi || [];
-        if (state.currentItem) {
-          state.currentItem.materi = action.payload.materi || [];
-        }
+        // Update currentItem with the full kurikulum data returned from backend
+        state.currentItem = action.payload.data;
+        // Extract materi from kurikulum_materi for assignedMateri
+        state.assignedMateri = action.payload.data.kurikulum_materi?.map(km => km.materi) || [];
       })
       .addCase(assignMateri.rejected, (state, action) => {
         state.loading = false;
@@ -272,9 +273,13 @@ const kurikulumSlice = createSlice({
       .addCase(removeMateri.fulfilled, (state, action) => {
         state.loading = false;
         const { materiId } = action.payload;
+        // Remove from assignedMateri
         state.assignedMateri = state.assignedMateri.filter(materi => materi.id_materi !== materiId);
-        if (state.currentItem && state.currentItem.materi) {
-          state.currentItem.materi = state.currentItem.materi.filter(materi => materi.id_materi !== materiId);
+        // Remove from currentItem.kurikulum_materi
+        if (state.currentItem && state.currentItem.kurikulum_materi) {
+          state.currentItem.kurikulum_materi = state.currentItem.kurikulum_materi.filter(
+            km => km.materi.id_materi !== materiId
+          );
         }
       })
       .addCase(removeMateri.rejected, (state, action) => {
@@ -283,10 +288,10 @@ const kurikulumSlice = createSlice({
       })
 
       .addCase(reorderMateri.fulfilled, (state, action) => {
-        state.assignedMateri = action.payload.materi || [];
-        if (state.currentItem) {
-          state.currentItem.materi = action.payload.materi || [];
-        }
+        // Update currentItem with the full kurikulum data returned from backend
+        state.currentItem = action.payload.data;
+        // Extract materi from kurikulum_materi for assignedMateri
+        state.assignedMateri = action.payload.data.kurikulum_materi?.map(km => km.materi) || [];
       })
 
       .addCase(getAvailableMateri.pending, (state) => {

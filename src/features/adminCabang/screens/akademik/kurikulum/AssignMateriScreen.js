@@ -68,9 +68,9 @@ const AssignMateriScreen = ({ navigation, route }) => {
     dispatch(getAvailableMateri({ kurikulumId, params }));
   };
 
-  const filteredMateri = availableMateri.filter(materi => 
-    materi.nama_materi.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    materi.kode_materi.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredMateri = (availableMateri || []).filter(materi => 
+    (materi?.nama_materi || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (materi?.kode_materi || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const toggleMateriSelection = (materi) => {
@@ -133,7 +133,7 @@ const AssignMateriScreen = ({ navigation, route }) => {
           <Ionicons name="book-outline" size={16} color={filterMataPelajaran ? '#fff' : '#007bff'} />
           <Text style={[styles.filterButtonText, filterMataPelajaran && styles.filterButtonTextActive]}>
             {filterMataPelajaran ? 
-              mataPelajaranOptions.find(mp => mp.id_mata_pelajaran.toString() === filterMataPelajaran)?.nama_mata_pelajaran.substring(0, 10) + '...' :
+              (mataPelajaranOptions.find(mp => mp.id_mata_pelajaran.toString() === filterMataPelajaran)?.nama_mata_pelajaran || 'Unknown').substring(0, 10) + '...' :
               'Mata Pelajaran'
             }
           </Text>
@@ -154,7 +154,7 @@ const AssignMateriScreen = ({ navigation, route }) => {
           <Ionicons name="people-outline" size={16} color={filterKelas ? '#fff' : '#007bff'} />
           <Text style={[styles.filterButtonText, filterKelas && styles.filterButtonTextActive]}>
             {filterKelas ? 
-              kelasOptions.find(k => k.id_kelas.toString() === filterKelas)?.nama_kelas :
+              kelasOptions.find(k => k.id_kelas.toString() === filterKelas)?.nama_kelas || 'Unknown' :
               'Kelas'
             }
           </Text>
@@ -187,13 +187,13 @@ const AssignMateriScreen = ({ navigation, route }) => {
       >
         <View style={styles.materiContent}>
           <View style={styles.materiHeader}>
-            <Text style={styles.materiName}>{item.nama_materi}</Text>
+            <Text style={styles.materiName}>{item.nama_materi || 'Nama tidak tersedia'}</Text>
             <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
               {isSelected && <Ionicons name="checkmark" size={16} color="#fff" />}
             </View>
           </View>
           
-          <Text style={styles.materiCode}>Kode: {item.kode_materi}</Text>
+          <Text style={styles.materiCode}>Kode: {item.kode_materi || 'Kode tidak tersedia'}</Text>
           
           <View style={styles.materiMeta}>
             <View style={styles.metaItem}>
@@ -210,12 +210,6 @@ const AssignMateriScreen = ({ navigation, route }) => {
               </Text>
             </View>
             
-            <View style={styles.metaItem}>
-              <Ionicons name="time-outline" size={14} color="#666" />
-              <Text style={styles.metaText}>
-                {item.durasi_menit || 0} menit
-              </Text>
-            </View>
           </View>
 
           {item.deskripsi && (
@@ -228,7 +222,7 @@ const AssignMateriScreen = ({ navigation, route }) => {
     );
   };
 
-  if (loading && availableMateri.length === 0) {
+  if (loading && (availableMateri || []).length === 0) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>

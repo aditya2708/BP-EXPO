@@ -31,7 +31,15 @@ const KurikulumDetailScreen = ({ navigation, route }) => {
   const error = useSelector(selectKurikulumError);
 
   const kurikulum = currentItem?.kurikulum || currentItem;
-  const materiList = currentItem?.materi || [];
+  const materiList = currentItem?.kurikulum_materi?.map(km => ({
+    id_materi: km.materi.id_materi,
+    nama_materi: km.materi.nama_materi,
+    kode_materi: km.materi.kode_materi || `MAT-${km.materi.id_materi}`,
+    deskripsi: km.materi.deskripsi,
+    mata_pelajaran: km.materi.mata_pelajaran,
+    kelas: km.materi.kelas,
+    urutan: km.urutan
+  })) || [];
   const statistics = currentItem?.statistics;
 
   useEffect(() => {
@@ -160,9 +168,6 @@ const KurikulumDetailScreen = ({ navigation, route }) => {
       <View style={styles.materiContent}>
         <Text style={styles.materiName}>{item.nama_materi}</Text>
         <Text style={styles.materiCode}>Kode: {item.kode_materi}</Text>
-        <Text style={styles.materiDuration}>
-          Durasi: {item.durasi_menit || 0} menit
-        </Text>
       </View>
       <TouchableOpacity
         style={styles.removeButton}
