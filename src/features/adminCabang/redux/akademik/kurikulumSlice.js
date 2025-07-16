@@ -289,8 +289,19 @@ const kurikulumSlice = createSlice({
         }
       })
 
+      .addCase(getAvailableMateri.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(getAvailableMateri.fulfilled, (state, action) => {
-        state.availableMateri = action.payload.data || action.payload;
+        state.loading = false;
+        // FIX: Extract the actual data array from paginated response
+        state.availableMateri = action.payload.data?.data || [];
+      })
+      .addCase(getAvailableMateri.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message || 'Gagal mengambil data materi tersedia';
+        state.availableMateri = [];
       })
 
       .addCase(getKurikulumStatistics.pending, (state) => {
