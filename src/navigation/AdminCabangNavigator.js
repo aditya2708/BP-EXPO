@@ -21,11 +21,22 @@ import MasterDataMenuScreen from '../features/adminCabang/screens/MasterDataMenu
 import JenjangListScreen from '../features/adminCabang/screens/masterData/jenjang/JenjangListScreen';
 import JenjangFormScreen from '../features/adminCabang/screens/masterData/jenjang/JenjangFormScreen';
 import JenjangDetailScreen from '../features/adminCabang/screens/masterData/jenjang/JenjangDetailScreen';
-// TODO: import other master data screens (MataPelajaran, Kelas, Materi)
+import MataPelajaranListScreen from '../features/adminCabang/screens/masterData/mataPelajaran/MataPelajaranListScreen';
+import MataPelajaranFormScreen from '../features/adminCabang/screens/masterData/mataPelajaran/MataPelajaranFormScreen';
+import MataPelajaranDetailScreen from '../features/adminCabang/screens/masterData/mataPelajaran/MataPelajaranDetailScreen';
+import KelasListScreen from '../features/adminCabang/screens/masterData/kelas/KelasListScreen';
+import KelasFormScreen from '../features/adminCabang/screens/masterData/kelas/KelasFormScreen';
+import KelasDetailScreen from '../features/adminCabang/screens/masterData/kelas/KelasDetailScreen';
+import MateriListScreen from '../features/adminCabang/screens/masterData/materi/MateriListScreen';
+import MateriFormScreen from '../features/adminCabang/screens/masterData/materi/MateriFormScreen';
+import MateriDetailScreen from '../features/adminCabang/screens/masterData/materi/MateriDetailScreen';
 
 // Akademik screens
 import AkademikMenuScreen from '../features/adminCabang/screens/AkademikMenuScreen';
-// TODO: import Kurikulum screens
+import KurikulumListScreen from '../features/adminCabang/screens/akademik/kurikulum/KurikulumListScreen';
+import KurikulumFormScreen from '../features/adminCabang/screens/akademik/kurikulum/KurikulumFormScreen';
+import KurikulumDetailScreen from '../features/adminCabang/screens/akademik/kurikulum/KurikulumDetailScreen';
+import AssignMateriScreen from '../features/adminCabang/screens/akademik/kurikulum/AssignMateriScreen';
 
 const Tab = createBottomTabNavigator();
 const DashboardStack = createStackNavigator();
@@ -118,7 +129,57 @@ const MasterDataStackNavigator = () => (
       component={JenjangDetailScreen}
       options={{ headerTitle: 'Detail Jenjang' }}
     />
-    {/* TODO: Add Mata Pelajaran, Kelas, Materi screens */}
+    <MasterDataStack.Screen
+      name="MataPelajaranList"
+      component={MataPelajaranListScreen}
+      options={{ headerTitle: 'Daftar Mata Pelajaran' }}
+    />
+    <MasterDataStack.Screen
+      name="MataPelajaranForm"
+      component={MataPelajaranFormScreen}
+      options={({ route }) => ({
+        headerTitle: route.params?.isEdit ? 'Edit Mata Pelajaran' : 'Tambah Mata Pelajaran',
+      })}
+    />
+    <MasterDataStack.Screen
+      name="MataPelajaranDetail"
+      component={MataPelajaranDetailScreen}
+      options={{ headerTitle: 'Detail Mata Pelajaran' }}
+    />
+    <MasterDataStack.Screen
+      name="KelasList"
+      component={KelasListScreen}
+      options={{ headerTitle: 'Daftar Kelas' }}
+    />
+    <MasterDataStack.Screen
+      name="KelasForm"
+      component={KelasFormScreen}
+      options={({ route }) => ({
+        headerTitle: route.params?.isEdit ? 'Edit Kelas' : 'Tambah Kelas',
+      })}
+    />
+    <MasterDataStack.Screen
+      name="KelasDetail"
+      component={KelasDetailScreen}
+      options={{ headerTitle: 'Detail Kelas' }}
+    />
+    <MasterDataStack.Screen
+      name="MateriList"
+      component={MateriListScreen}
+      options={{ headerTitle: 'Daftar Materi' }}
+    />
+    <MasterDataStack.Screen
+      name="MateriForm"
+      component={MateriFormScreen}
+      options={({ route }) => ({
+        headerTitle: route.params?.isEdit ? 'Edit Materi' : 'Tambah Materi',
+      })}
+    />
+    <MasterDataStack.Screen
+      name="MateriDetail"
+      component={MateriDetailScreen}
+      options={{ headerTitle: 'Detail Materi' }}
+    />
   </MasterDataStack.Navigator>
 );
 
@@ -130,7 +191,28 @@ const AkademikStackNavigator = () => (
       component={AkademikMenuScreen}
       options={{ headerTitle: 'Akademik' }}
     />
-    {/* TODO: Add Kurikulum screens */}
+    <AkademikStack.Screen
+      name="KurikulumList"
+      component={KurikulumListScreen}
+      options={{ headerTitle: 'Daftar Kurikulum' }}
+    />
+    <AkademikStack.Screen
+      name="KurikulumForm"
+      component={KurikulumFormScreen}
+      options={({ route }) => ({
+        headerTitle: route.params?.isEdit ? 'Edit Kurikulum' : 'Tambah Kurikulum',
+      })}
+    />
+    <AkademikStack.Screen
+      name="KurikulumDetail"
+      component={KurikulumDetailScreen}
+      options={{ headerTitle: 'Detail Kurikulum' }}
+    />
+    <AkademikStack.Screen
+      name="AssignMateri"
+      component={AssignMateriScreen}
+      options={{ headerTitle: 'Assign Materi' }}
+    />
   </AkademikStack.Navigator>
 );
 
