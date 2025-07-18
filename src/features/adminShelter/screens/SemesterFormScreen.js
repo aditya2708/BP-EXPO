@@ -99,6 +99,21 @@ const SemesterFormScreen = () => {
     navigation.navigate('KurikulumSelection');
   };
 
+  const getKurikulumDisplayInfo = () => {
+    const kurikulum = selectedKurikulumForSemester || selectedKurikulum;
+    if (!kurikulum) return null;
+    
+    return {
+      nama: kurikulum.nama_kurikulum,
+      kode: kurikulum.kode_kurikulum,
+      jenjang: kurikulum.jenjang?.nama_jenjang || 'N/A',
+      mataPelajaran: kurikulum.mata_pelajaran?.nama_mata_pelajaran || 'N/A',
+      materiCount: kurikulum.kurikulum_materi_count || kurikulum.materi_count || 0,
+      status: kurikulum.is_active ? 'Aktif' : 'Tidak Aktif',
+      statusColor: kurikulum.is_active ? '#27ae60' : '#e74c3c'
+    };
+  };
+
   const handleRemoveKurikulum = () => {
     Alert.alert(
       'Hapus Kurikulum',
@@ -182,21 +197,51 @@ const SemesterFormScreen = () => {
               <View style={styles.kurikulumInfo}>
                 <View style={styles.kurikulumHeader}>
                   <Ionicons name="school" size={20} color="#27ae60" />
-                  <Text style={styles.kurikulumName}>{currentKurikulum.nama_kurikulum}</Text>
+                  <Text style={styles.kurikulumName}>{getKurikulumDisplayInfo()?.nama}</Text>
+                  <View style={[styles.statusBadge, { backgroundColor: getKurikulumDisplayInfo()?.statusColor }]}>
+                    <Text style={styles.statusText}>{getKurikulumDisplayInfo()?.status}</Text>
+                  </View>
                 </View>
-                <Text style={styles.kurikulumTahun}>{currentKurikulum.tahun_berlaku}</Text>
+                
+                <Text style={styles.kurikulumCode}>Kode: {getKurikulumDisplayInfo()?.kode}</Text>
+                
+                <View style={styles.kurikulumMeta}>
+                  <View style={styles.metaItem}>
+                    <Ionicons name="library-outline" size={16} color="#7f8c8d" />
+                    <Text style={styles.metaText}>Jenjang: {getKurikulumDisplayInfo()?.jenjang}</Text>
+                  </View>
+                  <View style={styles.metaItem}>
+                    <Ionicons name="book-outline" size={16} color="#7f8c8d" />
+                    <Text style={styles.metaText}>Mata Pelajaran: {getKurikulumDisplayInfo()?.mataPelajaran}</Text>
+                  </View>
+                  <View style={styles.metaItem}>
+                    <Ionicons name="document-text-outline" size={16} color="#7f8c8d" />
+                    <Text style={styles.metaText}>{getKurikulumDisplayInfo()?.materiCount} Materi</Text>
+                  </View>
+                </View>
+                
                 {currentKurikulum.deskripsi && (
                   <Text style={styles.kurikulumDesc} numberOfLines={2}>
                     {currentKurikulum.deskripsi}
                   </Text>
                 )}
               </View>
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={handleRemoveKurikulum}
-              >
-                <Ionicons name="close-circle" size={24} color="#e74c3c" />
-              </TouchableOpacity>
+              
+              <View style={styles.kurikulumActions}>
+                <TouchableOpacity
+                  style={styles.changeButton}
+                  onPress={navigateToKurikulumSelection}
+                >
+                  <Ionicons name="swap-horizontal" size={16} color="#3498db" />
+                  <Text style={styles.changeButtonText}>Ganti</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={handleRemoveKurikulum}
+                >
+                  <Ionicons name="close-circle" size={20} color="#e74c3c" />
+                </TouchableOpacity>
+              </View>
             </View>
           ) : (
             <TouchableOpacity
@@ -371,11 +416,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   selectedKurikulum: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#f8fff8',
     borderRadius: 8,
-    padding: 12,
+    padding: 16,
     borderWidth: 1,
     borderColor: '#27ae60',
   },
@@ -385,22 +428,70 @@ const styles = StyleSheet.create({
   kurikulumHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
+    flexWrap: 'wrap',
   },
   kurikulumName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#27ae60',
+    color: '#2c3e50',
+    marginLeft: 8,
+    flex: 1,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
     marginLeft: 8,
   },
-  kurikulumTahun: {
+  statusText: {
+    fontSize: 12,
+    color: '#fff',
+    fontWeight: '600',
+  },
+  kurikulumCode: {
     fontSize: 14,
     color: '#7f8c8d',
+    marginBottom: 8,
+  },
+  kurikulumMeta: {
+    marginBottom: 8,
+  },
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 4,
+  },
+  metaText: {
+    fontSize: 12,
+    color: '#7f8c8d',
+    marginLeft: 6,
   },
   kurikulumDesc: {
     fontSize: 12,
     color: '#95a5a6',
+    marginTop: 4,
+  },
+  kurikulumActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 8,
+  },
+  changeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e3f2fd',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  changeButtonText: {
+    fontSize: 12,
+    color: '#3498db',
+    fontWeight: '600',
   },
   removeButton: {
     padding: 4,
