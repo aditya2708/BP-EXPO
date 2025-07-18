@@ -5,11 +5,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Dimensions
+  SafeAreaView,
+  RefreshControl,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import MasterDataCard from '../components/masterData/MasterDataCard';
 import {
   selectJenjangLoading,
   selectJenjangError,
@@ -17,19 +19,49 @@ import {
   getJenjangStatistics
 } from '../redux/masterData/jenjangSlice';
 import {
+  selectMataPelajaranStatistics,
+  selectMataPelajaranLoading,
+  selectMataPelajaranError,
+  getMataPelajaranStatistics
+} from '../redux/masterData/mataPelajaranSlice';
+import {
+  selectKelasStatistics,
+  selectKelasLoading,
+  selectKelasError,
+  getKelasStatistics
+} from '../redux/masterData/kelasSlice';
+import {
   selectMateriStatistics,
+  selectMateriLoading,
+  selectMateriError,
   getMateriStatistics
 } from '../redux/masterData/materiSlice';
 
-const { width } = Dimensions.get('window');
-const cardWidth = (width - 48) / 2;
-
 const MasterDataMenuScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const loading = useSelector(selectJenjangLoading);
-  const error = useSelector(selectJenjangError);
-  const statistics = useSelector(selectJenjangStatistics); // 3. Use the selector to get statistics data
+  
+  // Jenjang selectors
+  const jenjangLoading = useSelector(selectJenjangLoading);
+  const jenjangError = useSelector(selectJenjangError);
+  const jenjangStatistics = useSelector(selectJenjangStatistics);
+  
+  // Mata Pelajaran selectors
+  const mataPelajaranLoading = useSelector(selectMataPelajaranLoading);
+  const mataPelajaranError = useSelector(selectMataPelajaranError);
+  const mataPelajaranStatistics = useSelector(selectMataPelajaranStatistics);
+  
+  // Kelas selectors
+  const kelasLoading = useSelector(selectKelasLoading);
+  const kelasError = useSelector(selectKelasError);
+  const kelasStatistics = useSelector(selectKelasStatistics);
+  
+  // Materi selectors
+  const materiLoading = useSelector(selectMateriLoading);
+  const materiError = useSelector(selectMateriError);
   const materiStatistics = useSelector(selectMateriStatistics);
+  
+  // Overall loading state
+  const isLoading = jenjangLoading || mataPelajaranLoading || kelasLoading || materiLoading;
 
   useFocusEffect(
     React.useCallback(() => {
@@ -41,6 +73,8 @@ const MasterDataMenuScreen = ({ navigation }) => {
     try {
       await Promise.all([
         dispatch(getJenjangStatistics()).unwrap(),
+        dispatch(getMataPelajaranStatistics()).unwrap(),
+        dispatch(getKelasStatistics()).unwrap(),
         dispatch(getMateriStatistics()).unwrap()
       ]);
     } catch (err) {
@@ -68,95 +102,120 @@ const MasterDataMenuScreen = ({ navigation }) => {
     navigation.navigate('JenjangForm');
   };
 
-  const renderMasterDataCard = (title, icon, count, onPress, onAdd, iconColor = '#007bff') => (
-    <TouchableOpacity style={styles.card} onPress={onPress}>
-      <View style={styles.cardHeader}>
-        <View style={[styles.iconContainer, { backgroundColor: `${iconColor}20` }]}>
-          <Ionicons name={icon} size={24} color={iconColor} />
-        </View>
-        <TouchableOpacity style={styles.addButton} onPress={onAdd}>
-          <Ionicons name="add" size={16} color="#007bff" />
-        </TouchableOpacity>
-      </View>
-      
-      <Text style={styles.cardTitle}>{title}</Text>
-      
-      <View style={styles.statsContainer}>
-        {/* 4. Display the count from statistics, provide a fallback */}
-        <Text style={styles.countText}>{count || '0'}</Text>
-        <Text style={styles.countLabel}>Total Data</Text>
-      </View>
-      
-      <View style={styles.cardFooter}>
-        <Text style={styles.viewAllText}>Lihat Semua</Text>
-        <Ionicons name="chevron-forward" size={16} color="#666" />
-      </View>
-    </TouchableOpacity>
-  );
+  const handleAddMataPelajaran = () => {
+    navigation.navigate('MataPelajaranForm');
+  };
+
+  const handleAddKelas = () => {
+    navigation.navigate('KelasForm');
+  };
+
+  const handleAddMateri = () => {
+    navigation.navigate('MateriForm');
+  };
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={styles.container}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={loadStatistics}
+            colors={['#3498db']}
+            tintColor="#3498db"
+          />
+        }
+      >
         <View style={styles.header}>
           <Text style={styles.title}>Master Data</Text>
           <Text style={styles.subtitle}>Kelola data master sistem</Text>
         </View>
 
         <View style={styles.cardsContainer}>
-          {renderMasterDataCard(
-            'Jenjang',
-            'school-outline',
-            statistics?.data?.total_jenjang,
-            handleJenjangPress,
-            handleAddJenjang,
-            '#007bff'
-          )}
+          <MasterDataCard
+            title="Jenjang"
+            icon="school-outline"
+            statistics={{
+              total: jenjangStatistics?.data?.total_jenjang || 0,
+              active: jenjangStatistics?.data?.total_jenjang_aktif || 0,
+            }}
+            loading={jenjangLoading}
+            error={jenjangError}
+            onPress={handleJenjangPress}
+            onAddNew={handleAddJenjang}
+            primaryColor="#3498db"
+            testID="jenjang-card"
+          />
           
-          {renderMasterDataCard(
-            'Mata Pelajaran',
-            'book-outline',
-            statistics?.data?.total_mata_pelajaran,
-            handleMataPelajaranPress,
-            () => navigation.navigate('MataPelajaranForm'),
-            '#28a745'
-          )}
+          <MasterDataCard
+            title="Mata Pelajaran"
+            icon="book-outline"
+            statistics={{
+              total: mataPelajaranStatistics?.data?.total_mata_pelajaran || 0,
+              active: mataPelajaranStatistics?.data?.total_mata_pelajaran_aktif || 0,
+            }}
+            loading={mataPelajaranLoading}
+            error={mataPelajaranError}
+            onPress={handleMataPelajaranPress}
+            onAddNew={handleAddMataPelajaran}
+            primaryColor="#27ae60"
+            testID="mata-pelajaran-card"
+          />
           
-          {renderMasterDataCard(
-            'Kelas',
-            'library-outline',
-            statistics?.data?.total_kelas,
-            handleKelasPress,
-            () => navigation.navigate('KelasForm'),
-            '#ffc107'
-          )}
+          <MasterDataCard
+            title="Kelas"
+            icon="library-outline"
+            statistics={{
+              total: kelasStatistics?.data?.total_kelas || 0,
+              active: kelasStatistics?.data?.total_kelas_aktif || 0,
+            }}
+            loading={kelasLoading}
+            error={kelasError}
+            onPress={handleKelasPress}
+            onAddNew={handleAddKelas}
+            primaryColor="#f39c12"
+            testID="kelas-card"
+          />
           
-          {renderMasterDataCard(
-            'Materi',
-            'document-text-outline',
-            materiStatistics?.data?.total_materi,
-            handleMateriPress,
-            () => navigation.navigate('MateriForm'),
-            '#dc3545'
-          )}
+          <MasterDataCard
+            title="Materi"
+            icon="document-text-outline"
+            statistics={{
+              total: materiStatistics?.data?.total_materi || 0,
+              active: materiStatistics?.data?.total_materi_aktif || 0,
+            }}
+            loading={materiLoading}
+            error={materiError}
+            onPress={handleMateriPress}
+            onAddNew={handleAddMateri}
+            primaryColor="#e74c3c"
+            testID="materi-card"
+          />
         </View>
 
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>Ringkasan Master Data</Text>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Total Jenjang Aktif:</Text>
-            <Text style={styles.summaryValue}>{statistics?.data?.total_jenjang_aktif || 0}</Text>
+            <Text style={styles.summaryValue}>{jenjangStatistics?.data?.total_jenjang_aktif || 0}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Total Mata Pelajaran:</Text>
-            <Text style={styles.summaryValue}>{statistics?.data?.total_mata_pelajaran || 0}</Text>
+            <Text style={styles.summaryValue}>{mataPelajaranStatistics?.data?.total_mata_pelajaran || 0}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Total Kelas:</Text>
-            <Text style={styles.summaryValue}>{statistics?.data?.total_kelas || 0}</Text>
+            <Text style={styles.summaryValue}>{kelasStatistics?.data?.total_kelas || 0}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Total Materi:</Text>
+            <Text style={styles.summaryValue}>{materiStatistics?.data?.total_materi || 0}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Jenjang Terbanyak Kelas:</Text>
-            <Text style={styles.summaryValue}>{statistics?.data?.jenjang_with_most_kelas?.nama_jenjang || '-'}</Text>
+            <Text style={styles.summaryValue}>{jenjangStatistics?.data?.jenjang_with_most_kelas?.nama_jenjang || '-'}</Text>
           </View>
         </View>
 
@@ -193,7 +252,7 @@ const MasterDataMenuScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 // ... rest of the styles
@@ -201,7 +260,7 @@ const MasterDataMenuScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5'
+    backgroundColor: '#f8f9fa'
   },
   scrollView: {
     flex: 1
@@ -215,94 +274,35 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#333',
+    color: '#2c3e50',
     marginBottom: 4
   },
   subtitle: {
     fontSize: 14,
-    color: '#666'
+    color: '#7f8c8d'
   },
   cardsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     padding: 16,
     gap: 16
-  },
-  card: {
-    width: cardWidth,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  addButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#e3f2fd',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8
-  },
-  statsContainer: {
-    marginBottom: 12
-  },
-  countText: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#007bff'
-  },
-  countLabel: {
-    fontSize: 12,
-    color: '#666'
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  viewAllText: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500'
   },
   summaryCard: {
     backgroundColor: 'white',
     margin: 16,
     borderRadius: 12,
     padding: 16,
-    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   summaryTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#2c3e50',
     marginBottom: 16
   },
   summaryRow: {
@@ -311,32 +311,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0'
+    borderBottomColor: '#ecf0f1'
   },
   summaryLabel: {
     fontSize: 14,
-    color: '#666'
+    color: '#7f8c8d'
   },
   summaryValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333'
+    color: '#2c3e50'
   },
   quickActions: {
     margin: 16,
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
-    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   quickActionsTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#2c3e50',
     marginBottom: 16
   },
   quickActionButton: {
@@ -353,12 +356,12 @@ const styles = StyleSheet.create({
   },
   quickActionText: {
     fontSize: 14,
-    color: '#007bff',
+    color: '#3498db',
     marginLeft: 12,
     fontWeight: '500'
   },
   disabledText: {
-    color: '#ccc'
+    color: '#bdc3c7'
   }
 });
 

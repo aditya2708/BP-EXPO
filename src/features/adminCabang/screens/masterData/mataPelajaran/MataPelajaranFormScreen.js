@@ -32,7 +32,9 @@ const MataPelajaranFormScreen = ({ navigation, route }) => {
   const { mataPelajaran, isEdit } = route.params || {};
   const [namaMataPelajaran, setNamaMataPelajaran] = useState(mataPelajaran?.nama_mata_pelajaran || '');
   const [kodeMataPelajaran, setKodeMataPelajaran] = useState(mataPelajaran?.kode_mata_pelajaran || '');
-  const [idJenjang, setIdJenjang] = useState(mataPelajaran?.id_jenjang?.toString() || '');
+  const [idJenjang, setIdJenjang] = useState(
+    mataPelajaran?.id_jenjang ? mataPelajaran.id_jenjang.toString() : ''
+  );
   const [deskripsi, setDeskripsi] = useState(mataPelajaran?.deskripsi || '');
   const [kategori, setKategori] = useState(mataPelajaran?.kategori || '');
   const [status, setStatus] = useState(mataPelajaran?.status || 'aktif');
@@ -65,7 +67,7 @@ const MataPelajaranFormScreen = ({ navigation, route }) => {
     const data = {
       nama_mata_pelajaran: namaMataPelajaran.trim(),
       kode_mata_pelajaran: kodeMataPelajaran.trim().toUpperCase(),
-      id_jenjang: idJenjang ? parseInt(idJenjang) : null,
+      id_jenjang: idJenjang && idJenjang !== '' ? parseInt(idJenjang) : null,
       kategori: kategori,
       deskripsi: deskripsi.trim(),
       status: status

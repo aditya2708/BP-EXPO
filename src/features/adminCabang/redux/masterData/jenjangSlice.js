@@ -1,13 +1,22 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { jenjangApi } from '../../api/masterData/jenjangApi';
+import { extractErrorMessage, extractValidationErrors } from '../../../../common/utils/errorHandler';
+
 
 const initialState = {
   items: [],
   currentItem: null,
   dropdownOptions: [],
   statistics: {},
+  existingUrutan: [],
+  urutanValidation: {
+    checking: false,
+    available: null,
+    error: null
+  },
   loading: false,
   error: null,
+  validationErrors: null,
   pagination: {
     currentPage: 1,
     lastPage: 1,
@@ -104,6 +113,30 @@ export const getJenjangStatistics = createAsyncThunk(
   }
 );
 
+export const checkUrutanAvailability = createAsyncThunk(
+  'jenjang/checkUrutanAvailability',
+  async ({ urutan, excludeId }, { rejectWithValue }) => {
+    try {
+      const response = await jenjangApi.checkUrutanAvailability(urutan, excludeId);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const getExistingUrutan = createAsyncThunk(
+  'jenjang/getExistingUrutan',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await jenjangApi.getExistingUrutan();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 const jenjangSlice = createSlice({
   name: 'jenjang',
   initialState,
@@ -119,6 +152,14 @@ const jenjangSlice = createSlice({
     },
     clearError: (state) => {
       state.error = null;
+      state.validationErrors = null;
+    },
+    clearUrutanValidation: (state) => {
+      state.urutanValidation = {
+        checking: false,
+        available: null,
+        error: null
+      };
     }
   },
   extraReducers: (builder) => {
@@ -139,7 +180,8 @@ const jenjangSlice = createSlice({
       })
       .addCase(getAllJenjang.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Gagal mengambil data jenjang';
+        state.error = extractErrorMessage(action.payload) || 'Gagal mengambil data jenjang';
+        state.validationErrors = extractValidationErrors(action.payload);
       })
 
       .addCase(getJenjangById.pending, (state) => {
@@ -153,7 +195,8 @@ const jenjangSlice = createSlice({
       })
       .addCase(getJenjangById.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Gagal mengambil detail jenjang';
+        state.error = extractErrorMessage(action.payload) || 'Gagal mengambil detail jenjang';
+        state.validationErrors = extractValidationErrors(action.payload);
       })
 
       .addCase(createJenjang.pending, (state) => {
@@ -166,7 +209,8 @@ const jenjangSlice = createSlice({
       })
       .addCase(createJenjang.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Gagal membuat jenjang';
+        state.error = extractErrorMessage(action.payload) || 'Gagal membuat jenjang';
+        state.validationErrors = extractValidationErrors(action.payload);
       })
 
       .addCase(updateJenjang.pending, (state) => {
@@ -183,7 +227,8 @@ const jenjangSlice = createSlice({
       })
       .addCase(updateJenjang.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Gagal mengupdate jenjang';
+        state.error = extractErrorMessage(action.payload) || 'Gagal mengupdate jenjang';
+        state.validationErrors = extractValidationErrors(action.payload);
       })
 
       .addCase(deleteJenjang.pending, (state) => {
@@ -196,7 +241,8 @@ const jenjangSlice = createSlice({
       })
       .addCase(deleteJenjang.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || 'Gagal menghapus jenjang';
+        state.error = extractErrorMessage(action.payload) || 'Gagal menghapus jenjang';
+        state.validationErrors = extractValidationErrors(action.payload);
       })
 
       .addCase(getJenjangForDropdown.fulfilled, (state, action) => {
@@ -205,16 +251,36 @@ const jenjangSlice = createSlice({
 
       .addCase(getJenjangStatistics.fulfilled, (state, action) => {
         state.statistics = action.payload;
+      })
+
+      .addCase(checkUrutanAvailability.pending, (state) => {
+        state.urutanValidation.checking = true;
+        state.urutanValidation.error = null;
+      })
+      .addCase(checkUrutanAvailability.fulfilled, (state, action) => {
+        state.urutanValidation.checking = false;
+        state.urutanValidation.available = action.payload.data.available;
+      })
+      .addCase(checkUrutanAvailability.rejected, (state, action) => {
+        state.urutanValidation.checking = false;
+        state.urutanValidation.error = extractErrorMessage(action.payload);
+      })
+
+      .addCase(getExistingUrutan.fulfilled, (state, action) => {
+        state.existingUrutan = action.payload.data || [];
       });
   }
 });
 
-export const { setFilters, resetFilters, clearCurrentItem, clearError } = jenjangSlice.actions;
+export const { setFilters, resetFilters, clearCurrentItem, clearError, clearUrutanValidation } = jenjangSlice.actions;
 
 export const selectJenjangItems = (state) => state.jenjang.items;
 export const selectCurrentJenjang = (state) => state.jenjang.currentItem;
 export const selectJenjangLoading = (state) => state.jenjang.loading;
 export const selectJenjangError = (state) => state.jenjang.error;
+export const selectJenjangValidationErrors = (state) => state.jenjang.validationErrors;
+export const selectExistingUrutan = (state) => state.jenjang.existingUrutan;
+export const selectUrutanValidation = (state) => state.jenjang.urutanValidation;
 export const selectJenjangPagination = (state) => state.jenjang.pagination;
 export const selectJenjangFilters = (state) => state.jenjang.filters;
 export const selectJenjangDropdownOptions = (state) => state.jenjang.dropdownOptions;

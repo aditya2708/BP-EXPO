@@ -1,218 +1,370 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
+  FlatList,
   TouchableOpacity,
   StyleSheet,
   Alert,
-  ScrollView,
+  RefreshControl,
   ActivityIndicator
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { Picker } from '@react-native-picker/picker';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import {
+  selectJenjangDropdownOptions,
   selectJenjangLoading,
   selectJenjangError,
   clearError,
-  createJenjang,
-  updateJenjang
+  getJenjangForDropdown,
+  deleteJenjang
 } from '../../../redux/masterData/jenjangSlice';
 
-const JenjangFormScreen = ({ navigation, route }) => {
+const JenjangListScreen = ({ navigation }) => {
   const dispatch = useDispatch();
+  const jenjangList = useSelector(selectJenjangDropdownOptions);
   const loading = useSelector(selectJenjangLoading);
   const error = useSelector(selectJenjangError);
 
-  const { jenjang, isEdit } = route.params || {};
-  const [namaJenjang, setNamaJenjang] = useState(jenjang?.nama_jenjang || '');
-  const [kodeJenjang, setKodeJenjang] = useState(jenjang?.kode_jenjang || '');
-  const [urutan, setUrutan] = useState(jenjang?.urutan?.toString() || '');
-  const [deskripsi, setDeskripsi] = useState(jenjang?.deskripsi || '');
-  const [isActive, setIsActive] = useState(jenjang?.is_active !== undefined ? jenjang.is_active : true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    if (error) {
-      Alert.alert('Error', error, [{ text: 'OK', onPress: () => dispatch(clearError()) }]);
-    }
-  }, [error, dispatch]);
+  useFocusEffect(
+    React.useCallback(() => {
+      loadJenjangData();
+    }, [])
+  );
 
-  const handleSubmit = () => {
-    // Validation
-    if (!namaJenjang.trim()) {
-      Alert.alert('Error', 'Nama jenjang harus diisi');
-      return;
-    }
-    if (!kodeJenjang.trim()) {
-      Alert.alert('Error', 'Kode jenjang harus diisi');
-      return;
-    }
-    if (!urutan.trim()) {
-      Alert.alert('Error', 'Urutan harus diisi');
-      return;
-    }
-
-    const data = {
-      nama_jenjang: namaJenjang.trim(),
-      kode_jenjang: kodeJenjang.trim().toUpperCase(),
-      urutan: parseInt(urutan),
-      deskripsi: deskripsi.trim(),
-      is_active: isActive
-    };
-
-    if (isEdit) {
-      dispatch(updateJenjang({ id: jenjang.id_jenjang, data }))
-        .unwrap()
-        .then(() => {
-          Alert.alert('Berhasil', 'Jenjang berhasil diperbarui');
-          navigation.goBack();
-        })
-        .catch(err => {
-          Alert.alert('Error', err.message || 'Gagal memperbarui jenjang');
-        });
-    } else {
-      dispatch(createJenjang(data))
-        .unwrap()
-        .then(() => {
-          Alert.alert('Berhasil', 'Jenjang berhasil dibuat');
-          navigation.goBack();
-        })
-        .catch(err => {
-          Alert.alert('Error', err.message || 'Gagal membuat jenjang');
-        });
+  const loadJenjangData = async () => {
+    try {
+      await dispatch(getJenjangForDropdown()).unwrap();
+    } catch (err) {
+      console.error('Error loading jenjang:', err);
     }
   };
 
-  return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>{isEdit ? 'Edit Jenjang' : 'Tambah Jenjang'}</Text>
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadJenjangData();
+    setRefreshing(false);
+  };
+
+  const handleEdit = (jenjang) => {
+    navigation.navigate('JenjangForm', { jenjang, isEdit: true });
+  };
+
+  const handleDetail = (jenjang) => {
+    navigation.navigate('JenjangDetail', { jenjangId: jenjang.id_jenjang });
+  };
+
+  const handleDelete = (jenjang) => {
+    Alert.alert(
+      'Hapus Jenjang',
+      `Apakah Anda yakin ingin menghapus jenjang "${jenjang.nama_jenjang}"?`,
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Hapus',
+          style: 'destructive',
+          onPress: () => confirmDelete(jenjang.id_jenjang)
+        }
+      ]
+    );
+  };
+
+  const confirmDelete = async (id) => {
+    console.log('🔄 JenjangListScreen - Delete clicked for ID:', id);
+    console.log('📊 Current jenjangList:', jenjangList);
+    
+    setDeleting(true);
+    
+    try {
+      console.log('📤 JenjangListScreen - Calling deleteJenjang Redux action...');
+      const result = await dispatch(deleteJenjang(id)).unwrap();
+      console.log('✅ JenjangListScreen - Delete successful, result:', result);
       
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Nama Jenjang *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Contoh: Sekolah Dasar"
-          value={namaJenjang}
-          onChangeText={setNamaJenjang}
-        />
-      </View>
+      Alert.alert(
+        'Berhasil', 
+        'Jenjang berhasil dihapus',
+        [{ text: 'OK', onPress: () => {
+          console.log('📱 JenjangListScreen - Success alert closed, refreshing data...');
+          loadJenjangData();
+        }}]
+      );
+    } catch (err) {
+      console.log('❌ JenjangListScreen - Delete failed with error:', err);
+      console.log('🔍 Error details:', JSON.stringify(err, null, 2));
+      console.log('🔍 Error message:', err.message);
+      console.log('🔍 Error type:', typeof err);
+      
+      // Better error message handling
+      let errorMessage = 'Gagal menghapus jenjang';
+      
+      if (err.message) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      } else if (err.data && err.data.message) {
+        errorMessage = err.data.message;
+      }
+      
+      console.log('📱 JenjangListScreen - Showing error alert:', errorMessage);
+      
+      Alert.alert(
+        'Tidak Dapat Menghapus', 
+        errorMessage,
+        [{ text: 'Mengerti' }]
+      );
+    } finally {
+      console.log('🏁 JenjangListScreen - Delete operation finished');
+      setDeleting(false);
+    }
+  };
 
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Kode Jenjang *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Contoh: SD"
-          value={kodeJenjang}
-          onChangeText={setKodeJenjang}
-          maxLength={10}
-          autoCapitalize="characters"
-        />
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Urutan *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Contoh: 1"
-          value={urutan}
-          onChangeText={setUrutan}
-          keyboardType="numeric"
-        />
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Deskripsi</Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder="Deskripsi jenjang..."
-          value={deskripsi}
-          onChangeText={setDeskripsi}
-          multiline
-          numberOfLines={3}
-        />
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Text style={styles.label}>Status</Text>
-        <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={isActive}
-            onValueChange={(val) => setIsActive(val)}
-            style={styles.picker}
-          >
-            <Picker.Item label="Aktif" value={true} />
-            <Picker.Item label="Tidak Aktif" value={false} />
-          </Picker>
+  const renderJenjangItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.itemContainer}
+      onPress={() => handleDetail(item)}
+    >
+      <View style={styles.itemContent}>
+        <Text style={styles.itemTitle}>{item.nama_jenjang}</Text>
+        <Text style={styles.itemCode}>Kode: {item.kode_jenjang}</Text>
+        <Text style={styles.itemDescription}>Urutan: {item.urutan}</Text>
+        <View style={styles.itemMeta}>
+          <Text style={styles.itemMetaText}>
+            Status: Aktif
+          </Text>
+          <Text style={styles.itemMetaText}>
+            ID: {item.id_jenjang}
+          </Text>
         </View>
       </View>
+      <View style={styles.itemActions}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => handleEdit(item)}
+        >
+          <Ionicons name="pencil" size={16} color="#007bff" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionButton, deleting && styles.actionButtonDisabled]}
+          onPress={() => handleDelete(item)}
+          disabled={deleting}
+        >
+          <Ionicons 
+            name="trash" 
+            size={16} 
+            color={deleting ? "#999" : "#dc3545"} 
+          />
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyContainer}>
+      <Ionicons name="school-outline" size={64} color="#ccc" />
+      <Text style={styles.emptyText}>Belum ada data jenjang</Text>
       <TouchableOpacity
-        style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-        onPress={handleSubmit}
-        disabled={loading}
+        style={styles.addButton}
+        onPress={() => navigation.navigate('JenjangForm')}
       >
-        {loading
-          ? <ActivityIndicator />
-          : <Text style={styles.submitButtonText}>{isEdit ? 'Update' : 'Submit'}</Text>
-        }
+        <Text style={styles.addButtonText}>Tambah Jenjang Pertama</Text>
       </TouchableOpacity>
-    </ScrollView>
+    </View>
+  );
+
+  if (loading && !refreshing && jenjangList.length === 0) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007bff" />
+        <Text style={styles.loadingText}>Memuat data jenjang...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.container}>
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => {
+              dispatch(clearError());
+              loadJenjangData();
+            }}
+          >
+            <Text style={styles.retryButtonText}>Coba Lagi</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <FlatList
+        data={jenjangList}
+        keyExtractor={(item) => item.id_jenjang.toString()}
+        renderItem={renderJenjangItem}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+        contentContainerStyle={
+          jenjangList.length === 0 ? styles.emptyList : styles.list
+        }
+        ListEmptyComponent={renderEmptyState}
+        showsVerticalScrollIndicator={false}
+      />
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('JenjangForm')}
+      >
+        <Ionicons name="add" size={24} color="white" />
+      </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5'
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666'
+  },
+  errorContainer: {
+    backgroundColor: '#fee',
+    padding: 12,
+    margin: 16,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#dc3545'
+  },
+  errorText: {
+    color: '#dc3545',
+    fontSize: 14,
+    marginBottom: 8
+  },
+  retryButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#dc3545',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600'
+  },
+  list: {
     padding: 16
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 24,
-    color: '#333'
+  emptyList: {
+    flex: 1
   },
-  inputGroup: {
-    marginBottom: 16
+  itemContainer: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2
   },
-  label: {
+  itemContent: {
+    flex: 1
+  },
+  itemTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
+    marginBottom: 4
+  },
+  itemCode: {
+    fontSize: 12,
+    color: '#007bff',
+    fontWeight: '600',
+    marginBottom: 4
+  },
+  itemDescription: {
+    fontSize: 14,
+    color: '#666',
     marginBottom: 8
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
+  itemMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  itemMetaText: {
+    fontSize: 12,
+    color: '#999'
+  },
+  itemActions: {
+    flexDirection: 'row',
+    marginLeft: 12
+  },
+  actionButton: {
+    padding: 8,
+    marginLeft: 4,
+    borderRadius: 4
+  },
+  actionButtonDisabled: {
+    opacity: 0.5
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32
+  },
+  emptyText: {
     fontSize: 16,
-    backgroundColor: '#fff'
+    color: '#666',
+    marginTop: 16,
+    marginBottom: 24,
+    textAlign: 'center'
   },
-  textArea: {
-    height: 80,
-    textAlignVertical: 'top'
-  },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    backgroundColor: '#fff'
-  },
-  picker: {
-    height: 50
-  },
-  submitButton: {
+  addButton: {
     backgroundColor: '#007bff',
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center'
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8
   },
-  submitButtonDisabled: {
-    backgroundColor: '#6c757d'
-  },
-  submitButtonText: {
+  addButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600'
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#007bff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4
   }
 });
 
-export default JenjangFormScreen;
+export default JenjangListScreen;

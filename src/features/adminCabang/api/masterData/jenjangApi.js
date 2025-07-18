@@ -91,5 +91,35 @@ export const jenjangApi = {
     } catch (error) {
       throw error;
     }
+  },
+
+  /**
+   * Check if urutan is available
+   * @param {number} urutan - Urutan to check
+   * @param {number|string} excludeId - ID to exclude (for edit mode)
+   * @returns {Promise} API response with availability status
+   */
+  checkUrutanAvailability: async (urutan, excludeId = null) => {
+    try {
+      const params = { urutan };
+      if (excludeId) {
+        params.exclude_id = excludeId;
+      }
+      return await api.get(`${BASE_URL}/check-urutan`, { params });
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Get all existing urutan values
+   * @returns {Promise} API response with existing urutan array
+   */
+  getExistingUrutan: async () => {
+    try {
+      return await api.get(`${BASE_URL}/existing-urutan`);
+    } catch (error) {
+      throw error;
+    }
   }
 };

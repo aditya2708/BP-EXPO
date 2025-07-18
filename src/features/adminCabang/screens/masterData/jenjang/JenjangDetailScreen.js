@@ -28,6 +28,8 @@ const JenjangDetailScreen = ({ navigation, route }) => {
   const loading = useSelector(selectJenjangLoading);
   const error = useSelector(selectJenjangError);
   const statistics = useSelector(selectJenjangStatistics);
+  
+  const [deleting, setDeleting] = React.useState(false);
 
   // Handle nested structure if it exists
   const jenjang = currentItem?.jenjang || currentItem;
@@ -76,15 +78,57 @@ const JenjangDetailScreen = ({ navigation, route }) => {
   };
 
   const confirmDelete = async () => {
+    console.log('🔄 JenjangDetailScreen - Delete clicked for jenjang:', jenjang);
+    console.log('🔄 JenjangDetailScreen - Jenjang ID:', jenjang?.id_jenjang);
+    
+    if (!jenjang?.id_jenjang) {
+      console.log('❌ JenjangDetailScreen - No jenjang ID found');
+      Alert.alert('Error', 'ID jenjang tidak ditemukan');
+      return;
+    }
+    
+    setDeleting(true);
+    
     try {
-      await dispatch(deleteJenjang(jenjang.id_jenjang)).unwrap();
+      console.log('📤 JenjangDetailScreen - Calling deleteJenjang Redux action...');
+      const result = await dispatch(deleteJenjang(jenjang.id_jenjang)).unwrap();
+      console.log('✅ JenjangDetailScreen - Delete successful, result:', result);
+      
       Alert.alert(
         'Berhasil',
         'Jenjang berhasil dihapus',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
+        [{ text: 'OK', onPress: () => {
+          console.log('📱 JenjangDetailScreen - Success alert closed, navigating back...');
+          navigation.goBack();
+        }}]
       );
     } catch (err) {
-      Alert.alert('Error', err.message || 'Gagal menghapus jenjang');
+      console.log('❌ JenjangDetailScreen - Delete failed with error:', err);
+      console.log('🔍 Error details:', JSON.stringify(err, null, 2));
+      console.log('🔍 Error message:', err.message);
+      console.log('🔍 Error type:', typeof err);
+      
+      // Better error message handling
+      let errorMessage = 'Gagal menghapus jenjang';
+      
+      if (err.message) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      } else if (err.data && err.data.message) {
+        errorMessage = err.data.message;
+      }
+      
+      console.log('📱 JenjangDetailScreen - Showing error alert:', errorMessage);
+      
+      Alert.alert(
+        'Tidak Dapat Menghapus',
+        errorMessage,
+        [{ text: 'Mengerti' }]
+      );
+    } finally {
+      console.log('🏁 JenjangDetailScreen - Delete operation finished');
+      setDeleting(false);
     }
   };
 
@@ -258,11 +302,14 @@ const JenjangDetailScreen = ({ navigation, route }) => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.deleteButton}
+          style={[styles.deleteButton, deleting && styles.deleteButtonDisabled]}
           onPress={handleDelete}
+          disabled={deleting}
         >
           <Ionicons name="trash" size={20} color="white" />
-          <Text style={styles.deleteButtonText}>Hapus</Text>
+          <Text style={styles.deleteButtonText}>
+            {deleting ? 'Menghapus...' : 'Hapus'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -431,6 +478,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8
+  },
+  deleteButtonDisabled: {
+    opacity: 0.6,
+    backgroundColor: '#95a5a6'
   }
 });
 

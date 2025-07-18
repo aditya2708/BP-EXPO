@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
+import MateriAssignmentModal from '../../../components/akademik/MateriAssignmentModal';
 import {
   selectCurrentKurikulum,
   selectKurikulumLoading,
@@ -29,6 +30,9 @@ const KurikulumDetailScreen = ({ navigation, route }) => {
   const currentItem = useSelector(selectCurrentKurikulum);
   const loading = useSelector(selectKurikulumLoading);
   const error = useSelector(selectKurikulumError);
+  
+  // Modal state
+  const [showAssignModal, setShowAssignModal] = useState(false);
 
   const kurikulum = currentItem?.kurikulum || currentItem;
   const materiList = currentItem?.kurikulum_materi?.map(km => ({
@@ -122,6 +126,13 @@ const KurikulumDetailScreen = ({ navigation, route }) => {
       dispatch(getKurikulumById(kurikulumId));
     } catch (err) {
       Alert.alert('Error', err.message || 'Gagal menghapus materi');
+    }
+  };
+
+  const handleAssignSuccess = () => {
+    // Refresh kurikulum data to show updated materi count
+    if (kurikulumId) {
+      dispatch(getKurikulumById(kurikulumId));
     }
   };
 
@@ -273,12 +284,7 @@ const KurikulumDetailScreen = ({ navigation, route }) => {
             <Text style={styles.sectionTitle}>Daftar Materi ({materiList.length})</Text>
             <TouchableOpacity
               style={styles.addMateriButton}
-              onPress={() => {
-                navigation.navigate('AssignMateri', { 
-                  kurikulumId: kurikulum.id_kurikulum,
-                  kurikulumName: kurikulum.nama_kurikulum 
-                });
-              }}
+              onPress={() => setShowAssignModal(true)}
             >
               <Ionicons name="add" size={16} color="#007bff" />
               <Text style={styles.addMateriText}>Tambah</Text>
@@ -364,6 +370,14 @@ const KurikulumDetailScreen = ({ navigation, route }) => {
           <Text style={styles.deleteButtonText}>Hapus</Text>
         </TouchableOpacity>
       </View>
+
+      <MateriAssignmentModal
+        visible={showAssignModal}
+        onClose={() => setShowAssignModal(false)}
+        kurikulumId={kurikulum?.id_kurikulum}
+        kurikulumName={kurikulum?.nama_kurikulum}
+        onAssignSuccess={handleAssignSuccess}
+      />
     </View>
   );
 };
@@ -476,7 +490,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#e3f2fd',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   addMateriText: {
     fontSize: 12,
