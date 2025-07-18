@@ -27,5 +27,12 @@ export const kurikulumShelterApi = {
    */
   getForDropdown: async () => {
     return await api.get('/admin-shelter/kurikulum-dropdown');
+  },
+
+  /**
+   * Get kurikulum list (alias for getAllKurikulum)
+   */
+  getKurikulumList: async (params = {}) => {
+    return await api.get('/admin-shelter/kurikulum', { params });
   }
 };
