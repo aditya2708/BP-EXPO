@@ -22,7 +22,9 @@ const KeluargaFormStepSurveyBasic = ({
     formData.pekerjaan_kepala_keluarga,
     formData.pendidikan_kepala_keluarga,
     formData.jumlah_tanggungan,
-    formData.status_anak
+    formData.kondisi_fisik_anak,
+    formData.kepribadian_anak,
+    formData.keterangan_disabilitas
   ]);
 
   const jobOptions = [
@@ -51,11 +53,10 @@ const KeluargaFormStepSurveyBasic = ({
     { label: 'Pascasarjana', value: 'Pascasarjana' },
   ];
 
-  const childStatusOptions = [
-    { label: '-- Pilih Status Anak --', value: '' },
-    { label: 'Baik', value: 'Baik' },
-    { label: 'Kurang Baik', value: 'Kurang Baik' },
-    { label: 'Bermasalah', value: 'Bermasalah' },
+  const physicalConditionOptions = [
+    { label: '-- Pilih Kondisi Fisik --', value: '' },
+    { label: 'Normal', value: 'Normal' },
+    { label: 'Disabilitas', value: 'Disabilitas' },
   ];
 
   return (
@@ -109,15 +110,23 @@ const KeluargaFormStepSurveyBasic = ({
         inputProps={{ keyboardType: 'numeric' }}
       />
 
+      <TextInput
+        label="Kepribadian Anak*"
+        value={formData.kepribadian_anak}
+        onChangeText={(value) => onChange('kepribadian_anak', value)}
+        placeholder="Masukkan kepribadian anak"
+        leftIcon={<Ionicons name="person-outline" size={20} color="#777" />}
+      />
+
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Status Anak*</Text>
+        <Text style={styles.label}>Kondisi Fisik Anak*</Text>
         <View style={styles.pickerContainer}>
           <Picker
-            selectedValue={formData.status_anak}
-            onValueChange={(value) => onChange('status_anak', value)}
+            selectedValue={formData.kondisi_fisik_anak}
+            onValueChange={(value) => onChange('kondisi_fisik_anak', value)}
             style={styles.picker}
           >
-            {childStatusOptions.map((option, index) => (
+            {physicalConditionOptions.map((option, index) => (
               <Picker.Item 
                 key={index}
                 label={option.label} 
@@ -127,6 +136,17 @@ const KeluargaFormStepSurveyBasic = ({
           </Picker>
         </View>
       </View>
+
+      {formData.kondisi_fisik_anak === 'Disabilitas' && (
+        <TextInput
+          label="Keterangan Jenis Disabilitas*"
+          value={formData.keterangan_disabilitas}
+          onChangeText={(value) => onChange('keterangan_disabilitas', value)}
+          placeholder="Jelaskan jenis disabilitas"
+          leftIcon={<Ionicons name="medical-outline" size={20} color="#777" />}
+          inputProps={{ multiline: true, numberOfLines: 3 }}
+        />
+      )}
     </View>
   );
 };

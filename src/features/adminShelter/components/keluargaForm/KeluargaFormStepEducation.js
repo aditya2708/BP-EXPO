@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -17,13 +17,89 @@ const KeluargaFormStepEducation = ({
   setStepValid,
   validateStep
 }) => {
-  // Validate on mount and when form data changes
+  const [validationErrors, setValidationErrors] = useState({});
+
+  // Enhanced form validation hook
+  
+  // Create refs for key form fields
+  const namaSekolahRef = useRef('nama_sekolah');
+
+  // Validate step fields without useCallback to avoid dependency issues
+  const validateStepFields = () => {
+    const errors = {};
+
+    // Only validate if jenjang is selected and not 'belum_sd'
+    if (formData.jenjang && formData.jenjang !== 'belum_sd') {
+      // For school levels (sd, smp, sma)
+      if (['sd', 'smp', 'sma'].includes(formData.jenjang)) {
+        if (!formData.kelas) {
+          errors.kelas = 'Kelas wajib diisi';
+        }
+        if (!formData.nama_sekolah) {
+          errors.nama_sekolah = 'Nama sekolah wajib diisi';
+        }
+        if (!formData.alamat_sekolah) {
+          errors.alamat_sekolah = 'Alamat sekolah wajib diisi';
+        }
+        // Additional validation for SMA
+        if (formData.jenjang === 'sma' && !formData.jurusan) {
+          errors.jurusan = 'Jurusan wajib diisi';
+        }
+      }
+      // For college level
+      else if (formData.jenjang === 'perguruan_tinggi') {
+        if (!formData.semester) {
+          errors.semester = 'Semester wajib diisi';
+        }
+        if (!formData.jurusan) {
+          errors.jurusan = 'Jurusan wajib diisi';
+        }
+        if (!formData.nama_pt) {
+          errors.nama_pt = 'Nama perguruan tinggi wajib diisi';
+        }
+        if (!formData.alamat_pt) {
+          errors.alamat_pt = 'Alamat perguruan tinggi wajib diisi';
+        }
+      }
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Validate on mount and when form data changes - simplified approach
   useEffect(() => {
-    const isValid = validateStep();
+    // Debug logging for development
+    if (__DEV__) {
+      console.log('=== KeluargaFormStepEducation useEffect triggered ===');
+      console.log('Form data:', {
+        jenjang: formData.jenjang,
+        kelas: formData.kelas,
+        nama_sekolah: formData.nama_sekolah,
+        alamat_sekolah: formData.alamat_sekolah,
+        jurusan: formData.jurusan,
+        semester: formData.semester,
+        nama_pt: formData.nama_pt,
+        alamat_pt: formData.alamat_pt
+      });
+    }
+    
+    // Run both validation functions without function dependencies
+    const parentValid = validateStep();
+    const localValid = validateStepFields();
+    const isValid = parentValid && localValid;
     setStepValid(isValid);
+    
+    console.log('Education step validation result:', { parentValid, localValid, isValid });
   }, [
     formData.jenjang,
-    
+    formData.kelas,
+    formData.nama_sekolah,
+    formData.alamat_sekolah,
+    formData.jurusan,
+    formData.semester,
+    formData.nama_pt,
+    formData.alamat_pt
   ]);
   
   // Education level options
@@ -172,11 +248,13 @@ const KeluargaFormStepEducation = ({
           
           {/* School Name */}
           <TextInput
+            ref={namaSekolahRef}
             label="Nama Sekolah"
             value={formData.nama_sekolah}
             onChangeText={(value) => onChange('nama_sekolah', value)}
             placeholder=""
             leftIcon={<Ionicons name="school-outline" size={20} color="#777" />}
+            // fieldStatus={getFieldStatus('nama_sekolah', formData.nama_sekolah)}
           />
           
           {/* School Address */}

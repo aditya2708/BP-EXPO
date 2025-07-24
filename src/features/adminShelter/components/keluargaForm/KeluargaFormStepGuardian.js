@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -21,15 +21,60 @@ const KeluargaFormStepGuardian = ({
 }) => {
   // State for date picker
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+  
+  // Store current formData in ref to avoid stale closure
+  const formDataRef = useRef(formData);
+  
+  // Update formData ref whenever formData changes
+  useEffect(() => {
+    formDataRef.current = formData;
+  }, [formData]);
+
+  // Enhanced form validation hook
+  
+  // Create refs for key form fields
+  const nikWaliRef = useRef('nik_wali');
+  const namaWaliRef = useRef('nama_wali');
+
+  // Enhanced validation function
+  const validateStepFields = () => {
+    // Get current form values from ref to avoid stale closure
+    const currentFormData = formDataRef.current;
+    const errors = {};
+
+    // Guardian validation - all fields required
+    if (!currentFormData.nama_wali) errors.nama_wali = 'Nama wali wajib diisi';
+    if (!currentFormData.nik_wali) {
+      errors.nik_wali = 'NIK wali wajib diisi';
+    } else if (currentFormData.nik_wali.length !== 16) {
+      errors.nik_wali = 'NIK wali harus 16 digit';
+    }
+    if (!currentFormData.agama_wali) errors.agama_wali = 'Agama wali wajib dipilih';
+    if (!currentFormData.tempat_lahir_wali) errors.tempat_lahir_wali = 'Tempat lahir wali wajib diisi';
+    if (!currentFormData.tanggal_lahir_wali) errors.tanggal_lahir_wali = 'Tanggal lahir wali wajib dipilih';
+    if (!currentFormData.alamat_wali) errors.alamat_wali = 'Alamat wali wajib diisi';
+    if (!currentFormData.penghasilan_wali) errors.penghasilan_wali = 'Penghasilan wali wajib dipilih';
+    if (!currentFormData.hub_kerabat_wali) errors.hub_kerabat_wali = 'Hubungan kerabat wali wajib dipilih';
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
   
   // Validate on mount and when form data changes
   useEffect(() => {
-    const isValid = validateStep();
+    // Run both validation functions
+    const isValid = validateStep() && validateStepFields();
     setStepValid(isValid);
   }, [
     formData.nik_wali,
-    formData.nama_wali
-   
+    formData.nama_wali,
+    formData.agama_wali,
+    formData.tempat_lahir_wali,
+    formData.tanggal_lahir_wali,
+    formData.alamat_wali,
+    formData.penghasilan_wali,
+    formData.hub_kerabat_wali
   ]);
   
   // Religion options
@@ -70,10 +115,11 @@ const KeluargaFormStepGuardian = ({
   };
   
   // Handle date change
- const handleDateChange = (event, selectedDate) => {
+  const handleDateChange = (event, selectedDate) => {
     toggleDatePicker();
     
-    if (selectedDate) {
+    // Only update if user didn't cancel (selectedDate exists and event type is not dismissed)
+    if (selectedDate && event.type !== 'dismissed') {
       // Format date as DD-MM-YYYY
       const day = String(selectedDate.getDate()).padStart(2, '0');
       const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
@@ -82,42 +128,47 @@ const KeluargaFormStepGuardian = ({
       
       onChange('tanggal_lahir_wali', formattedDate);
     }
+    // If user canceled (event.type === 'dismissed' or no selectedDate), do nothing
   };
   
   return (
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>Data Wali</Text>
       
-      <View style={styles.helperTextContainer}>
-        {/* <Text style={styles.helperText}>
-          This section is optional and only needed if the child lives with a guardian instead of parents.
-          If the child lives with one or both parents, you can leave this section empty.
-        </Text> */}
-      </View>
-      
       {/* Guardian's NIK */}
       <TextInput
-        label="NIK Wali"
+        ref={nikWaliRef}
+        label="NIK Wali*"
         value={formData.nik_wali}
-        onChangeText={(value) => onChange('nik_wali', value)}
-        placeholder=""
+        onChangeText={(value) => {
+          // Only allow numeric characters
+          const numericValue = value.replace(/[^0-9]/g, '');
+          onChange('nik_wali', numericValue);
+        }}
+        placeholder="Masukkan 16 digit NIK wali"
         leftIcon={<Ionicons name="card-outline" size={20} color="#777" />}
         inputProps={{ maxLength: 16, keyboardType: 'numeric' }}
+        error={validationErrors.nik_wali}
       />
       
       {/* Guardian's Name */}
       <TextInput
-        label="Nama Lengkap"
+        ref={namaWaliRef}
+        label="Nama Lengkap*"
         value={formData.nama_wali}
         onChangeText={(value) => onChange('nama_wali', value)}
-        placeholder=""
+        placeholder="Masukkan nama lengkap wali"
         leftIcon={<Ionicons name="person-outline" size={20} color="#777" />}
+        error={validationErrors.nama_wali}
       />
       
       {/* Relation to Child */}
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Hubungan Kerabat</Text>
-        <View style={styles.pickerContainer}>
+        <Text style={styles.label}>Hubungan Kerabat*</Text>
+        <View style={[
+          styles.pickerContainer,
+          validationErrors.hub_kerabat_wali && styles.pickerContainerError
+        ]}>
           <Picker
             selectedValue={formData.hub_kerabat_wali}
             onValueChange={(value) => onChange('hub_kerabat_wali', value)}
@@ -132,12 +183,18 @@ const KeluargaFormStepGuardian = ({
             ))}
           </Picker>
         </View>
+        {validationErrors.hub_kerabat_wali && (
+          <Text style={styles.errorText}>{validationErrors.hub_kerabat_wali}</Text>
+        )}
       </View>
       
       {/* Religion */}
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Agama Wali</Text>
-        <View style={styles.pickerContainer}>
+        <Text style={styles.label}>Agama Wali*</Text>
+        <View style={[
+          styles.pickerContainer,
+          validationErrors.agama_wali && styles.pickerContainerError
+        ]}>
           <Picker
             selectedValue={formData.agama_wali}
             onValueChange={(value) => onChange('agama_wali', value)}
@@ -152,22 +209,29 @@ const KeluargaFormStepGuardian = ({
             ))}
           </Picker>
         </View>
+        {validationErrors.agama_wali && (
+          <Text style={styles.errorText}>{validationErrors.agama_wali}</Text>
+        )}
       </View>
       
       {/* Place of Birth */}
       <TextInput
-        label="Tempat Lahir wali"
+        label="Tempat Lahir Wali*"
         value={formData.tempat_lahir_wali}
         onChangeText={(value) => onChange('tempat_lahir_wali', value)}
-        placeholder=""
+        placeholder="Masukkan tempat lahir wali"
         leftIcon={<Ionicons name="location-outline" size={20} color="#777" />}
+        error={validationErrors.tempat_lahir_wali}
       />
       
  
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Tanggal Lahir Wali</Text>
+        <Text style={styles.label}>Tanggal Lahir Wali*</Text>
         <TouchableOpacity
-          style={styles.dateInput}
+          style={[
+            styles.dateInput,
+            validationErrors.tanggal_lahir_wali && styles.dateInputError
+          ]}
           onPress={toggleDatePicker}
         >
           <Ionicons name="calendar-outline" size={20} color="#777" style={styles.dateIcon} />
@@ -175,6 +239,9 @@ const KeluargaFormStepGuardian = ({
             {formData.tanggal_lahir_wali || 'Pilih Tanggal'}
           </Text>
         </TouchableOpacity>
+        {validationErrors.tanggal_lahir_wali && (
+          <Text style={styles.errorText}>{validationErrors.tanggal_lahir_wali}</Text>
+        )}
         
         {showDatePicker && (
           <DateTimePicker
@@ -189,19 +256,22 @@ const KeluargaFormStepGuardian = ({
       
       {/* Address */}
       <TextInput
-        label="Alamat Wali"
+        label="Alamat Wali*"
         value={formData.alamat_wali}
         onChangeText={(value) => onChange('alamat_wali', value)}
-        placeholder=""
-        leftIcon={<Ionicons name="home-outline" size={20} color="#777" />}
+        placeholder="Masukkan alamat lengkap wali"
         multiline
         inputProps={{ numberOfLines: 3 }}
+        error={validationErrors.alamat_wali}
       />
       
       {/* Income */}
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Penghasilan Bulanan</Text>
-        <View style={styles.pickerContainer}>
+        <Text style={styles.label}>Penghasilan Bulanan*</Text>
+        <View style={[
+          styles.pickerContainer,
+          validationErrors.penghasilan_wali && styles.pickerContainerError
+        ]}>
           <Picker
             selectedValue={formData.penghasilan_wali}
             onValueChange={(value) => onChange('penghasilan_wali', value)}
@@ -216,6 +286,9 @@ const KeluargaFormStepGuardian = ({
             ))}
           </Picker>
         </View>
+        {validationErrors.penghasilan_wali && (
+          <Text style={styles.errorText}>{validationErrors.penghasilan_wali}</Text>
+        )}
       </View>
     </View>
   );
@@ -270,6 +343,20 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 16,
     color: '#333',
+  },
+  dateInputError: {
+    borderColor: '#e74c3c',
+    borderWidth: 2,
+  },
+  pickerContainerError: {
+    borderColor: '#e74c3c',
+    borderWidth: 2,
+  },
+  errorText: {
+    color: '#e74c3c',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 2,
   },
   helperTextContainer: {
     marginVertical: 16,

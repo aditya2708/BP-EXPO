@@ -57,15 +57,6 @@ const KeluargaFormReview = ({ formData, dropdownData, isEditMode }) => {
           <Text style={styles.infoValue}>{formData.status_ortu || '-'}</Text>
         </View>
         
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Kacab:</Text>
-          <Text style={styles.infoValue}>{findKacabName(formData.id_kacab)}</Text>
-        </View>
-        
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Wilbin:</Text>
-          <Text style={styles.infoValue}>{findWilbinName(formData.id_wilbin)}</Text>
-        </View>
         
         {formData.bank_choice === 'yes' && (
           <>
