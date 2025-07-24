@@ -38,12 +38,6 @@ export const validateBasicStep = (formData) => {
     };
   }
   
-  if (!formData.status_anak) {
-    return {
-      isValid: false,
-      errorMessage: 'Please select the child status'
-    };
-  }
   
   return { isValid: true };
 };
@@ -286,8 +280,7 @@ export const validateSubmission = (formData) => {
   if (!formData.pendidikan_kepala_keluarga || 
       !formData.jumlah_tanggungan || 
       !formData.pekerjaan_kepala_keluarga || 
-      !formData.penghasilan ||
-      !formData.status_anak) {
+      !formData.penghasilan) {
     return {
       isValid: false,
       errorMessage: 'Please complete the Basic Information section'
