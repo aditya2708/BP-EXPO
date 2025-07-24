@@ -42,6 +42,7 @@ const Tab = createBottomTabNavigator();
 const DashboardStack = createStackNavigator();
 const MasterDataStack = createStackNavigator();
 const AkademikStack = createStackNavigator();
+const ProfileStack = createStackNavigator();
 
 // Dashboard Stack Navigator
 const DashboardStackNavigator = () => (
@@ -50,11 +51,6 @@ const DashboardStackNavigator = () => (
       name="DashboardHome"
       component={AdminCabangDashboardScreen}
       options={{ headerTitle: 'Dashboard' }}
-    />
-    <DashboardStack.Screen
-      name="Profile"
-      component={AdminCabangProfileScreen}
-      options={{ headerTitle: 'Profil' }}
     />
     <DashboardStack.Screen
       name="SurveyStatusFilter"
@@ -216,6 +212,17 @@ const AkademikStackNavigator = () => (
   </AkademikStack.Navigator>
 );
 
+// Profile Stack Navigator
+const ProfileStackNavigator = () => (
+  <ProfileStack.Navigator>
+    <ProfileStack.Screen
+      name="ProfileHome"
+      component={AdminCabangProfileScreen}
+      options={{ headerTitle: 'Profil' }}
+    />
+  </ProfileStack.Navigator>
+);
+
 const AdminCabangNavigator = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
@@ -224,6 +231,7 @@ const AdminCabangNavigator = () => (
         if (route.name === 'Home') iconName = focused ? 'grid' : 'grid-outline';
         else if (route.name === 'MasterData') iconName = focused ? 'library' : 'library-outline';
         else if (route.name === 'Akademik') iconName = focused ? 'school' : 'school-outline';
+        else if (route.name === 'Profile') iconName = focused ? 'person-circle' : 'person-circle-outline';
         return <Ionicons name={iconName} size={size} color={color} />;
       },
       tabBarActiveTintColor: '#007bff',
@@ -245,6 +253,11 @@ const AdminCabangNavigator = () => (
       name="Akademik"
       component={AkademikStackNavigator}
       options={{ tabBarLabel: 'Akademik' }}
+    />
+    <Tab.Screen
+      name="Profile"
+      component={ProfileStackNavigator}
+      options={{ tabBarLabel: 'Profil' }}
     />
   </Tab.Navigator>
 );
