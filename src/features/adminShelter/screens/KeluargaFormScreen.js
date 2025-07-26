@@ -9,7 +9,6 @@ import {
   Platform,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
 
 import Button from '../../../common/components/Button';
 import LoadingSpinner from '../../../common/components/LoadingSpinner';
@@ -126,10 +125,6 @@ const KeluargaFormScreen = () => {
               tempat_lahir_ayah: ayah.tempat_lahir || '',
               tanggal_lahir_ayah: ayah.tanggal_lahir || '',
               alamat_ayah: ayah.alamat || '',
-              id_prov_ayah: ayah.id_prov || '',
-              id_kab_ayah: ayah.id_kab || '',
-              id_kec_ayah: ayah.id_kec || '',
-              id_kel_ayah: ayah.id_kel || '',
               penghasilan_ayah: ayah.penghasilan || '',
               tanggal_kematian_ayah: ayah.tanggal_kematian || '',
               penyebab_kematian_ayah: ayah.penyebab_kematian || '',
@@ -140,10 +135,6 @@ const KeluargaFormScreen = () => {
               tempat_lahir_ibu: ibu.tempat_lahir || '',
               tanggal_lahir_ibu: ibu.tanggal_lahir || '',
               alamat_ibu: ibu.alamat || '',
-              id_prov_ibu: ibu.id_prov || '',
-              id_kab_ibu: ibu.id_kab || '',
-              id_kec_ibu: ibu.id_kec || '',
-              id_kel_ibu: ibu.id_kel || '',
               penghasilan_ibu: ibu.penghasilan || '',
               tanggal_kematian_ibu: ibu.tanggal_kematian || '',
               penyebab_kematian_ibu: ibu.penyebab_kematian || '',
