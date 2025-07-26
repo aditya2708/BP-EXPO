@@ -1,4 +1,4 @@
-import { useReducer, useState, useCallback, useRef } from 'react';
+import { useReducer, useState, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { adminShelterKeluargaApi } from '../api/adminShelterKeluargaApi';
 import { 
@@ -16,36 +16,17 @@ const FORM_ACTIONS = {
   SET_FIELD: 'SET_FIELD',
   SET_FORM_DATA: 'SET_FORM_DATA',
   RESET_FORM: 'RESET_FORM',
-  SET_DEFAULTS: 'SET_DEFAULTS',
 };
 
 // Form Reducer
 const formReducer = (state, action) => {
   switch (action.type) {
     case FORM_ACTIONS.SET_FIELD:
-      return {
-        ...state,
-        [action.field]: action.value,
-      };
+      return { ...state, [action.field]: action.value };
     case FORM_ACTIONS.SET_FORM_DATA:
-      return {
-        ...state,
-        ...action.data,
-      };
+      return { ...state, ...action.data };
     case FORM_ACTIONS.RESET_FORM:
       return getInitialFormData();
-    case FORM_ACTIONS.SET_DEFAULTS:
-      return {
-        ...state,
-        id_prov_ayah: state.id_prov_ayah || '1',
-        id_kab_ayah: state.id_kab_ayah || '1',
-        id_kec_ayah: state.id_kec_ayah || '1',
-        id_kel_ayah: state.id_kel_ayah || '1',
-        id_prov_ibu: state.id_prov_ibu || '1',
-        id_kab_ibu: state.id_kab_ibu || '1',
-        id_kec_ibu: state.id_kec_ibu || '1',
-        id_kel_ibu: state.id_kel_ibu || '1',
-      };
     default:
       return state;
   }
@@ -85,16 +66,11 @@ export const useKeluargaForm = (existingKeluarga = null, isEditMode = false) => 
     dispatch({ type: FORM_ACTIONS.RESET_FORM });
   }, []);
 
-  const setDefaults = useCallback(() => {
-    dispatch({ type: FORM_ACTIONS.SET_DEFAULTS });
-  }, []);
-
   return {
     formData,
     setField,
     setFormData,
     resetForm,
-    setDefaults,
     loading,
     setLoading,
     error,
@@ -270,11 +246,21 @@ export const useFormSubmission = () => {
   const prepareFormData = useCallback((data) => {
     const formDataObj = new FormData();
     
-    Object.entries(data).forEach(([key, value]) => {
-      if (
-        key === '_stepValidation' ||
-        (key === 'foto' && !value)
-      ) {
+    // Add default regional values
+    const dataWithDefaults = {
+      ...data,
+      id_prov_ayah: data.id_prov_ayah || '1',
+      id_kab_ayah: data.id_kab_ayah || '1',
+      id_kec_ayah: data.id_kec_ayah || '1',
+      id_kel_ayah: data.id_kel_ayah || '1',
+      id_prov_ibu: data.id_prov_ibu || '1',
+      id_kab_ibu: data.id_kab_ibu || '1',
+      id_kec_ibu: data.id_kec_ibu || '1',
+      id_kel_ibu: data.id_kel_ibu || '1',
+    };
+    
+    Object.entries(dataWithDefaults).forEach(([key, value]) => {
+      if (key === '_stepValidation' || (key === 'foto' && !value)) {
         return;
       }
       
@@ -289,7 +275,6 @@ export const useFormSubmission = () => {
           name: filename,
         });
       } else if (value !== null && value !== undefined) {
-        // Format dates for submission
         if (key.includes('tanggal_') && value) {
           const formattedDate = formatDateForSubmission(value);
           formDataObj.append(key, formattedDate);
@@ -416,7 +401,6 @@ export const useEnhancedKeluargaForm = (existingKeluarga = null, isEditMode = fa
     setField: handleFieldChange,
     setFormData: formHook.setFormData,
     resetForm: formHook.resetForm,
-    setDefaults: formHook.setDefaults,
     
     // Loading and error states
     loading: formHook.loading,
