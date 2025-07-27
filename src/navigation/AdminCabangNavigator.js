@@ -35,7 +35,7 @@ const MasterDataStack = createStackNavigator();
 const AkademikStack = createStackNavigator();
 const ProfileStack = createStackNavigator();
 
-// Dashboard Stack Navigator (unchanged)
+// Dashboard Stack Navigator
 const DashboardStackNavigator = () => (
   <DashboardStack.Navigator>
     <DashboardStack.Screen
@@ -101,7 +101,7 @@ const MasterDataStackNavigator = () => (
     />
     {/* Universal Entity Screen - handles all Master Data CRUD operations */}
     <MasterDataStack.Screen
-      name="Entity"
+      name="MasterDataEntity"
       component={EntityScreen}
       options={({ route }) => {
         const { entityType, mode, itemId, item } = route.params || {};
@@ -113,7 +113,7 @@ const MasterDataStackNavigator = () => (
           };
         } catch (error) {
           console.warn('Error getting entity title:', error);
-          return { headerTitle: 'Entity' };
+          return { headerTitle: 'Master Data' };
         }
       }}
     />
@@ -130,7 +130,7 @@ const AkademikStackNavigator = () => (
     />
     {/* Universal Entity Screen - handles Kurikulum CRUD operations */}
     <AkademikStack.Screen
-      name="Entity"
+      name="AkademikEntity"
       component={EntityScreen}
       options={({ route }) => {
         const { entityType, mode, itemId, item } = route.params || {};
@@ -142,7 +142,7 @@ const AkademikStackNavigator = () => (
           };
         } catch (error) {
           console.warn('Error getting entity title:', error);
-          return { headerTitle: 'Entity' };
+          return { headerTitle: 'Akademik' };
         }
       }}
     />
@@ -155,7 +155,7 @@ const AkademikStackNavigator = () => (
   </AkademikStack.Navigator>
 );
 
-// Profile Stack Navigator (unchanged)
+// Profile Stack Navigator
 const ProfileStackNavigator = () => (
   <ProfileStack.Navigator>
     <ProfileStack.Screen
