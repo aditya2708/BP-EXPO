@@ -16,27 +16,18 @@ import AdminCabangDonaturFormScreen from '../features/adminCabang/screens/AdminC
 import AdminCabangDonaturDetailScreen from '../features/adminCabang/screens/AdminCabangDonaturDetailScreen';
 import DonaturFilterScreen from '../features/adminCabang/screens/DonaturFilterScreen';
 
-// Master Data screens
+// Menu screens
 import MasterDataMenuScreen from '../features/adminCabang/screens/MasterDataMenuScreen';
-import JenjangListScreen from '../features/adminCabang/screens/masterData/jenjang/JenjangListScreen';
-import JenjangFormScreen from '../features/adminCabang/screens/masterData/jenjang/JenjangFormScreen';
-import JenjangDetailScreen from '../features/adminCabang/screens/masterData/jenjang/JenjangDetailScreen';
-import MataPelajaranListScreen from '../features/adminCabang/screens/masterData/mataPelajaran/MataPelajaranListScreen';
-import MataPelajaranFormScreen from '../features/adminCabang/screens/masterData/mataPelajaran/MataPelajaranFormScreen';
-import MataPelajaranDetailScreen from '../features/adminCabang/screens/masterData/mataPelajaran/MataPelajaranDetailScreen';
-import KelasListScreen from '../features/adminCabang/screens/masterData/kelas/KelasListScreen';
-import KelasFormScreen from '../features/adminCabang/screens/masterData/kelas/KelasFormScreen';
-import KelasDetailScreen from '../features/adminCabang/screens/masterData/kelas/KelasDetailScreen';
-import MateriListScreen from '../features/adminCabang/screens/masterData/materi/MateriListScreen';
-import MateriFormScreen from '../features/adminCabang/screens/masterData/materi/MateriFormScreen';
-import MateriDetailScreen from '../features/adminCabang/screens/masterData/materi/MateriDetailScreen';
-
-// Akademik screens
 import AkademikMenuScreen from '../features/adminCabang/screens/AkademikMenuScreen';
-import KurikulumListScreen from '../features/adminCabang/screens/akademik/kurikulum/KurikulumListScreen';
-import KurikulumFormScreen from '../features/adminCabang/screens/akademik/kurikulum/KurikulumFormScreen';
-import KurikulumDetailScreen from '../features/adminCabang/screens/akademik/kurikulum/KurikulumDetailScreen';
+
+// Universal Entity Screen (replaces 16+ individual screens)
+import EntityScreen from '../features/adminCabang/screens/EntityScreen';
+
+// Special screens (keep for now - complex logic)
 import AssignMateriScreen from '../features/adminCabang/screens/akademik/kurikulum/AssignMateriScreen';
+
+// Helper for dynamic headers
+import { getEntityTitle } from '../features/adminCabang/logic/entityHelpers';
 
 const Tab = createBottomTabNavigator();
 const DashboardStack = createStackNavigator();
@@ -44,7 +35,7 @@ const MasterDataStack = createStackNavigator();
 const AkademikStack = createStackNavigator();
 const ProfileStack = createStackNavigator();
 
-// Dashboard Stack Navigator
+// Dashboard Stack Navigator (unchanged)
 const DashboardStackNavigator = () => (
   <DashboardStack.Navigator>
     <DashboardStack.Screen
@@ -100,7 +91,7 @@ const DashboardStackNavigator = () => (
   </DashboardStack.Navigator>
 );
 
-// Master Data Stack Navigator
+// Master Data Stack Navigator (REFACTORED - 12 screens → 1 screen)
 const MasterDataStackNavigator = () => (
   <MasterDataStack.Navigator>
     <MasterDataStack.Screen
@@ -108,78 +99,28 @@ const MasterDataStackNavigator = () => (
       component={MasterDataMenuScreen}
       options={{ headerTitle: 'Master Data' }}
     />
+    {/* Universal Entity Screen - handles all Master Data CRUD operations */}
     <MasterDataStack.Screen
-      name="JenjangList"
-      component={JenjangListScreen}
-      options={{ headerTitle: 'Daftar Jenjang' }}
-    />
-    <MasterDataStack.Screen
-      name="JenjangForm"
-      component={JenjangFormScreen}
-      options={({ route }) => ({
-        headerTitle: route.params?.isEdit ? 'Edit Jenjang' : 'Tambah Jenjang',
-      })}
-    />
-    <MasterDataStack.Screen
-      name="JenjangDetail"
-      component={JenjangDetailScreen}
-      options={{ headerTitle: 'Detail Jenjang' }}
-    />
-    <MasterDataStack.Screen
-      name="MataPelajaranList"
-      component={MataPelajaranListScreen}
-      options={{ headerTitle: 'Daftar Mata Pelajaran' }}
-    />
-    <MasterDataStack.Screen
-      name="MataPelajaranForm"
-      component={MataPelajaranFormScreen}
-      options={({ route }) => ({
-        headerTitle: route.params?.isEdit ? 'Edit Mata Pelajaran' : 'Tambah Mata Pelajaran',
-      })}
-    />
-    <MasterDataStack.Screen
-      name="MataPelajaranDetail"
-      component={MataPelajaranDetailScreen}
-      options={{ headerTitle: 'Detail Mata Pelajaran' }}
-    />
-    <MasterDataStack.Screen
-      name="KelasList"
-      component={KelasListScreen}
-      options={{ headerTitle: 'Daftar Kelas' }}
-    />
-    <MasterDataStack.Screen
-      name="KelasForm"
-      component={KelasFormScreen}
-      options={({ route }) => ({
-        headerTitle: route.params?.isEdit ? 'Edit Kelas' : 'Tambah Kelas',
-      })}
-    />
-    <MasterDataStack.Screen
-      name="KelasDetail"
-      component={KelasDetailScreen}
-      options={{ headerTitle: 'Detail Kelas' }}
-    />
-    <MasterDataStack.Screen
-      name="MateriList"
-      component={MateriListScreen}
-      options={{ headerTitle: 'Daftar Materi' }}
-    />
-    <MasterDataStack.Screen
-      name="MateriForm"
-      component={MateriFormScreen}
-      options={({ route }) => ({
-        headerTitle: route.params?.isEdit ? 'Edit Materi' : 'Tambah Materi',
-      })}
-    />
-    <MasterDataStack.Screen
-      name="MateriDetail"
-      component={MateriDetailScreen}
-      options={{ headerTitle: 'Detail Materi' }}
+      name="Entity"
+      component={EntityScreen}
+      options={({ route }) => {
+        const { entityType, mode, itemId, item } = route.params || {};
+        
+        // Dynamic header title based on entity and mode
+        try {
+          return {
+            headerTitle: getEntityTitle(entityType, mode, item)
+          };
+        } catch (error) {
+          console.warn('Error getting entity title:', error);
+          return { headerTitle: 'Entity' };
+        }
+      }}
     />
   </MasterDataStack.Navigator>
 );
 
-// Akademik Stack Navigator
+// Akademik Stack Navigator (REFACTORED - 4 screens → 1 screen + special)
 const AkademikStackNavigator = () => (
   <AkademikStack.Navigator>
     <AkademikStack.Screen
@@ -187,23 +128,25 @@ const AkademikStackNavigator = () => (
       component={AkademikMenuScreen}
       options={{ headerTitle: 'Akademik' }}
     />
+    {/* Universal Entity Screen - handles Kurikulum CRUD operations */}
     <AkademikStack.Screen
-      name="KurikulumList"
-      component={KurikulumListScreen}
-      options={{ headerTitle: 'Daftar Kurikulum' }}
+      name="Entity"
+      component={EntityScreen}
+      options={({ route }) => {
+        const { entityType, mode, itemId, item } = route.params || {};
+        
+        // Dynamic header title based on entity and mode
+        try {
+          return {
+            headerTitle: getEntityTitle(entityType, mode, item)
+          };
+        } catch (error) {
+          console.warn('Error getting entity title:', error);
+          return { headerTitle: 'Entity' };
+        }
+      }}
     />
-    <AkademikStack.Screen
-      name="KurikulumForm"
-      component={KurikulumFormScreen}
-      options={({ route }) => ({
-        headerTitle: route.params?.isEdit ? 'Edit Kurikulum' : 'Tambah Kurikulum',
-      })}
-    />
-    <AkademikStack.Screen
-      name="KurikulumDetail"
-      component={KurikulumDetailScreen}
-      options={{ headerTitle: 'Detail Kurikulum' }}
-    />
+    {/* Keep special screens with complex logic */}
     <AkademikStack.Screen
       name="AssignMateri"
       component={AssignMateriScreen}
@@ -212,7 +155,7 @@ const AkademikStackNavigator = () => (
   </AkademikStack.Navigator>
 );
 
-// Profile Stack Navigator
+// Profile Stack Navigator (unchanged)
 const ProfileStackNavigator = () => (
   <ProfileStack.Navigator>
     <ProfileStack.Screen
