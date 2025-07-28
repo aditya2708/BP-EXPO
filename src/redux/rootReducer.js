@@ -20,14 +20,6 @@ import laporanSuratReducer from '../features/adminShelter/redux/laporanSuratSlic
 import laporanAktivitasReducer from '../features/adminShelter/redux/laporanAktivitasSlice';
 import historiLaporanReducer from '../features/adminShelter/redux/historiLaporanSlice';
 
-// ✨ REFACTORED: Unified Entity Reducers (replaces 5 individual slices)
-import { 
-  jenjangReducer,
-  mataPelajaranReducer,
-  kelasReducer,
-  materiReducer,
-  kurikulumReducer
-} from '../features/adminCabang/logic/entityRedux';
 
 const appReducer = combineReducers({
   auth: authReducer,
@@ -50,13 +42,6 @@ const appReducer = combineReducers({
   laporanSurat: laporanSuratReducer,
   laporanAktivitas: laporanAktivitasReducer,
   historiLaporan: historiLaporanReducer,
-  
-  // ✨ REFACTORED: Unified Admin Cabang Entities (5 slices → 5 unified reducers)
-  jenjang: jenjangReducer,
-  mataPelajaran: mataPelajaranReducer,
-  kelas: kelasReducer,
-  materi: materiReducer,
-  kurikulum: kurikulumReducer,
 });
 
 const rootReducer = (state, action) => {
