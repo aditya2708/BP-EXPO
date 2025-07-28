@@ -16,23 +16,8 @@ import AdminCabangDonaturFormScreen from '../features/adminCabang/screens/AdminC
 import AdminCabangDonaturDetailScreen from '../features/adminCabang/screens/AdminCabangDonaturDetailScreen';
 import DonaturFilterScreen from '../features/adminCabang/screens/DonaturFilterScreen';
 
-// Menu screens
-import MasterDataMenuScreen from '../features/adminCabang/screens/MasterDataMenuScreen';
-import AkademikMenuScreen from '../features/adminCabang/screens/AkademikMenuScreen';
-
-// Universal Entity Screen (replaces 16+ individual screens)
-import EntityScreen from '../features/adminCabang/screens/EntityScreen';
-
-// Special screens (keep for now - complex logic)
-import AssignMateriScreen from '../features/adminCabang/screens/akademik/kurikulum/AssignMateriScreen';
-
-// Helper for dynamic headers
-import { getEntityTitle } from '../features/adminCabang/logic/entityHelpers';
-
 const Tab = createBottomTabNavigator();
 const DashboardStack = createStackNavigator();
-const MasterDataStack = createStackNavigator();
-const AkademikStack = createStackNavigator();
 const ProfileStack = createStackNavigator();
 
 // Dashboard Stack Navigator
@@ -91,69 +76,7 @@ const DashboardStackNavigator = () => (
   </DashboardStack.Navigator>
 );
 
-// Master Data Stack Navigator (REFACTORED - 12 screens → 1 screen)
-const MasterDataStackNavigator = () => (
-  <MasterDataStack.Navigator>
-    <MasterDataStack.Screen
-      name="MasterDataMenu"
-      component={MasterDataMenuScreen}
-      options={{ headerTitle: 'Master Data' }}
-    />
-    {/* Universal Entity Screen - handles all Master Data CRUD operations */}
-    <MasterDataStack.Screen
-      name="MasterDataEntity"
-      component={EntityScreen}
-      options={({ route }) => {
-        const { entityType, mode, itemId, item } = route.params || {};
-        
-        // Dynamic header title based on entity and mode
-        try {
-          return {
-            headerTitle: getEntityTitle(entityType, mode, item)
-          };
-        } catch (error) {
-          console.warn('Error getting entity title:', error);
-          return { headerTitle: 'Master Data' };
-        }
-      }}
-    />
-  </MasterDataStack.Navigator>
-);
 
-// Akademik Stack Navigator (REFACTORED - 4 screens → 1 screen + special)
-const AkademikStackNavigator = () => (
-  <AkademikStack.Navigator>
-    <AkademikStack.Screen
-      name="AkademikMenu"
-      component={AkademikMenuScreen}
-      options={{ headerTitle: 'Akademik' }}
-    />
-    {/* Universal Entity Screen - handles Kurikulum CRUD operations */}
-    <AkademikStack.Screen
-      name="AkademikEntity"
-      component={EntityScreen}
-      options={({ route }) => {
-        const { entityType, mode, itemId, item } = route.params || {};
-        
-        // Dynamic header title based on entity and mode
-        try {
-          return {
-            headerTitle: getEntityTitle(entityType, mode, item)
-          };
-        } catch (error) {
-          console.warn('Error getting entity title:', error);
-          return { headerTitle: 'Akademik' };
-        }
-      }}
-    />
-    {/* Keep special screens with complex logic */}
-    <AkademikStack.Screen
-      name="AssignMateri"
-      component={AssignMateriScreen}
-      options={{ headerTitle: 'Assign Materi' }}
-    />
-  </AkademikStack.Navigator>
-);
 
 // Profile Stack Navigator
 const ProfileStackNavigator = () => (
