@@ -16,6 +16,9 @@ import AdminCabangDonaturFormScreen from '../features/adminCabang/screens/AdminC
 import AdminCabangDonaturDetailScreen from '../features/adminCabang/screens/AdminCabangDonaturDetailScreen';
 import DonaturFilterScreen from '../features/adminCabang/screens/DonaturFilterScreen';
 
+// Master Data Navigator
+import MasterDataStackNavigator from '../features/adminCabang/navigation/MasterDataStackNavigator';
+
 const Tab = createBottomTabNavigator();
 const DashboardStack = createStackNavigator();
 const ProfileStack = createStackNavigator();
@@ -76,8 +79,6 @@ const DashboardStackNavigator = () => (
   </DashboardStack.Navigator>
 );
 
-
-
 // Profile Stack Navigator
 const ProfileStackNavigator = () => (
   <ProfileStack.Navigator>
@@ -96,7 +97,6 @@ const AdminCabangNavigator = () => (
         let iconName;
         if (route.name === 'Home') iconName = focused ? 'grid' : 'grid-outline';
         else if (route.name === 'MasterData') iconName = focused ? 'library' : 'library-outline';
-        else if (route.name === 'Akademik') iconName = focused ? 'school' : 'school-outline';
         else if (route.name === 'Profile') iconName = focused ? 'person-circle' : 'person-circle-outline';
         return <Ionicons name={iconName} size={size} color={color} />;
       },
@@ -114,11 +114,6 @@ const AdminCabangNavigator = () => (
       name="MasterData"
       component={MasterDataStackNavigator}
       options={{ tabBarLabel: 'Master Data' }}
-    />
-    <Tab.Screen
-      name="Akademik"
-      component={AkademikStackNavigator}
-      options={{ tabBarLabel: 'Akademik' }}
     />
     <Tab.Screen
       name="Profile"
