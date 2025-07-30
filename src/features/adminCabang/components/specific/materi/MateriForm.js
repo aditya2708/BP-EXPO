@@ -1,100 +1,220 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
-import TextInput from '../../../../../common/components/TextInput';
-import ActionButton from '../../shared/ActionButton';
+// src/features/adminCabang/components/specific/materi/MateriForm.js
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import {
+  View, Text, TextInput, TouchableOpacity, Switch, StyleSheet, Alert, ScrollView
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import BaseFormScreen from '../../base/BaseFormScreen';
 import CascadeDropdown from '../../shared/CascadeDropdown';
-import { useCascadeData } from '../../../hooks/useCascadeData';
-import { useMateri } from '../../../hooks/useMateri';
+import DropdownSelector from '../../shared/DropdownSelector';
+import { useStoreSelectors } from '../../../stores';
+import { useFormValidation } from '../../../hooks';
+import { ENTITIES } from '../../../stores/masterDataStore';
 
-const MateriForm = ({ 
-  initialData = null, 
-  mode = 'create',
-  onSubmit,
-  onCancel,
-  submitting = false
+/**
+ * MateriForm - Form untuk create/edit materi dengan triple cascade dependencies
+ * Supports jenjang > mataPelajaran > kelas > materi validation
+ */
+const MateriForm = ({
+  mode: propMode,
+  initialData: propInitialData,
+  onSuccess: propOnSuccess,
+  onCancel: propOnCancel
 }) => {
-  const { data, loading, loadMataPelajaran, loadKelas } = useCascadeData({ includeMateri: false });
-  const { getUsageAnalytics } = useMateri();
+  const route = useRoute();
+  const navigation = useNavigation();
   
-  const [formData, setFormData] = useState({
-    id_mata_pelajaran: '',
-    id_kelas: '',
-    nama_materi: ''
+  // Get params from route or props
+  const mode = propMode || route.params?.mode || 'create';
+  const routeInitialData = route.params?.item || {};
+  const initialData = propInitialData || routeInitialData;
+  
+  // ==================== ZUSTAND STORES ====================
+  const masterDataActions = useStoreSelectors.masterData.actions();
+  const cascadeActions = useStoreSelectors.cascade.actions();
+  const uiActions = useStoreSelectors.ui.actions();
+  
+  const materiData = useStoreSelectors.masterData.entitiesArray(ENTITIES.MATERI);
+  const loading = useStoreSelectors.ui.loading(ENTITIES.MATERI, mode === 'create' ? 'creating' : 'updating');
+  const jenjangOptions = useStoreSelectors.cascade.jenjangOptions();
+  const selectedJenjang = useStoreSelectors.cascade.selected('jenjang');
+  const selectedMataPelajaran = useStoreSelectors.cascade.selected('mataPelajaran');
+  const selectedKelas = useStoreSelectors.cascade.selected('kelas');
+  
+  // ==================== LOCAL STATE ====================
+  const [formData, setFormData] = useState(() => getInitialFormData());
+  const [errors, setErrors] = useState({});
+  const [isDirty, setIsDirty] = useState(false);
+  const [cascadeData, setCascadeData] = useState({
+    jenjang: [],
+    mataPelajaran: [],
+    kelas: []
   });
   
-  const [selectedJenjang, setSelectedJenjang] = useState('');
-  const [errors, setErrors] = useState({});
-  const [usageInfo, setUsageInfo] = useState(null);
-
-  // Initialize form
+  // ==================== FORM VALIDATION ====================
+  const { validateForm, validateField, clearFieldError } = useFormValidation();
+  
+  function getInitialFormData() {
+    if (mode === 'edit') {
+      return {
+        nama_materi: initialData.nama_materi || '',
+        kode_materi: initialData.kode_materi || '',
+        deskripsi: initialData.deskripsi || '',
+        id_mata_pelajaran: initialData.id_mata_pelajaran || null,
+        id_kelas: initialData.id_kelas || null,
+        is_active: initialData.is_active !== false
+      };
+    }
+    
+    return {
+      nama_materi: '',
+      kode_materi: '',
+      deskripsi: '',
+      id_mata_pelajaran: null,
+      id_kelas: null,
+      is_active: true
+    };
+  }
+  
+  // ==================== COMPUTED VALUES ====================
+  
+  const mataPelajaranOptions = useMemo(() => {
+    return useStoreSelectors.cascade.mataPelajaranOptions(selectedJenjang);
+  }, [selectedJenjang]);
+  
+  const kelasOptions = useMemo(() => {
+    return useStoreSelectors.cascade.kelasOptions(selectedJenjang);
+  }, [selectedJenjang]);
+  
+  const isEditMode = mode === 'edit';
+  const formTitle = isEditMode ? 'Edit Materi' : 'Tambah Materi';
+  
+  // Validate triple dependency consistency
+  const dependencyValidation = useMemo(() => {
+    if (!formData.id_mata_pelajaran || !formData.id_kelas) {
+      return { valid: true };
+    }
+    
+    const mataPelajaran = cascadeData.mataPelajaran.find(
+      mp => mp.value === formData.id_mata_pelajaran?.toString()
+    );
+    const kelas = cascadeData.kelas.find(
+      k => k.value === formData.id_kelas?.toString()
+    );
+    
+    if (mataPelajaran && kelas) {
+      const mpJenjang = mataPelajaran.data?.id_jenjang;
+      const kelasJenjang = kelas.data?.id_jenjang;
+      
+      if (mpJenjang && kelasJenjang && mpJenjang !== kelasJenjang) {
+        return {
+          valid: false,
+          message: 'Mata pelajaran dan kelas harus berada dalam jenjang yang sama'
+        };
+      }
+    }
+    
+    return { valid: true };
+  }, [formData.id_mata_pelajaran, formData.id_kelas, cascadeData]);
+  
+  // ==================== VALIDATION RULES ====================
+  
+  const checkNamaUnique = useCallback(async (value) => {
+    if (!value || value.length < 2) return true;
+    
+    const existing = materiData.find(item => 
+      item.nama_materi?.toLowerCase() === value.toLowerCase() &&
+      item.id_mata_pelajaran === formData.id_mata_pelajaran &&
+      item.id_kelas === formData.id_kelas &&
+      item.id_materi !== initialData.id_materi
+    );
+    
+    return !existing;
+  }, [materiData, formData.id_mata_pelajaran, formData.id_kelas, initialData.id_materi]);
+  
+  const checkKodeUnique = useCallback(async (value) => {
+    if (!value || value.length < 2) return true;
+    
+    const existing = materiData.find(item => 
+      item.kode_materi?.toLowerCase() === value.toLowerCase() &&
+      item.id_materi !== initialData.id_materi
+    );
+    
+    return !existing;
+  }, [materiData, initialData.id_materi]);
+  
+  const validationRules = {
+    nama_materi: [
+      'required',
+      { type: 'maxLength', params: [255] },
+      { type: 'unique', params: [checkNamaUnique] }
+    ],
+    kode_materi: [
+      { type: 'maxLength', params: [50] },
+      { type: 'unique', params: [checkKodeUnique] }
+    ],
+    id_mata_pelajaran: [
+      'required'
+    ],
+    id_kelas: [
+      'required'
+    ],
+    deskripsi: [
+      { type: 'maxLength', params: [1000] }
+    ]
+  };
+  
+  // ==================== EFFECTS ====================
+  
+  // Initialize cascade selections on edit mode
   useEffect(() => {
-    if (mode === 'edit' && initialData) {
-      setFormData({
-        id_mata_pelajaran: initialData.id_mata_pelajaran?.toString() || '',
-        id_kelas: initialData.id_kelas?.toString() || '',
-        nama_materi: initialData.nama_materi || ''
-      });
-      
-      // Set initial jenjang selection
-      if (initialData.kelas?.id_jenjang) {
-        setSelectedJenjang(initialData.kelas.id_jenjang.toString());
+    if (mode === 'edit' && initialData.mataPelajaran && initialData.kelas) {
+      const jenjangId = initialData.mataPelajaran.id_jenjang || initialData.kelas.id_jenjang;
+      if (jenjangId) {
+        cascadeActions.setSelected('jenjang', jenjangId.toString());
       }
-      
-      // Load usage info for edit mode
-      if (initialData.id_materi) {
-        loadUsageInfo(initialData.id_materi);
+      cascadeActions.setSelected('mataPelajaran', initialData.id_mata_pelajaran?.toString());
+      cascadeActions.setSelected('kelas', initialData.id_kelas?.toString());
+    }
+  }, [mode, initialData, cascadeActions]);
+  
+  // Load cascade data
+  useEffect(() => {
+    const loadCascadeData = async () => {
+      try {
+        const jenjangData = await masterDataActions.load(ENTITIES.JENJANG);
+        const mpData = await masterDataActions.load(ENTITIES.MATA_PELAJARAN);
+        const kelasData = await masterDataActions.load(ENTITIES.KELAS);
+        
+        setCascadeData({
+          jenjang: jenjangData || [],
+          mataPelajaran: mpData || [],
+          kelas: kelasData || []
+        });
+      } catch (err) {
+        console.error('Error loading cascade data:', err);
       }
+    };
+    
+    loadCascadeData();
+  }, [masterDataActions]);
+  
+  // Track form changes
+  useEffect(() => {
+    if (mode === 'create' || JSON.stringify(formData) !== JSON.stringify(getInitialFormData())) {
+      setIsDirty(true);
+    } else {
+      setIsDirty(false);
     }
-  }, [mode, initialData]);
-
-  const loadUsageInfo = async (materiId) => {
-    try {
-      const usage = await getUsageAnalytics(materiId);
-      setUsageInfo(usage);
-    } catch (err) {
-      console.error('Error loading usage info:', err);
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.id_mata_pelajaran) {
-      newErrors.id_mata_pelajaran = 'Mata pelajaran harus dipilih';
-    }
-
-    if (!formData.id_kelas) {
-      newErrors.id_kelas = 'Kelas harus dipilih';
-    }
-
-    if (!formData.nama_materi.trim()) {
-      newErrors.nama_materi = 'Nama materi harus diisi';
-    }
-
-    // Validate jenjang consistency
-    if (formData.id_mata_pelajaran && formData.id_kelas) {
-      const mataPelajaran = data.mata_pelajaran.find(
-        mp => mp.id_mata_pelajaran == formData.id_mata_pelajaran
-      );
-      const kelas = data.kelas.find(
-        k => k.id_kelas == formData.id_kelas
-      );
-      
-      if (mataPelajaran && kelas) {
-        if (mataPelajaran.id_jenjang && mataPelajaran.id_jenjang !== kelas.id_jenjang) {
-          newErrors.consistency = 'Mata pelajaran dan kelas harus berada dalam jenjang yang sama';
-        }
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleInputChange = (field, value) => {
+  }, [formData, mode]);
+  
+  // ==================== HANDLERS ====================
+  
+  const handleInputChange = useCallback((field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
-    // Clear errors
+    // Clear field errors
     if (errors[field]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -102,282 +222,386 @@ const MateriForm = ({
         return newErrors;
       });
     }
-
-    if ((field === 'id_mata_pelajaran' || field === 'id_kelas') && errors.consistency) {
+    
+    // Handle cascade dependencies
+    if (field === 'id_mata_pelajaran' || field === 'id_kelas') {
+      // Clear dependency validation error
+      if (errors.dependency) {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.dependency;
+          return newErrors;
+        });
+      }
+    }
+  }, [errors]);
+  
+  const handleJenjangChange = useCallback((jenjangId) => {
+    cascadeActions.setSelected('jenjang', jenjangId);
+    
+    // Clear mata pelajaran dan kelas when jenjang changes
+    if (formData.id_mata_pelajaran || formData.id_kelas) {
+      setFormData(prev => ({
+        ...prev,
+        id_mata_pelajaran: null,
+        id_kelas: null
+      }));
+      cascadeActions.setSelected('mataPelajaran', null);
+      cascadeActions.setSelected('kelas', null);
+    }
+  }, [cascadeActions, formData]);
+  
+  const handleMataPelajaranChange = useCallback((mataPelajaranId) => {
+    setFormData(prev => ({ ...prev, id_mata_pelajaran: mataPelajaranId }));
+    cascadeActions.setSelected('mataPelajaran', mataPelajaranId);
+    
+    // Clear dependency error if exists
+    if (errors.dependency) {
       setErrors(prev => {
         const newErrors = { ...prev };
-        delete newErrors.consistency;
+        delete newErrors.dependency;
         return newErrors;
       });
     }
-  };
-
-  const handleJenjangChange = async (jenjangId) => {
-    setSelectedJenjang(jenjangId);
+  }, [cascadeActions, errors]);
+  
+  const handleKelasChange = useCallback((kelasId) => {
+    setFormData(prev => ({ ...prev, id_kelas: kelasId }));
+    cascadeActions.setSelected('kelas', kelasId);
     
-    // Reset mata pelajaran and kelas
-    setFormData(prev => ({
-      ...prev,
-      id_mata_pelajaran: '',
-      id_kelas: ''
-    }));
-    
-    // Clear related errors
-    setErrors(prev => {
-      const newErrors = { ...prev };
-      delete newErrors.id_mata_pelajaran;
-      delete newErrors.id_kelas;
-      delete newErrors.consistency;
-      return newErrors;
-    });
-
-    // Load filtered data
-    if (jenjangId) {
-      await loadMataPelajaran(jenjangId);
-      await loadKelas(jenjangId);
-    }
-  };
-
-  const handleMataPelajaranChange = (mataPelajaranId) => {
-    handleInputChange('id_mata_pelajaran', mataPelajaranId);
-    
-    // Reset kelas
-    setFormData(prev => ({ ...prev, id_kelas: '' }));
-    
-    if (errors.id_kelas) {
+    // Clear dependency error if exists
+    if (errors.dependency) {
       setErrors(prev => {
         const newErrors = { ...prev };
-        delete newErrors.id_kelas;
+        delete newErrors.dependency;
         return newErrors;
       });
     }
-  };
-
-  const handleSubmit = () => {
-    if (!validateForm()) return;
+  }, [cascadeActions, errors]);
+  
+  const handleValidation = useCallback(async () => {
+    const newErrors = {};
     
-    const submitData = {
-      ...formData,
-      id_mata_pelajaran: parseInt(formData.id_mata_pelajaran),
-      id_kelas: parseInt(formData.id_kelas)
-    };
+    // Basic field validation
+    if (!formData.nama_materi?.trim()) {
+      newErrors.nama_materi = 'Nama materi harus diisi';
+    }
     
-    onSubmit(submitData);
-  };
-
-  const handleCancel = () => {
-    if (submitting) return;
+    if (!formData.id_mata_pelajaran) {
+      newErrors.id_mata_pelajaran = 'Mata pelajaran harus dipilih';
+    }
     
-    Alert.alert(
-      'Batal',
-      'Yakin ingin membatalkan? Data yang belum disimpan akan hilang.',
-      [
-        { text: 'Tidak', style: 'cancel' },
-        { text: 'Ya, Batal', style: 'destructive', onPress: onCancel }
-      ]
-    );
-  };
-
-  // Filter data based on selections
-  const filteredMataPelajaran = data.mata_pelajaran.filter(mp => 
-    !selectedJenjang || !mp.id_jenjang || mp.id_jenjang == selectedJenjang
-  );
-
-  const filteredKelas = data.kelas.filter(k => 
-    !selectedJenjang || k.id_jenjang == selectedJenjang
-  );
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.form}>
-        {/* Usage Warning for Edit Mode */}
-        {mode === 'edit' && usageInfo && usageInfo.kurikulum_count > 0 && (
-          <View style={styles.warningCard}>
-            <Text style={styles.warningTitle}>⚠️ Peringatan</Text>
-            <Text style={styles.warningText}>
-              Materi ini digunakan dalam {usageInfo.kurikulum_count} kurikulum. 
-              Perubahan akan mempengaruhi kurikulum tersebut.
-            </Text>
-          </View>
-        )}
-
-        {/* Jenjang Filter */}
-        <CascadeDropdown
-          label="Jenjang (Filter)"
-          placeholder="Pilih jenjang untuk filter"
-          options={data.jenjang}
-          value={selectedJenjang}
-          onValueChange={handleJenjangChange}
-          keyExtractor="id_jenjang"
-          labelExtractor="nama_jenjang"
-          loading={loading.jenjang}
-        />
-
-        {/* Mata Pelajaran */}
-        <CascadeDropdown
-          label="Mata Pelajaran *"
-          placeholder="Pilih mata pelajaran"
-          options={filteredMataPelajaran}
-          value={formData.id_mata_pelajaran}
-          onValueChange={handleMataPelajaranChange}
-          keyExtractor="id_mata_pelajaran"
-          labelExtractor="nama_mata_pelajaran"
-          error={errors.id_mata_pelajaran}
-          disabled={submitting}
-          loading={loading.mata_pelajaran}
-          emptyText={selectedJenjang ? "Tidak ada mata pelajaran untuk jenjang ini" : "Pilih jenjang terlebih dahulu"}
-        />
-
-        {/* Kelas */}
-        <CascadeDropdown
-          label="Kelas *"
-          placeholder="Pilih kelas"
-          options={filteredKelas}
-          value={formData.id_kelas}
-          onValueChange={(value) => handleInputChange('id_kelas', value)}
-          keyExtractor="id_kelas"
-          labelExtractor={(item) => `${item.nama_kelas} (${item.jenis_kelas})`}
-          error={errors.id_kelas}
-          disabled={submitting}
-          loading={loading.kelas}
-          emptyText={selectedJenjang ? "Tidak ada kelas untuk jenjang ini" : "Pilih jenjang terlebih dahulu"}
-        />
-
-        {/* Consistency Error */}
-        {errors.consistency && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{errors.consistency}</Text>
-          </View>
-        )}
-
-        {/* Nama Materi */}
-        <TextInput
-          label="Nama Materi *"
-          value={formData.nama_materi}
-          onChangeText={(value) => handleInputChange('nama_materi', value)}
-          placeholder="Nama materi pembelajaran"
-          error={errors.nama_materi}
-          disabled={submitting}
-        />
-
-        {/* Selected Info */}
-        {formData.id_mata_pelajaran && formData.id_kelas && (
-          <View style={styles.infoCard}>
-            <Text style={styles.infoTitle}>Informasi Materi</Text>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Jenjang:</Text>
-              <Text style={styles.infoValue}>
-                {data.jenjang.find(j => j.id_jenjang == selectedJenjang)?.nama_jenjang || '-'}
-              </Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Mata Pelajaran:</Text>
-              <Text style={styles.infoValue}>
-                {data.mata_pelajaran.find(mp => mp.id_mata_pelajaran == formData.id_mata_pelajaran)?.nama_mata_pelajaran || '-'}
-              </Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Kelas:</Text>
-              <Text style={styles.infoValue}>
-                {data.kelas.find(k => k.id_kelas == formData.id_kelas)?.nama_kelas || '-'}
-              </Text>
-            </View>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.actions}>
-        <ActionButton
-          title="Batal"
-          variant="outline"
-          onPress={handleCancel}
-          disabled={submitting}
-          style={styles.cancelButton}
-        />
+    if (!formData.id_kelas) {
+      newErrors.id_kelas = 'Kelas harus dipilih';
+    }
+    
+    // Triple dependency validation
+    if (!dependencyValidation.valid) {
+      newErrors.dependency = dependencyValidation.message;
+    }
+    
+    // Unique validation
+    if (formData.nama_materi?.trim()) {
+      const isNamaUnique = await checkNamaUnique(formData.nama_materi.trim());
+      if (!isNamaUnique) {
+        newErrors.nama_materi = 'Nama materi sudah digunakan untuk kombinasi mata pelajaran dan kelas ini';
+      }
+    }
+    
+    if (formData.kode_materi?.trim()) {
+      const isKodeUnique = await checkKodeUnique(formData.kode_materi.trim());
+      if (!isKodeUnique) {
+        newErrors.kode_materi = 'Kode materi sudah digunakan';
+      }
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [formData, dependencyValidation, checkNamaUnique, checkKodeUnique]);
+  
+  const handleSubmit = useCallback(async () => {
+    try {
+      const isValid = await handleValidation();
+      if (!isValid) {
+        Alert.alert('Validasi Gagal', 'Mohon periksa kembali data yang diinput');
+        return;
+      }
+      
+      const submitData = {
+        ...formData,
+        nama_materi: formData.nama_materi.trim(),
+        kode_materi: formData.kode_materi?.trim() || null,
+        deskripsi: formData.deskripsi?.trim() || null
+      };
+      
+      let result;
+      if (isEditMode) {
+        result = await masterDataActions.update(ENTITIES.MATERI, initialData.id_materi, submitData);
+      } else {
+        result = await masterDataActions.create(ENTITIES.MATERI, submitData);
+      }
+      
+      if (result.success) {
+        const message = `Materi berhasil ${isEditMode ? 'diperbarui' : 'ditambahkan'}`;
+        uiActions.setSuccess(message, isEditMode ? 'update' : 'create');
+        setIsDirty(false);
         
-        <ActionButton
-          title={mode === 'create' ? 'Simpan' : 'Update'}
-          onPress={handleSubmit}
-          loading={submitting}
-          disabled={Object.keys(errors).length > 0}
-          style={styles.submitButton}
-        />
-      </View>
-    </View>
+        if (propOnSuccess) {
+          propOnSuccess(result.data);
+        } else {
+          navigation.goBack();
+        }
+      }
+    } catch (err) {
+      uiActions.setError(ENTITIES.MATERI, err.message || 'Gagal menyimpan data materi');
+    }
+  }, [formData, handleValidation, isEditMode, masterDataActions, uiActions, initialData, propOnSuccess, navigation]);
+  
+  const handleCancel = useCallback(() => {
+    if (isDirty) {
+      Alert.alert(
+        'Konfirmasi',
+        'Ada perubahan yang belum disimpan. Apakah Anda yakin ingin keluar?',
+        [
+          { text: 'Tidak', style: 'cancel' },
+          { 
+            text: 'Ya', 
+            onPress: () => {
+              if (propOnCancel) {
+                propOnCancel();
+              } else {
+                navigation.goBack();
+              }
+            }
+          }
+        ]
+      );
+    } else {
+      if (propOnCancel) {
+        propOnCancel();
+      } else {
+        navigation.goBack();
+      }
+    }
+  }, [isDirty, propOnCancel, navigation]);
+  
+  // ==================== RENDER ====================
+  
+  return (
+    <BaseFormScreen
+      title={formTitle}
+      loading={loading}
+      onSubmit={handleSubmit}
+      onCancel={handleCancel}
+      isDirty={isDirty}
+      submitText={isEditMode ? 'Update' : 'Simpan'}
+    >
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Triple Dependency Alert */}
+        {errors.dependency && (
+          <View style={styles.errorAlert}>
+            <Ionicons name="warning-outline" size={20} color="#dc3545" />
+            <Text style={styles.errorAlertText}>{errors.dependency}</Text>
+          </View>
+        )}
+        
+        {/* Jenjang Selection */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Pilih Jenjang</Text>
+          <CascadeDropdown
+            label="Jenjang"
+            value={selectedJenjang}
+            options={jenjangOptions}
+            onValueChange={handleJenjangChange}
+            placeholder="Pilih jenjang terlebih dahulu"
+            required
+          />
+        </View>
+        
+        {/* Mata Pelajaran Selection */}
+        {selectedJenjang && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Pilih Mata Pelajaran</Text>
+            <DropdownSelector
+              label="Mata Pelajaran"
+              value={formData.id_mata_pelajaran}
+              options={mataPelajaranOptions}
+              onValueChange={handleMataPelajaranChange}
+              placeholder="Pilih mata pelajaran"
+              error={errors.id_mata_pelajaran}
+              required
+            />
+          </View>
+        )}
+        
+        {/* Kelas Selection */}
+        {selectedJenjang && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Pilih Kelas</Text>
+            <DropdownSelector
+              label="Kelas"
+              value={formData.id_kelas}
+              options={kelasOptions}
+              onValueChange={handleKelasChange}
+              placeholder="Pilih kelas"
+              error={errors.id_kelas}
+              required
+            />
+          </View>
+        )}
+        
+        {/* Materi Details */}
+        {formData.id_mata_pelajaran && formData.id_kelas && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Detail Materi</Text>
+            
+            {/* Nama Materi */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Nama Materi <Text style={styles.required}>*</Text>
+              </Text>
+              <TextInput
+                style={[styles.input, errors.nama_materi && styles.inputError]}
+                value={formData.nama_materi}
+                onChangeText={(value) => handleInputChange('nama_materi', value)}
+                placeholder="Masukkan nama materi"
+                maxLength={255}
+              />
+              {errors.nama_materi && (
+                <Text style={styles.errorText}>{errors.nama_materi}</Text>
+              )}
+            </View>
+            
+            {/* Kode Materi */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Kode Materi</Text>
+              <TextInput
+                style={[styles.input, errors.kode_materi && styles.inputError]}
+                value={formData.kode_materi}
+                onChangeText={(value) => handleInputChange('kode_materi', value)}
+                placeholder="Masukkan kode materi (opsional)"
+                maxLength={50}
+              />
+              {errors.kode_materi && (
+                <Text style={styles.errorText}>{errors.kode_materi}</Text>
+              )}
+            </View>
+            
+            {/* Deskripsi */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Deskripsi</Text>
+              <TextInput
+                style={[styles.textArea, errors.deskripsi && styles.inputError]}
+                value={formData.deskripsi}
+                onChangeText={(value) => handleInputChange('deskripsi', value)}
+                placeholder="Masukkan deskripsi materi (opsional)"
+                multiline
+                numberOfLines={4}
+                maxLength={1000}
+              />
+              {errors.deskripsi && (
+                <Text style={styles.errorText}>{errors.deskripsi}</Text>
+              )}
+            </View>
+            
+            {/* Status Aktif */}
+            <View style={styles.switchGroup}>
+              <Text style={styles.label}>Status Aktif</Text>
+              <Switch
+                value={formData.is_active}
+                onValueChange={(value) => handleInputChange('is_active', value)}
+                trackColor={{ false: '#767577', true: '#28a745' }}
+                thumbColor={formData.is_active ? '#fff' : '#f4f3f4'}
+              />
+            </View>
+          </View>
+        )}
+      </ScrollView>
+    </BaseFormScreen>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1
+    flex: 1,
+    backgroundColor: '#f8f9fa'
   },
-  form: {
-    flex: 1
+  section: {
+    backgroundColor: '#fff',
+    margin: 16,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2
   },
-  warningCard: {
-    backgroundColor: '#fff3cd',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#ffc107'
-  },
-  warningTitle: {
-    fontSize: 14,
+  sectionTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#856404',
-    marginBottom: 4
-  },
-  warningText: {
-    fontSize: 12,
-    color: '#856404'
-  },
-  errorContainer: {
-    backgroundColor: '#f8d7da',
-    padding: 12,
-    borderRadius: 8,
+    color: '#333',
     marginBottom: 16
   },
-  errorText: {
-    fontSize: 14,
-    color: '#721c24',
-    textAlign: 'center'
+  inputGroup: {
+    marginBottom: 16
   },
-  infoCard: {
-    backgroundColor: '#e7f3ff',
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 16
-  },
-  infoTitle: {
+  label: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#007bff',
+    fontWeight: '500',
+    color: '#333',
     marginBottom: 8
   },
-  infoRow: {
+  required: {
+    color: '#dc3545'
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#fff'
+  },
+  inputError: {
+    borderColor: '#dc3545'
+  },
+  textArea: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#fff',
+    minHeight: 100,
+    textAlignVertical: 'top'
+  },
+  switchGroup: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4
+    alignItems: 'center',
+    marginBottom: 8
   },
-  infoLabel: {
+  errorText: {
+    color: '#dc3545',
     fontSize: 14,
-    color: '#007bff',
-    fontWeight: '500'
+    marginTop: 4
   },
-  infoValue: {
-    fontSize: 14,
-    color: '#007bff'
-  },
-  actions: {
+  errorAlert: {
     flexDirection: 'row',
-    paddingTop: 16,
-    gap: 12
+    alignItems: 'center',
+    backgroundColor: '#f8d7da',
+    borderColor: '#f5c6cb',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    margin: 16,
+    marginBottom: 8
   },
-  cancelButton: {
-    flex: 1
-  },
-  submitButton: {
+  errorAlertText: {
+    color: '#721c24',
+    fontSize: 14,
+    marginLeft: 8,
     flex: 1
   }
 });

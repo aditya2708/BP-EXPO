@@ -1,36 +1,107 @@
-import React, { useState, useEffect } from 'react';
-import { Alert } from 'react-native';
+// src/features/adminCabang/screens/materi/MateriFormScreen.js
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, StyleSheet, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import BaseFormScreen from '../../../components/base/BaseFormScreen';
-import MateriForm from '../../../components/specific/materi/MateriForm';
-import { useMateri } from '../../../hooks/useMateri';
+import MateriForm from '../../specific/materi/MateriForm';
+import { useStoreSelectors } from '../../../stores';
+import { ENTITIES } from '../../../stores/masterDataStore';
 
+/**
+ * MateriFormScreen - Screen wrapper untuk MateriForm
+ * Handles navigation, success/error states, dan triple dependency context
+ */
 const MateriFormScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   
-  const { mode = 'create', id, item } = route.params || {};
-  const { createMateri, updateMateri, getMateriById, submitting, error, clearError } = useMateri();
+  // ==================== ZUSTAND STORES ====================
+  const uiActions = useStoreSelectors.ui.actions();
+  const masterDataActions = useStoreSelectors.masterData.actions();
   
-  const [initialData, setInitialData] = useState(item || null);
+  // ==================== ROUTE PARAMS ====================
+  const { mode, id, item, contextData } = route.params || {};
+  const isEditMode = mode === 'edit';
+  
+  // Pre-selected values from context (navigation from mata pelajaran or kelas)
+  const preSelectedMataPelajaran = contextData?.id_mata_pelajaran;
+  const preSelectedKelas = contextData?.id_kelas;
+  const preSelectedJenjang = contextData?.id_jenjang;
+  
+  // ==================== LOCAL STATE ====================
+  const [initialData, setInitialData] = useState(null);
   const [loading, setLoading] = useState(false);
-
+  
+  // ==================== EFFECTS ====================
+  
+  // Set navigation header title
   useEffect(() => {
     navigation.setOptions({
-      headerTitle: mode === 'create' ? 'Tambah Materi' : 'Edit Materi'
+      title: isEditMode ? 'Edit Materi' : 'Tambah Materi',
+      headerShown: false // Let the form handle its own header
     });
-  }, [navigation, mode]);
-
+  }, [navigation, isEditMode]);
+  
+  // Fetch initial data for edit mode
   useEffect(() => {
-    if (mode === 'edit' && id && !initialData) {
+    if (isEditMode && id && !item) {
       fetchMateriData();
+    } else if (item) {
+      setInitialData(item);
+    } else if (!isEditMode && (preSelectedMataPelajaran || preSelectedKelas || preSelectedJenjang)) {
+      // Set initial data with pre-selected context
+      setInitialData({
+        id_mata_pelajaran: preSelectedMataPelajaran,
+        id_kelas: preSelectedKelas,
+        nama_materi: '',
+        kode_materi: '',
+        deskripsi: '',
+        is_active: true
+      });
     }
-  }, [mode, id, initialData]);
-
+  }, [isEditMode, id, item, preSelectedMataPelajaran, preSelectedKelas, preSelectedJenjang]);
+  
+  // Handle back button with dirty state check
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      // Check if form has unsaved changes
+      const formState = useStoreSelectors.ui.formState(ENTITIES.MATERI);
+      
+      if (!formState?.dirty) {
+        // No unsaved changes, allow normal back behavior
+        return;
+      }
+      
+      // Prevent default behavior
+      e.preventDefault();
+      
+      // Show confirmation dialog
+      Alert.alert(
+        'Batalkan Perubahan?',
+        'Ada perubahan yang belum disimpan. Yakin ingin keluar?',
+        [
+          { text: 'Lanjut Edit', style: 'cancel' },
+          {
+            text: 'Keluar',
+            style: 'destructive',
+            onPress: () => {
+              // Clear form state and go back
+              uiActions.setFormState(ENTITIES.MATERI, { dirty: false });
+              navigation.dispatch(e.data.action);
+            }
+          }
+        ]
+      );
+    });
+    
+    return unsubscribe;
+  }, [navigation, uiActions]);
+  
+  // ==================== HANDLERS ====================
+  
   const fetchMateriData = async () => {
     setLoading(true);
     try {
-      const result = await getMateriById(id);
+      const result = await masterDataActions.getById(ENTITIES.MATERI, id);
       if (result.success) {
         setInitialData(result.data);
       } else {
@@ -44,68 +115,124 @@ const MateriFormScreen = () => {
       setLoading(false);
     }
   };
-
-  const handleSubmit = async (formData) => {
-    clearError();
+  
+  const handleSuccess = useCallback((data) => {
+    const message = isEditMode 
+      ? `Materi "${data.nama_materi}" berhasil diperbarui`
+      : `Materi "${data.nama_materi}" berhasil ditambahkan`;
     
-    try {
-      let result;
+    // Show success toast
+    uiActions.setSuccess(message, isEditMode ? 'update' : 'create');
+    
+    // Clear form dirty state
+    uiActions.setFormState(ENTITIES.MATERI, { dirty: false });
+    
+    // Navigate based on context
+    if (contextData?.returnTo) {
+      // Return to specific screen with updated data
+      navigation.navigate(contextData.returnTo, {
+        ...contextData.returnParams,
+        refreshData: true,
+        newItemId: data.id_materi
+      });
+    } else {
+      // Normal navigation flow
+      navigation.goBack();
       
-      if (mode === 'create') {
-        result = await createMateri(formData);
-      } else {
-        result = await updateMateri(id, formData);
+      // If creating, optionally navigate to detail screen
+      if (!isEditMode && data.id_materi) {
+        setTimeout(() => {
+          navigation.navigate('MateriDetail', {
+            id: data.id_materi,
+            item: data
+          });
+        }, 100);
       }
-
-      if (result.success) {
-        Alert.alert(
-          'Berhasil',
-          `Materi berhasil ${mode === 'create' ? 'ditambahkan' : 'diperbarui'}`,
-          [{ text: 'OK', onPress: () => navigation.goBack() }]
-        );
-      } else {
-        Alert.alert('Error', result.error || `Gagal ${mode === 'create' ? 'menambah' : 'memperbarui'} materi`);
-      }
-    } catch (err) {
-      Alert.alert('Error', `Gagal ${mode === 'create' ? 'menambah' : 'memperbarui'} materi`);
     }
-  };
-
-  const handleCancel = () => {
-    if (submitting) return;
+  }, [isEditMode, navigation, uiActions, contextData]);
+  
+  const handleCancel = useCallback(() => {
+    // Check if form has changes
+    const formState = useStoreSelectors.ui.formState(ENTITIES.MATERI);
     
-    Alert.alert(
-      'Batal',
-      'Yakin ingin membatalkan? Data yang belum disimpan akan hilang.',
-      [
-        { text: 'Tidak', style: 'cancel' },
-        { text: 'Ya, Batal', style: 'destructive', onPress: () => navigation.goBack() }
-      ]
-    );
-  };
-
-  const handleRetry = () => {
-    clearError();
-    if (mode === 'edit' && id) {
-      fetchMateriData();
+    if (formState?.dirty) {
+      Alert.alert(
+        'Batalkan Perubahan?',
+        'Ada perubahan yang belum disimpan. Yakin ingin keluar?',
+        [
+          { text: 'Lanjut Edit', style: 'cancel' },
+          {
+            text: 'Keluar',
+            style: 'destructive',
+            onPress: () => {
+              uiActions.setFormState(ENTITIES.MATERI, { dirty: false });
+              navigation.goBack();
+            }
+          }
+        ]
+      );
+    } else {
+      navigation.goBack();
     }
-  };
-
+  }, [navigation, uiActions]);
+  
+  const handleError = useCallback((error) => {
+    Alert.alert(
+      'Error',
+      error.message || 'Terjadi kesalahan saat menyimpan data materi',
+      [{ text: 'OK' }]
+    );
+  }, []);
+  
+  // Show context info in development
+  const showContextInfo = useCallback(() => {
+    if (__DEV__ && (preSelectedMataPelajaran || preSelectedKelas || preSelectedJenjang)) {
+      console.log('MateriFormScreen Context:', {
+        preSelectedJenjang,
+        preSelectedMataPelajaran,
+        preSelectedKelas,
+        contextData
+      });
+    }
+  }, [preSelectedJenjang, preSelectedMataPelajaran, preSelectedKelas, contextData]);
+  
+  useEffect(() => {
+    showContextInfo();
+  }, [showContextInfo]);
+  
+  // ==================== RENDER ====================
+  
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        {/* Loading indicator could be added here */}
+      </View>
+    );
+  }
+  
   return (
-    <BaseFormScreen
-      loading={loading}
-      error={error}
-      onRetry={handleRetry}
-    >
+    <View style={styles.container}>
       <MateriForm
-        initialData={initialData}
         mode={mode}
-        onSubmit={handleSubmit}
+        initialData={initialData}
+        onSuccess={handleSuccess}
         onCancel={handleCancel}
-        submitting={submitting}
+        onError={handleError}
       />
-    </BaseFormScreen>
+    </View>
   );
 };
+
+// ==================== STYLES ====================
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa'
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center'
+  }
+});
 
 export default MateriFormScreen;
