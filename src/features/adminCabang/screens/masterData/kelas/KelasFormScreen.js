@@ -1,136 +1,213 @@
-import React, { useState, useEffect } from 'react';
-import { Alert } from 'react-native';
+// src/features/adminCabang/screens/masterData/kelas/KelasFormScreen.js
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet, Alert, ActivityIndicator, Text } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import BaseFormScreen from '../../../components/base/BaseFormScreen';
 import KelasForm from '../../../components/specific/kelas/KelasForm';
-import { useKelas } from '../../../hooks/useKelas';
+import { useStoreSelectors } from '../../../stores';
+import { ENTITIES } from '../../../stores/masterDataStore';
 
+/**
+ * KelasFormScreen - Screen wrapper untuk KelasForm
+ * Handles navigation, route params, data loading, dan success/error states
+ */
 const KelasFormScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   
-  const { mode = 'create', id, item } = route.params || {};
-  const { 
-    createKelas, 
-    updateKelas, 
-    getKelasById, 
-    cascadeData, 
-    fetchCascadeData,
-    submitting, 
-    error, 
-    clearError 
-  } = useKelas();
+  // ==================== ZUSTAND STORES ====================
+  const masterDataActions = useStoreSelectors.masterData.actions();
+  const uiActions = useStoreSelectors.ui.actions();
   
+  const submitting = useStoreSelectors.ui.loading(ENTITIES.KELAS, 'creating') || 
+                    useStoreSelectors.ui.loading(ENTITIES.KELAS, 'updating');
+  const error = useStoreSelectors.ui.error(ENTITIES.KELAS);
+  
+  // ==================== ROUTE PARAMS ====================
+  const { mode = 'create', kelasId, id, item } = route.params || {};
+  const actualId = kelasId || id;
+  const isEditMode = mode === 'edit';
+  
+  // ==================== LOCAL STATE ====================
   const [initialData, setInitialData] = useState(item || null);
   const [loading, setLoading] = useState(false);
-
+  const [dataLoaded, setDataLoaded] = useState(false);
+  
+  // ==================== EFFECTS ====================
+  
+  // Set header title based on mode
   useEffect(() => {
+    let title = 'Tambah Kelas';
+    if (isEditMode) {
+      title = initialData?.nama_kelas ? `Edit ${initialData.nama_kelas}` : 'Edit Kelas';
+    }
+    
     navigation.setOptions({
-      headerTitle: mode === 'create' ? 'Tambah Kelas' : 'Edit Kelas'
+      headerTitle: title,
+      headerBackTitle: 'Kembali'
     });
-  }, [navigation, mode]);
-
+  }, [navigation, isEditMode, initialData]);
+  
+  // Load data for edit mode
   useEffect(() => {
-    if (mode === 'edit' && id && !initialData) {
+    if (isEditMode && actualId && !initialData && !dataLoaded) {
       fetchKelasData();
+    } else if (!isEditMode || initialData) {
+      setDataLoaded(true);
     }
-    if (!cascadeData) {
-      fetchCascadeData();
-    }
-  }, [mode, id, initialData, cascadeData]);
-
-  const fetchKelasData = async () => {
+  }, [isEditMode, actualId, initialData, dataLoaded]);
+  
+  // ==================== HANDLERS ====================
+  
+  const fetchKelasData = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await getKelasById(id);
-      if (result.success) {
-        setInitialData(result.data);
+      // Use the getEntityById selector to get data from store first
+      const existingData = useStoreSelectors.masterData.entityById(ENTITIES.KELAS, actualId);
+      
+      if (existingData) {
+        setInitialData(existingData);
+        setDataLoaded(true);
       } else {
-        Alert.alert('Error', result.error || 'Gagal mengambil data kelas');
-        navigation.goBack();
+        // If not in store, fetch from API
+        const result = await masterDataActions.loadById(ENTITIES.KELAS, actualId);
+        if (result?.success && result.data) {
+          setInitialData(result.data);
+          setDataLoaded(true);
+        } else {
+          throw new Error(result?.message || 'Data kelas tidak ditemukan');
+        }
       }
     } catch (err) {
-      Alert.alert('Error', 'Gagal mengambil data kelas');
-      navigation.goBack();
+      console.error('Error fetching kelas data:', err);
+      
+      Alert.alert(
+        'Error',
+        err.message || 'Gagal mengambil data kelas',
+        [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack()
+          }
+        ]
+      );
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSubmit = async (formData) => {
-    clearError();
+  }, [actualId, masterDataActions, navigation]);
+  
+  const handleSuccess = useCallback((data) => {
+    const kelasName = data.nama_kelas || 'Kelas';
+    const message = isEditMode 
+      ? `Kelas "${kelasName}" berhasil diperbarui`
+      : `Kelas "${kelasName}" berhasil ditambahkan`;
     
-    try {
-      let result;
-      
-      if (mode === 'create') {
-        result = await createKelas(formData);
-      } else {
-        result = await updateKelas(id, formData);
-      }
-
-      if (result.success) {
-        Alert.alert(
-          'Berhasil',
-          `Kelas berhasil ${mode === 'create' ? 'ditambahkan' : 'diperbarui'}`,
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.goBack()
-            }
-          ]
-        );
-      } else {
-        Alert.alert('Error', result.error || `Gagal ${mode === 'create' ? 'menambah' : 'memperbarui'} kelas`);
-      }
-    } catch (err) {
-      Alert.alert('Error', `Gagal ${mode === 'create' ? 'menambah' : 'memperbarui'} kelas`);
+    // Show success message
+    uiActions.showSuccess(message);
+    
+    // Navigate back to list
+    navigation.goBack();
+    
+    // For new kelas, optionally navigate to detail screen
+    if (!isEditMode && data.id_kelas) {
+      setTimeout(() => {
+        navigation.navigate('KelasDetail', {
+          kelasId: data.id_kelas,
+          title: kelasName,
+          item: data
+        });
+      }, 100);
     }
-  };
-
-  const handleCancel = () => {
+  }, [isEditMode, navigation, uiActions]);
+  
+  const handleCancel = useCallback(() => {
     if (submitting) return;
     
-    Alert.alert(
-      'Batal',
-      'Yakin ingin membatalkan? Data yang belum disimpan akan hilang.',
-      [
-        { text: 'Tidak', style: 'cancel' },
-        { 
-          text: 'Ya, Batal', 
-          style: 'destructive',
-          onPress: () => navigation.goBack()
-        }
-      ]
+    navigation.goBack();
+  }, [submitting, navigation]);
+  
+  const handleError = useCallback((error) => {
+    console.error('Form submission error:', error);
+    
+    const errorMessage = error.message || 
+      `Terjadi kesalahan saat ${isEditMode ? 'memperbarui' : 'menyimpan'} data kelas`;
+    
+    Alert.alert('Error', errorMessage, [{ text: 'OK' }]);
+  }, [isEditMode]);
+  
+  // ==================== RENDER ====================
+  
+  // Show loading state while fetching data
+  if (isEditMode && loading && !dataLoaded) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007bff" />
+        <Text style={styles.loadingText}>Memuat data kelas...</Text>
+      </View>
     );
-  };
-
-  const handleRetry = () => {
-    clearError();
-    if (mode === 'edit' && id) {
-      fetchKelasData();
-    }
-    if (!cascadeData) {
-      fetchCascadeData();
-    }
-  };
-
+  }
+  
+  // Don't render form until data is loaded for edit mode
+  if (isEditMode && !dataLoaded) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Menyiapkan form...</Text>
+      </View>
+    );
+  }
+  
   return (
-    <BaseFormScreen
-      loading={loading}
-      error={error}
-      onRetry={handleRetry}
-    >
+    <View style={styles.container}>
       <KelasForm
-        initialData={initialData}
         mode={mode}
-        cascadeData={cascadeData}
-        onSubmit={handleSubmit}
+        initialData={initialData}
+        onSuccess={handleSuccess}
         onCancel={handleCancel}
-        submitting={submitting}
+        onError={handleError}
       />
-    </BaseFormScreen>
+      
+      {/* Global Error Display */}
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+    </View>
   );
 };
+
+// ==================== STYLES ====================
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa'
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    padding: 20
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 16,
+    textAlign: 'center'
+  },
+  errorContainer: {
+    backgroundColor: '#f8d7da',
+    borderColor: '#f5c6cb',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    margin: 16
+  },
+  errorText: {
+    color: '#721c24',
+    fontSize: 14,
+    textAlign: 'center'
+  }
+});
 
 export default KelasFormScreen;

@@ -1,24 +1,44 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Switch } from 'react-native';
-import TextInput from '../../../../../common/components/TextInput';
+// src/features/adminCabang/components/specific/kelas/KelasForm.js
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import {
+  View, Text, TextInput, TouchableOpacity, Switch, Alert, StyleSheet, ScrollView
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useRoute } from '@react-navigation/native';
+import CascadeDropdown from '../../shared/CascadeDropdown';
 import DropdownSelector from '../../shared/DropdownSelector';
-import ActionButton from '../../shared/ActionButton';
-import { useKelas } from '../../../hooks/useKelas';
+import { useStoreSelectors } from '../../../stores';
+import { useFormValidation } from '../../../hooks';
+import { ENTITIES } from '../../../stores/masterDataStore';
 
-const KelasForm = ({ 
-  initialData = null, 
-  mode = 'create',
-  onSubmit,
-  onCancel,
-  submitting = false
+/**
+ * KelasForm - Form untuk create/edit kelas dengan jenjang dependency
+ * Supports jenis kelas logic, tingkat selection, dan urutan validation
+ */
+const KelasForm = ({
+  // Props dari navigation atau parent
+  mode: propMode,
+  initialData: propInitialData,
+  onSuccess: propOnSuccess,
+  onCancel: propOnCancel
 }) => {
-  const { 
-    cascadeData, 
-    checkUrutanAvailability, 
-    generateStandardKelasName,
-    fetchCascadeData 
-  } = useKelas();
+  const route = useRoute();
   
+  // Get params from route or props
+  const mode = propMode || route.params?.mode || 'create';
+  const routeInitialData = route.params?.item || {};
+  const initialData = propInitialData || routeInitialData;
+  
+  // ==================== ZUSTAND STORES ====================
+  const masterDataActions = useStoreSelectors.masterData.actions();
+  const cascadeActions = useStoreSelectors.cascade.actions();
+  const uiActions = useStoreSelectors.ui.actions();
+  
+  const kelasData = useStoreSelectors.masterData.entitiesArray(ENTITIES.KELAS);
+  const jenjangOptions = useStoreSelectors.cascade.jenjangOptions();
+  const submitting = useStoreSelectors.ui.loading(ENTITIES.KELAS, mode === 'create' ? 'creating' : 'updating');
+  
+  // ==================== FORM STATE ====================
   const [formData, setFormData] = useState({
     id_jenjang: '',
     nama_kelas: '',
@@ -29,12 +49,109 @@ const KelasForm = ({
     is_active: true
   });
   
-  const [errors, setErrors] = useState({});
+  const [isDirty, setIsDirty] = useState(false);
   const [urutanChecking, setUrutanChecking] = useState(false);
-
-  // Initialize form with data if edit mode
+  
+  // ==================== VALIDATION FUNCTIONS ====================
+  
+  async function checkNamaUnique(value) {
+    if (!value || !formData.id_jenjang) return true;
+    
+    const existing = kelasData.find(item => 
+      item.nama_kelas?.toLowerCase() === value.toLowerCase() &&
+      item.id_jenjang?.toString() === formData.id_jenjang &&
+      item.id_kelas !== initialData.id_kelas
+    );
+    
+    return !existing;
+  }
+  
+  async function checkUrutanUnique(value) {
+    if (!value || !formData.id_jenjang || !formData.jenis_kelas) return true;
+    
+    const existing = kelasData.find(item => 
+      item.urutan?.toString() === value.toString() &&
+      item.id_jenjang?.toString() === formData.id_jenjang &&
+      item.jenis_kelas === formData.jenis_kelas &&
+      item.id_kelas !== initialData.id_kelas
+    );
+    
+    return !existing;
+  }
+  
+  // ==================== VALIDATION RULES ====================
+  const validationRules = useMemo(() => ({
+    id_jenjang: ['required'],
+    nama_kelas: [
+      'required',
+      { type: 'maxLength', params: [100] },
+      { type: 'unique', params: [checkNamaUnique] }
+    ],
+    jenis_kelas: ['required'],
+    tingkat: formData.jenis_kelas === 'standard' ? ['required', 'numeric'] : [],
+    urutan: [
+      'required',
+      'positiveNumber',
+      { type: 'unique', params: [checkUrutanUnique] }
+    ],
+    deskripsi: [{ type: 'maxLength', params: [500] }]
+  }), [formData.jenis_kelas, formData.id_jenjang]);
+  
+  const {
+    errors, validateField, validateForm, clearFieldError, isFormValid
+  } = useFormValidation(validationRules);
+  
+  // ==================== COMPUTED VALUES ====================
+  
+  const isEditMode = mode === 'edit';
+  
+  const jenisKelasOptions = useMemo(() => [
+    { 
+      label: 'Standard', 
+      value: 'standard',
+      description: 'Kelas dengan tingkat I-XII dan nama otomatis'
+    },
+    { 
+      label: 'Custom', 
+      value: 'custom',
+      description: 'Kelas dengan nama bebas dan tingkat opsional'
+    }
+  ], []);
+  
+  const tingkatOptions = useMemo(() => {
+    if (!formData.id_jenjang) return [];
+    
+    // Generate tingkat options 1-12 (could be customized based on jenjang)
+    return Array.from({ length: 12 }, (_, i) => {
+      const tingkat = i + 1;
+      const romans = {
+        1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI',
+        7: 'VII', 8: 'VIII', 9: 'IX', 10: 'X', 11: 'XI', 12: 'XII'
+      };
+      
+      return {
+        label: `Tingkat ${romans[tingkat]} (${tingkat})`,
+        value: tingkat.toString()
+      };
+    });
+  }, [formData.id_jenjang]);
+  
+  const autoGeneratedName = useMemo(() => {
+    if (formData.jenis_kelas !== 'standard' || !formData.tingkat) return '';
+    
+    const romans = {
+      1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI',
+      7: 'VII', 8: 'VIII', 9: 'IX', 10: 'X', 11: 'XI', 12: 'XII'
+    };
+    
+    return `Kelas ${romans[parseInt(formData.tingkat)]}`;
+  }, [formData.jenis_kelas, formData.tingkat]);
+  
+  // ==================== EFFECTS ====================
+  
+  // Initialize form data
   useEffect(() => {
-    if (mode === 'edit' && initialData) {
+    if (isEditMode && initialData) {
       setFormData({
         id_jenjang: initialData.id_jenjang?.toString() || '',
         nama_kelas: initialData.nama_kelas || '',
@@ -42,332 +159,418 @@ const KelasForm = ({
         tingkat: initialData.tingkat?.toString() || '',
         urutan: initialData.urutan?.toString() || '',
         deskripsi: initialData.deskripsi || '',
-        is_active: initialData.is_active ?? true
+        is_active: initialData.is_active !== false
       });
     }
-  }, [mode, initialData]);
-
-  // Load cascade data
+  }, [isEditMode, initialData]);
+  
+  // Auto-generate nama_kelas for standard classes
   useEffect(() => {
-    if (!cascadeData) {
-      fetchCascadeData();
+    if (formData.jenis_kelas === 'standard' && autoGeneratedName) {
+      setFormData(prev => ({ ...prev, nama_kelas: autoGeneratedName }));
     }
-  }, [cascadeData, fetchCascadeData]);
-
-  // Auto-generate nama_kelas for standard kelas
+  }, [formData.jenis_kelas, autoGeneratedName]);
+  
+  // Auto-validate urutan when dependencies change
   useEffect(() => {
-    if (formData.jenis_kelas === 'standard' && formData.tingkat) {
-      const generatedName = generateStandardKelasName(parseInt(formData.tingkat));
-      setFormData(prev => ({ ...prev, nama_kelas: generatedName }));
-    }
-  }, [formData.jenis_kelas, formData.tingkat, generateStandardKelasName]);
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.id_jenjang) {
-      newErrors.id_jenjang = 'Jenjang harus dipilih';
-    }
-
-    if (!formData.jenis_kelas) {
-      newErrors.jenis_kelas = 'Jenis kelas harus dipilih';
-    }
-
-    if (formData.jenis_kelas === 'standard') {
-      if (!formData.tingkat) {
-        newErrors.tingkat = 'Tingkat harus dipilih untuk kelas standard';
-      }
-    } else if (formData.jenis_kelas === 'custom') {
-      if (!formData.nama_kelas.trim()) {
-        newErrors.nama_kelas = 'Nama kelas harus diisi untuk kelas custom';
-      }
-    }
-
-    if (!formData.urutan.trim()) {
-      newErrors.urutan = 'Urutan harus diisi';
-    } else if (isNaN(formData.urutan) || parseInt(formData.urutan) < 1) {
-      newErrors.urutan = 'Urutan harus berupa angka positif';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const checkUrutan = async (urutan) => {
-    if (!urutan || isNaN(urutan) || !formData.id_jenjang || !formData.jenis_kelas) return;
-    
-    setUrutanChecking(true);
-    try {
-      const excludeId = mode === 'edit' ? initialData?.id_kelas : null;
-      const result = await checkUrutanAvailability(
-        parseInt(urutan), 
-        parseInt(formData.id_jenjang),
-        formData.jenis_kelas,
-        excludeId
-      );
-      
-      if (!result.available) {
-        setErrors(prev => ({
-          ...prev,
-          urutan: `Urutan sudah digunakan untuk kelas ${formData.jenis_kelas} di jenjang ini`
-        }));
-      } else {
-        setErrors(prev => {
-          const newErrors = { ...prev };
-          delete newErrors.urutan;
-          return newErrors;
-        });
-      }
-    } catch (err) {
-      console.error('Error checking urutan:', err);
-    } finally {
-      setUrutanChecking(false);
-    }
-  };
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
-    }
-
-    // Reset nama_kelas when jenis_kelas changes
-    if (field === 'jenis_kelas') {
-      if (value === 'custom') {
-        setFormData(prev => ({ ...prev, nama_kelas: '' }));
-      }
-    }
-
-    // Check urutan when dependencies change
-    if ((field === 'urutan' && value) || 
-        (field === 'id_jenjang' && formData.urutan) ||
-        (field === 'jenis_kelas' && formData.urutan)) {
+    if (formData.urutan && formData.id_jenjang && formData.jenis_kelas) {
       const timeoutId = setTimeout(() => {
-        const targetUrutan = field === 'urutan' ? value : formData.urutan;
-        const targetJenjang = field === 'id_jenjang' ? value : formData.id_jenjang;
-        const targetJenis = field === 'jenis_kelas' ? value : formData.jenis_kelas;
-        
-        if (targetUrutan && targetJenjang && targetJenis) {
-          checkUrutan(targetUrutan);
-        }
+        validateField('urutan', formData.urutan);
       }, 500);
       return () => clearTimeout(timeoutId);
     }
-  };
-
-  const handleSubmit = () => {
-    if (!validateForm()) return;
+  }, [formData.urutan, formData.id_jenjang, formData.jenis_kelas, validateField]);
+  
+  // ==================== HANDLERS ====================
+  
+  const handleFieldChange = useCallback((field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setIsDirty(true);
     
-    const submitData = {
-      ...formData,
-      id_jenjang: parseInt(formData.id_jenjang),
-      tingkat: formData.jenis_kelas === 'standard' && formData.tingkat ? parseInt(formData.tingkat) : null,
-      urutan: parseInt(formData.urutan)
-    };
+    // Clear error immediately for better UX
+    if (errors[field]) {
+      clearFieldError(field);
+    }
     
-    onSubmit(submitData);
-  };
-
-  const jenjangOptions = cascadeData?.jenjang?.map(item => ({
-    label: `${item.kode_jenjang} - ${item.nama_jenjang}`,
-    value: item.id_jenjang.toString()
-  })) || [];
-
-  const jenisKelasOptions = cascadeData?.jenis_kelas_list?.map(item => ({
-    label: item.label,
-    value: item.value,
-    description: item.description
-  })) || [
-    { label: 'Standard', value: 'standard', description: 'Kelas dengan tingkat I-XII' },
-    { label: 'Custom', value: 'custom', description: 'Kelas dengan nama bebas' }
-  ];
-
-  const tingkatOptions = cascadeData?.tingkat_options?.map(item => ({
-    label: item.label,
-    value: item.value.toString()
-  })) || [];
-
+    // Special handling for jenis_kelas change
+    if (field === 'jenis_kelas') {
+      if (value === 'custom') {
+        setFormData(prev => ({ 
+          ...prev, 
+          [field]: value,
+          nama_kelas: '',
+          tingkat: ''
+        }));
+      } else if (value === 'standard') {
+        setFormData(prev => ({ 
+          ...prev, 
+          [field]: value,
+          nama_kelas: autoGeneratedName || ''
+        }));
+      }
+    }
+    
+    // Validate field after change
+    setTimeout(() => {
+      validateField(field, field === 'jenis_kelas' && value === 'standard' ? autoGeneratedName : value);
+    }, 300);
+  }, [errors, clearFieldError, validateField, autoGeneratedName]);
+  
+  const handleSubmit = useCallback(async () => {
+    if (!isFormValid() || submitting) return;
+    
+    try {
+      const submitData = {
+        ...formData,
+        id_jenjang: parseInt(formData.id_jenjang),
+        tingkat: formData.jenis_kelas === 'standard' && formData.tingkat 
+          ? parseInt(formData.tingkat) 
+          : null,
+        urutan: parseInt(formData.urutan)
+      };
+      
+      let result;
+      if (isEditMode) {
+        result = await masterDataActions.update(ENTITIES.KELAS, initialData.id_kelas, submitData);
+      } else {
+        result = await masterDataActions.create(ENTITIES.KELAS, submitData);
+      }
+      
+      if (result?.success) {
+        const successMsg = isEditMode 
+          ? `Kelas "${formData.nama_kelas}" berhasil diperbarui`
+          : `Kelas "${formData.nama_kelas}" berhasil dibuat`;
+        
+        uiActions.showSuccess(successMsg);
+        setIsDirty(false);
+        
+        if (propOnSuccess) {
+          propOnSuccess(result.data);
+        }
+      }
+    } catch (error) {
+      console.error('Submit error:', error);
+      uiActions.setError(ENTITIES.KELAS, error.message || 'Gagal menyimpan data kelas');
+    }
+  }, [
+    isFormValid, submitting, formData, isEditMode, initialData, 
+    masterDataActions, uiActions, propOnSuccess
+  ]);
+  
+  const handleCancel = useCallback(() => {
+    if (isDirty) {
+      Alert.alert(
+        'Konfirmasi',
+        'Anda memiliki perubahan yang belum disimpan. Yakin ingin membatalkan?',
+        [
+          { text: 'Tetap Edit', style: 'cancel' },
+          { 
+            text: 'Ya, Batalkan', 
+            onPress: () => {
+              setIsDirty(false);
+              propOnCancel?.();
+            }
+          }
+        ]
+      );
+    } else {
+      propOnCancel?.();
+    }
+  }, [isDirty, propOnCancel]);
+  
+  // ==================== RENDER ====================
+  
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
       <View style={styles.form}>
-        <DropdownSelector
-          label="Jenjang *"
+        {/* Jenjang Selection */}
+        <CascadeDropdown
+          entityType={ENTITIES.JENJANG}
           value={formData.id_jenjang}
-          onValueChange={(value) => handleInputChange('id_jenjang', value)}
-          options={jenjangOptions}
+          onValueChange={(value) => handleFieldChange('id_jenjang', value)}
           placeholder="Pilih jenjang"
+          required
           error={errors.id_jenjang}
-          disabled={submitting}
         />
-
+        
+        {/* Jenis Kelas Selection */}
         <DropdownSelector
           label="Jenis Kelas *"
           value={formData.jenis_kelas}
-          onValueChange={(value) => handleInputChange('jenis_kelas', value)}
+          onValueChange={(value) => handleFieldChange('jenis_kelas', value)}
           options={jenisKelasOptions}
           placeholder="Pilih jenis kelas"
           error={errors.jenis_kelas}
-          disabled={submitting}
+          style={styles.field}
         />
-
-        {formData.jenis_kelas === 'standard' ? (
-          <>
-            <DropdownSelector
-              label="Tingkat *"
-              value={formData.tingkat}
-              onValueChange={(value) => handleInputChange('tingkat', value)}
-              options={tingkatOptions}
-              placeholder="Pilih tingkat"
-              error={errors.tingkat}
-              disabled={submitting}
-            />
-
-            <TextInput
-              label="Nama Kelas"
-              value={formData.nama_kelas}
-              placeholder="Auto-generated dari tingkat"
-              disabled={true}
-              inputProps={{ style: { backgroundColor: '#f8f9fa', color: '#666' } }}
-            />
-          </>
-        ) : (
-          <>
-            <TextInput
-              label="Nama Kelas *"
-              value={formData.nama_kelas}
-              onChangeText={(value) => handleInputChange('nama_kelas', value)}
-              placeholder="Contoh: Kelas Tahfidz"
-              error={errors.nama_kelas}
-              disabled={submitting}
-            />
-
-            <DropdownSelector
-              label="Tingkat (Opsional)"
-              value={formData.tingkat}
-              onValueChange={(value) => handleInputChange('tingkat', value)}
-              options={tingkatOptions}
-              placeholder="Pilih tingkat (opsional)"
-              disabled={submitting}
-            />
-          </>
+        
+        {/* Tingkat Selection (Standard only) */}
+        {formData.jenis_kelas === 'standard' && (
+          <DropdownSelector
+            label="Tingkat *"
+            value={formData.tingkat}
+            onValueChange={(value) => handleFieldChange('tingkat', value)}
+            options={tingkatOptions}
+            placeholder="Pilih tingkat"
+            error={errors.tingkat}
+            disabled={!formData.id_jenjang}
+            style={styles.field}
+          />
         )}
-
-        <TextInput
-          label="Urutan *"
-          value={formData.urutan}
-          onChangeText={(value) => handleInputChange('urutan', value)}
-          placeholder="Urutan tampil (angka)"
-          error={errors.urutan}
-          disabled={submitting}
-          inputProps={{ keyboardType: 'numeric' }}
-          rightIcon={urutanChecking ? 'hourglass-outline' : null}
-        />
-
-        <TextInput
-          label="Deskripsi"
-          value={formData.deskripsi}
-          onChangeText={(value) => handleInputChange('deskripsi', value)}
-          placeholder="Deskripsi kelas (opsional)"
-          error={errors.deskripsi}
-          disabled={submitting}
-          multiline
-          inputProps={{ numberOfLines: 3 }}
-        />
-
+        
+        {/* Nama Kelas */}
+        <View style={styles.field}>
+          <Text style={styles.label}>
+            Nama Kelas *
+            {formData.jenis_kelas === 'standard' && (
+              <Text style={styles.labelNote}> (otomatis)</Text>
+            )}
+          </Text>
+          <TextInput
+            style={[
+              styles.input,
+              formData.jenis_kelas === 'standard' && styles.inputDisabled,
+              errors.nama_kelas && styles.inputError
+            ]}
+            value={formData.nama_kelas}
+            onChangeText={(value) => handleFieldChange('nama_kelas', value)}
+            placeholder="Masukkan nama kelas"
+            editable={formData.jenis_kelas === 'custom'}
+            maxLength={100}
+          />
+          {errors.nama_kelas && (
+            <Text style={styles.errorText}>{errors.nama_kelas}</Text>
+          )}
+        </View>
+        
+        {/* Urutan */}
+        <View style={styles.field}>
+          <Text style={styles.label}>Urutan *</Text>
+          <TextInput
+            style={[styles.input, errors.urutan && styles.inputError]}
+            value={formData.urutan}
+            onChangeText={(value) => handleFieldChange('urutan', value)}
+            placeholder="Masukkan urutan (angka)"
+            keyboardType="numeric"
+            maxLength={3}
+          />
+          {urutanChecking && (
+            <Text style={styles.checkingText}>Mengecek ketersediaan urutan...</Text>
+          )}
+          {errors.urutan && (
+            <Text style={styles.errorText}>{errors.urutan}</Text>
+          )}
+        </View>
+        
+        {/* Deskripsi */}
+        <View style={styles.field}>
+          <Text style={styles.label}>Deskripsi</Text>
+          <TextInput
+            style={[styles.textArea, errors.deskripsi && styles.inputError]}
+            value={formData.deskripsi}
+            onChangeText={(value) => handleFieldChange('deskripsi', value)}
+            placeholder="Masukkan deskripsi kelas (opsional)"
+            multiline
+            numberOfLines={3}
+            maxLength={500}
+          />
+          {errors.deskripsi && (
+            <Text style={styles.errorText}>{errors.deskripsi}</Text>
+          )}
+        </View>
+        
+        {/* Status Switch */}
         <View style={styles.switchContainer}>
           <Text style={styles.switchLabel}>Status Aktif</Text>
           <Switch
             value={formData.is_active}
-            onValueChange={(value) => handleInputChange('is_active', value)}
-            disabled={submitting}
-            trackColor={{ false: '#ccc', true: '#007bff' }}
+            onValueChange={(value) => handleFieldChange('is_active', value)}
+            trackColor={{ false: '#f4f3f4', true: '#007bff' }}
             thumbColor={formData.is_active ? '#fff' : '#f4f3f4'}
           />
         </View>
       </View>
-
+      
+      {/* Actions */}
       <View style={styles.actions}>
-        <ActionButton
-          title="Batal"
-          variant="outline"
-          onPress={onCancel}
+        <TouchableOpacity
+          style={[styles.button, styles.cancelButton]}
+          onPress={handleCancel}
           disabled={submitting}
-          style={styles.cancelButton}
-        />
+        >
+          <Text style={styles.cancelButtonText}>Batal</Text>
+        </TouchableOpacity>
         
-        <ActionButton
-          title={mode === 'create' ? 'Simpan' : 'Update'}
+        <TouchableOpacity
+          style={[
+            styles.button, 
+            styles.submitButton,
+            (!isFormValid() || submitting) && styles.submitButtonDisabled
+          ]}
           onPress={handleSubmit}
-          loading={submitting}
-          disabled={Object.keys(errors).length > 0}
-          style={styles.submitButton}
-        />
+          disabled={!isFormValid() || submitting}
+        >
+          {submitting ? (
+            <Text style={styles.submitButtonText}>
+              {isEditMode ? 'Memperbarui...' : 'Menyimpan...'}
+            </Text>
+          ) : (
+            <Text style={styles.submitButtonText}>
+              {isEditMode ? 'Perbarui' : 'Simpan'}
+            </Text>
+          )}
+        </TouchableOpacity>
       </View>
-
+      
       {/* Info Box */}
       <View style={styles.infoBox}>
-        <Text style={styles.infoTitle}>
-          {formData.jenis_kelas === 'standard' ? 'Kelas Standard' : 'Kelas Custom'}
-        </Text>
+        <View style={styles.infoHeader}>
+          <Ionicons name="information-circle-outline" size={16} color="#666" />
+          <Text style={styles.infoTitle}>
+            {formData.jenis_kelas === 'standard' ? 'Kelas Standard' : 'Kelas Custom'}
+          </Text>
+        </View>
         <Text style={styles.infoText}>
           {formData.jenis_kelas === 'standard' 
-            ? 'Kelas standard menggunakan tingkat I-XII dan nama otomatis. Urutan tidak boleh sama dengan kelas standard lain dalam jenjang yang sama.'
+            ? 'Kelas standard menggunakan tingkat I-XII dengan nama otomatis. Urutan tidak boleh sama dengan kelas standard lain dalam jenjang yang sama.'
             : 'Kelas custom menggunakan nama bebas dan tingkat opsional. Urutan tidak boleh sama dengan kelas custom lain dalam jenjang yang sama.'
           }
         </Text>
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
+// ==================== STYLES ====================
+
 const styles = StyleSheet.create({
   container: {
-    flex: 1
+    flex: 1,
+    backgroundColor: '#f8f9fa'
   },
   form: {
-    flex: 1
+    padding: 16
+  },
+  field: {
+    marginBottom: 16
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 6
+  },
+  labelNote: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#666',
+    fontStyle: 'italic'
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 14,
+    backgroundColor: '#fff'
+  },
+  inputDisabled: {
+    backgroundColor: '#f8f9fa',
+    color: '#666'
+  },
+  inputError: {
+    borderColor: '#dc3545'
+  },
+  textArea: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 14,
+    backgroundColor: '#fff',
+    height: 80,
+    textAlignVertical: 'top'
   },
   switchContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0'
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    marginTop: 8
   },
   switchLabel: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500'
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333'
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#dc3545',
+    marginTop: 4
+  },
+  checkingText: {
+    fontSize: 12,
+    color: '#007bff',
+    marginTop: 4,
+    fontStyle: 'italic'
   },
   actions: {
     flexDirection: 'row',
-    paddingTop: 16,
-    gap: 12
+    padding: 16,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    backgroundColor: '#fff'
+  },
+  button: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center'
   },
   cancelButton: {
-    flex: 1
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#ddd'
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666'
   },
   submitButton: {
-    flex: 1
+    backgroundColor: '#007bff'
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#ccc'
+  },
+  submitButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff'
   },
   infoBox: {
     backgroundColor: '#f8f9fa',
+    margin: 16,
     padding: 12,
     borderRadius: 8,
-    marginTop: 16
+    borderLeftWidth: 4,
+    borderLeftColor: '#007bff'
+  },
+  infoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4
   },
   infoTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 4
+    marginLeft: 6
   },
   infoText: {
     fontSize: 12,
