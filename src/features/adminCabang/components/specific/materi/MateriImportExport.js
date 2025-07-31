@@ -4,8 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import ActionButton from '../../shared/ActionButton';
-import DropdownSelector from '../../shared/DropdownSelector';
+import ActionButton from '../../../components/shared/ActionButton';
+import DropdownSelector from '../../../components/shared/DropdownSelector';
 import { useCascadeData } from '../../../hooks/useCascadeData';
 
 const MateriImportExport = ({

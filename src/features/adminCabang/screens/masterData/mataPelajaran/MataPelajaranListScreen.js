@@ -7,10 +7,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useStoreSelectors } from '../../../stores';
-import MataPelajaranCard from '../../specific/mataPelajaran/MataPelajaranCard';
-import MataPelajaranFilter from '../../specific/mataPelajaran/MataPelajaranFilter';
-import SearchBar from '../../shared/SearchBar';
-import CascadeDropdown from '../../shared/CascadeDropdown';
+import MataPelajaranCard from '../../../components/specific/mataPelajaran/MataPelajaranCard';
+import MataPelajaranFilter from '../../../components/specific/mataPelajaran/MataPelajaranFilter';
+import SearchBar from '../../../components/shared/SearchBar';
+import CascadeDropdown from '../../../components/shared/CascadeDropdown';
 import { ENTITIES } from '../../../stores/masterDataStore';
 
 /**

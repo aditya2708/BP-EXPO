@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import StatsCard from '../../shared/StatsCard';
+import StatsCard from '../../../components/shared/StatsCard';
 
 const JenjangStatsCards = ({ statistics, loading = false }) => {
   if (!statistics && !loading) {

@@ -2,7 +2,7 @@
 import React, { useCallback } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import MataPelajaranForm from '../../specific/mataPelajaran/MataPelajaranForm';
+import MataPelajaranForm from '../../../components/specific/mataPelajaran/MataPelajaranForm';
 import { useStoreSelectors } from '../../../stores';
 import { ENTITIES } from '../../../stores/masterDataStore';
 

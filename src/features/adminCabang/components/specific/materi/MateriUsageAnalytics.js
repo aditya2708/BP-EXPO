@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import StatsCard from '../../shared/StatsCard';
-import ActionButton from '../../shared/ActionButton';
+import StatsCard from '../../../components/shared/StatsCard';
+import ActionButton from '../../../components/shared/ActionButton';
 import { useUsageAnalytics } from '../../../hooks/useUsageAnalytics';
 
 const MateriUsageAnalytics = ({

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import ActionButton from '../../shared/ActionButton';
-import DropdownSelector from '../../shared/DropdownSelector';
+import ActionButton from '../../../components/shared/ActionButton';
+import DropdownSelector from '../../../components/shared/DropdownSelector';
 import { useCascadeData } from '../../../hooks/useCascadeData';
 
 const MateriCascadeFilter = ({

@@ -6,8 +6,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute } from '@react-navigation/native';
 import BaseFormScreen from '../../base/BaseFormScreen';
-import CascadeDropdown from '../../shared/CascadeDropdown';
-import DropdownSelector from '../../shared/DropdownSelector';
+import CascadeDropdown from '../../../components/shared/CascadeDropdown';
+import DropdownSelector from '../../../components/shared/DropdownSelector';
 import { useStoreSelectors } from '../../../stores';
 import { useFormValidation } from '../../../hooks';
 import { ENTITIES } from '../../../stores/masterDataStore';

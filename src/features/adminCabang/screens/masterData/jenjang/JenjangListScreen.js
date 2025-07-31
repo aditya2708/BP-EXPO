@@ -6,10 +6,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useStoreSelectors } from '../../../stores';
-import BaseListScreen from '../../base/BaseListScreen';
-import JenjangCard from '../../specific/jenjang/JenjangCard';
-import JenjangFilter from '../../specific/jenjang/JenjangFilter';
-import SearchBar from '../../shared/SearchBar';
+import JenjangCard from '../../../components/specific/jenjang/JenjangCard';
+import JenjangFilter from '../../../components/specific/jenjang/JenjangFilter';
+import SearchBar from '../../../components/shared/SearchBar';
 import { ENTITIES } from '../../../stores/masterDataStore';
 
 /**

@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import MateriForm from '../../specific/materi/MateriForm';
+import MateriForm from '../../../components/specific/materi/MateriForm';
 import { useStoreSelectors } from '../../../stores';
 import { ENTITIES } from '../../../stores/masterDataStore';
 

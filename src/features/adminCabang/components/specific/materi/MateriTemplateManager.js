@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import ActionButton from '../../shared/ActionButton';
+import ActionButton from '../../../components/shared/ActionButton';
 import TextInput from '../../../../../common/components/TextInput';
-import DropdownSelector from '../../shared/DropdownSelector';
+import DropdownSelector from '../../../components/shared/DropdownSelector';
 import { useCascadeData } from '../../../hooks/useCascadeData';
 
 const MateriTemplateManager = ({

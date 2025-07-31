@@ -6,8 +6,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useStoreSelectors } from '../../../stores';
-import CascadeDropdown from '../../shared/CascadeDropdown';
-import DropdownSelector from '../../shared/DropdownSelector';
+import CascadeDropdown from '../../../components/shared/CascadeDropdown';
+import DropdownSelector from '../../../components/shared/DropdownSelector';
 import { ENTITIES } from '../../../stores/masterDataStore';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');

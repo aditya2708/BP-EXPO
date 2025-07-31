@@ -7,11 +7,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useStoreSelectors } from '../../../stores';
-import MateriCard from '../../specific/materi/MateriCard';
-import MateriFilter from '../../specific/materi/MateriFilter';
-import SearchBar from '../../shared/SearchBar';
-import CascadeDropdown from '../../shared/CascadeDropdown';
-import DropdownSelector from '../../shared/DropdownSelector';
+import MateriCard from '../../../components/specific/materi/MateriCard';
+import MateriFilter from '../../../components/specific/materi/MateriFilter';
+import SearchBar from '../../../components/shared/SearchBar';
+import CascadeDropdown from '../../../components/shared/CascadeDropdown';
+import DropdownSelector from '../../../components/shared/DropdownSelector';
 import { ENTITIES } from '../../../stores/masterDataStore';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');

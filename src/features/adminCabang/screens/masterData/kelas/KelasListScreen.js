@@ -7,10 +7,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useStoreSelectors } from '../../../stores';
-import KelasCard from '../../specific/kelas/KelasCard';
-import KelasFilter from '../../specific/kelas/KelasFilter';
-import SearchBar from '../../shared/SearchBar';
-import CascadeDropdown from '../../shared/CascadeDropdown';
+import KelasCard from '../../../components/specific/kelas/KelasCard';
+import KelasFilter from '../../../components/specific/kelas/KelasFilter';
+import SearchBar from '../../../components/shared/SearchBar';
+import CascadeDropdown from '../../../components/shared/CascadeDropdown';
 import { ENTITIES } from '../../../stores/masterDataStore';
 
 /**

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal, View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import ActionButton from '../../shared/ActionButton';
+import ActionButton from '../../../components/shared/ActionButton';
 
 const KelasValidationDialog = ({
   visible,
