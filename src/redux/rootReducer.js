@@ -20,6 +20,12 @@ import laporanSuratReducer from '../features/adminShelter/redux/laporanSuratSlic
 import laporanAktivitasReducer from '../features/adminShelter/redux/laporanAktivitasSlice';
 import historiLaporanReducer from '../features/adminShelter/redux/historiLaporanSlice';
 
+// Admin Cabang reducers
+import kurikulumReducer from '../features/adminCabang/redux/kurikulumSlice';
+import materiReducer from '../features/adminCabang/redux/materiSlice';
+import semesterCabangReducer from '../features/adminCabang/redux/semesterCabangSlice';
+import { kurikulumApi } from '../features/adminCabang/api/kurikulumApi';
+
 
 const appReducer = combineReducers({
   auth: authReducer,
@@ -42,6 +48,14 @@ const appReducer = combineReducers({
   laporanSurat: laporanSuratReducer,
   laporanAktivitas: laporanAktivitasReducer,
   historiLaporan: historiLaporanReducer,
+  
+  // Admin Cabang reducers
+  kurikulum: kurikulumReducer,
+  materi: materiReducer,
+  semesterCabang: semesterCabangReducer,
+  
+  // RTK Query API reducers
+  [kurikulumApi.reducerPath]: kurikulumApi.reducer,
 });
 
 const rootReducer = (state, action) => {
