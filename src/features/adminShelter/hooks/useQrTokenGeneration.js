@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Alert } from 'react-native';
 import { adminShelterAnakApi } from '../api/adminShelterAnakApi';
@@ -78,7 +78,7 @@ export const useQrTokenGeneration = (routeParams = {}) => {
       // For non-contextual mode, always fetch kelompok list for selection
       fetchKelompokList();
     }
-  }, [isContextualMode, activityType, completeActivity]);
+  }, [isContextualMode, activityType]);
   
   useEffect(() => {
     if (isContextualMode && activityType === 'Bimbel' && kelompokId) {
@@ -203,11 +203,13 @@ export const useQrTokenGeneration = (routeParams = {}) => {
     setSelectedKelompokId(kelompokId);
   };
   
-  const filteredStudents = students.filter(student => 
-    (student.full_name || student.nick_name || '')
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase())
-  );
+  // Use useMemo to memoize filteredStudents
+  const filteredStudents = useMemo(() => 
+    students.filter(student => 
+      (student.full_name || student.nick_name || '')
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase())
+    ), [students, searchQuery]);
   
   // Build unified targets array from students and tutor
   useEffect(() => {
