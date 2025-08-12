@@ -175,8 +175,8 @@ const AddChildrenToKelompokScreen = () => {
     }
     
     Alert.alert(
-      'Confirm',
-      `Add ${selectedChildren.length} child${selectedChildren.length > 1 ? 'ren' : ''} to the group?`,
+      'Konfirmasi',
+      `Tambah ${selectedChildren.length} Anak${selectedChildren.length > 1 ? '' : ''} ke kelompok?`,
       [
         { text: 'Cancel', style: 'cancel' },
         { 
@@ -225,8 +225,8 @@ const AddChildrenToKelompokScreen = () => {
                 );
               }
             } catch (err) {
-              console.error('Error submitting children:', err);
-              Alert.alert('Error', 'Failed to add children. Please try again.');
+              console.error('Gagal masukkan anak:', err);
+              Alert.alert('Error', 'Gagal masukkan anak, coba lagi.');
             } finally {
               setSubmitting(false);
             }
