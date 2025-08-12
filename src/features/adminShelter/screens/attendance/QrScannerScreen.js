@@ -295,7 +295,8 @@ const QrScannerScreen = ({ navigation, route }) => {
   const handleAttendanceRecording = useCallback(async (token, id_anak) => {
     try {
       if (isConnected) {
-        const formattedArrivalTime = format(new Date(), 'yyyy-MM-dd HH:mm:ss');
+        const now = new Date();
+        const formattedArrivalTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
         let gpsData = null;
         
         // Get GPS data if required
@@ -327,9 +328,11 @@ const QrScannerScreen = ({ navigation, route }) => {
         
         setTimeout(() => showToast(`${status}: ${studentName}`, toastType), 100);
       } else {
+        const offlineNow = new Date();
+        const offlineFormattedTime = `${offlineNow.getFullYear()}-${String(offlineNow.getMonth() + 1).padStart(2, '0')}-${String(offlineNow.getDate()).padStart(2, '0')} ${String(offlineNow.getHours()).padStart(2, '0')}:${String(offlineNow.getMinutes()).padStart(2, '0')}:${String(offlineNow.getSeconds()).padStart(2, '0')}`;
         const result = await OfflineSync.processAttendance({
           id_anak, id_aktivitas, status: null, token,
-          arrival_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss')
+          arrival_time: offlineFormattedTime
         }, 'qr');
         
         await playSound();
@@ -357,7 +360,8 @@ const QrScannerScreen = ({ navigation, route }) => {
   const handleTutorAttendanceRecording = useCallback(async (token) => {
     try {
       if (isConnected) {
-        const formattedArrivalTime = format(new Date(), 'yyyy-MM-dd HH:mm:ss');
+        const now = new Date();
+        const formattedArrivalTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
         let gpsData = null;
         
         // Get GPS data if required
@@ -389,8 +393,10 @@ const QrScannerScreen = ({ navigation, route }) => {
         const tutorName = result.data?.absen_user?.tutor?.nama || 'Tutor';
         setTimeout(() => showToast(`${status}: ${tutorName} (Tutor)`, toastType), 100);
       } else {
+        const tutorOfflineNow = new Date();
+        const tutorOfflineFormattedTime = `${tutorOfflineNow.getFullYear()}-${String(tutorOfflineNow.getMonth() + 1).padStart(2, '0')}-${String(tutorOfflineNow.getDate()).padStart(2, '0')} ${String(tutorOfflineNow.getHours()).padStart(2, '0')}:${String(tutorOfflineNow.getMinutes()).padStart(2, '0')}:${String(tutorOfflineNow.getSeconds()).padStart(2, '0')}`;
         await OfflineSync.processAttendance({
-          id_aktivitas, token, arrival_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+          id_aktivitas, token, arrival_time: tutorOfflineFormattedTime,
           type: 'tutor'
         }, 'qr');
         
