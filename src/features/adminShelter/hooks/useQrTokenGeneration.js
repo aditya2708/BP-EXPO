@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Alert } from 'react-native';
 import { adminShelterAnakApi } from '../api/adminShelterAnakApi';
@@ -8,7 +8,8 @@ import {
   generateBatchTokens,
   getActiveToken,
   selectQrTokenLoading, 
-  selectQrTokenError
+  selectQrTokenError,
+  resetQrTokenError
 } from '../redux/qrTokenSlice';
 import {
   generateTutorToken,
@@ -66,6 +67,11 @@ export const useQrTokenGeneration = (routeParams = {}) => {
     }
   }, [completeActivity]);
   
+  // Clear token errors on mount (no active token is expected behavior)
+  useEffect(() => {
+    dispatch(resetQrTokenError());
+  }, [dispatch]);
+  
   // Context-aware detection: Auto-load data based on activity context
   useEffect(() => {
     // For contextual mode (activity-specific), set appropriate visibility
@@ -78,7 +84,7 @@ export const useQrTokenGeneration = (routeParams = {}) => {
       // For non-contextual mode, always fetch kelompok list for selection
       fetchKelompokList();
     }
-  }, [isContextualMode, activityType]);
+  }, [isContextualMode, activityType, completeActivity]);
   
   useEffect(() => {
     if (isContextualMode && activityType === 'Bimbel' && kelompokId) {
@@ -203,13 +209,11 @@ export const useQrTokenGeneration = (routeParams = {}) => {
     setSelectedKelompokId(kelompokId);
   };
   
-  // Use useMemo to memoize filteredStudents
-  const filteredStudents = useMemo(() => 
-    students.filter(student => 
-      (student.full_name || student.nick_name || '')
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase())
-    ), [students, searchQuery]);
+  const filteredStudents = students.filter(student => 
+    (student.full_name || student.nick_name || '')
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase())
+  );
   
   // Build unified targets array from students and tutor
   useEffect(() => {
@@ -239,7 +243,13 @@ export const useQrTokenGeneration = (routeParams = {}) => {
     });
     
     setTargets(newTargets);
-  }, [filteredStudents, activityTutor, tutorToken, studentTokens, selectedStudents]);
+  }, [
+    filteredStudents.length, 
+    activityTutor?.id_tutor, 
+    tutorToken?.token, 
+    Object.keys(studentTokens).length,
+    selectedStudents.length
+  ]);
   
   const toggleStudentSelection = (studentId) => {
     if (selectedStudents.includes(studentId)) {
