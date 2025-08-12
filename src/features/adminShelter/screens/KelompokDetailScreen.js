@@ -42,9 +42,11 @@ const KelompokDetailScreen = () => {
       const response = await adminShelterKelompokApi.getKelompokDetail(id);
       
       if (response.data.success) {
-        setKelompok(response.data.data);
+        const kelompokData = response.data.data;
+        setKelompok(kelompokData);
+        setChildren(kelompokData.anak || []);
         navigation.setOptions({ 
-          headerTitle: response.data.data.nama_kelompok || 'Detail Kelompok' 
+          headerTitle: kelompokData.nama_kelompok || 'Detail Kelompok' 
         });
       } else {
         setError(response.data.message || 'Failed to load group details');
@@ -52,20 +54,6 @@ const KelompokDetailScreen = () => {
     } catch (err) {
       console.error('Error fetching kelompok details:', err);
       setError('Failed to load group details. Please try again.');
-    }
-  };
-  
-  const fetchGroupChildren = async () => {
-    try {
-      const response = await adminShelterKelompokApi.getGroupChildren(id);
-      
-      if (response.data.success) {
-        setChildren(response.data.data || []);
-      } else {
-        console.error('Error fetching group children:', response.data.message);
-      }
-    } catch (err) {
-      console.error('Error fetching group children:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -88,17 +76,24 @@ const KelompokDetailScreen = () => {
     if (id) {
       Promise.all([
         fetchKelompokDetails(),
-        fetchGroupChildren(),
         fetchAvailableKelas()
       ]);
     }
   }, [id]);
   
+  // Handle refresh when coming back from AddChildrenToKelompok
+  useEffect(() => {
+    if (route.params?.refresh) {
+      handleRefresh();
+      // Reset the refresh param
+      navigation.setParams({ refresh: false });
+    }
+  }, [route.params?.refresh]);
+  
   const handleRefresh = () => {
     setRefreshing(true);
     Promise.all([
       fetchKelompokDetails(),
-      fetchGroupChildren(),
       fetchAvailableKelas()
     ]);
   };
@@ -171,14 +166,13 @@ const KelompokDetailScreen = () => {
             try {
               setLoading(true);
               
-              const response = await adminShelterKelompokApi.removeChildFromGroup(
+              const response = await adminShelterKelompokApi.removeAnak(
                 id,
                 child.id_anak
               );
               
               if (response.data.success) {
-                fetchGroupChildren();
-                fetchKelompokDetails();
+                handleRefresh();
               } else {
                 setError(response.data.message || 'Failed to remove child');
                 setLoading(false);
@@ -198,10 +192,7 @@ const KelompokDetailScreen = () => {
     navigation.navigate('AddChildrenToKelompok', {
       kelompokId: id,
       kelompokName: kelompok?.nama_kelompok,
-      shelterId: kelompok?.shelter?.id_shelter || profile?.shelter?.id_shelter,
-      onRefresh: () => {
-        handleRefresh();
-      }
+      shelterId: kelompok?.shelter?.id_shelter || profile?.shelter?.id_shelter
     });
   };
 

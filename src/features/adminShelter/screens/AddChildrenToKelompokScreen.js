@@ -123,52 +123,49 @@ const AddChildrenToKelompokScreen = () => {
   };
   
   const checkEducationCompatibility = (child, kelompok) => {
-    if (!child.anakPendidikan || !kelompok?.level_anak_binaan) {
+    if (!child.anakPendidikan || !kelompok?.kelas_gabungan) {
       return { compatible: true, reason: 'No education data' };
     }
 
     const jenjang = child.anakPendidikan.jenjang?.toLowerCase().trim() || '';
-    const levelName = kelompok.level_anak_binaan.nama_level_binaan?.toLowerCase().trim() || '';
-
-    const compatibility = {
-      'belum_sd': ['tk', 'paud', 'early', 'dini', 'kelas 1', 'kelas 2', 'kelas 3'],
-      'sd': ['sd', 'elementary', 'dasar', 'kelas 1', 'kelas 2', 'kelas 3', 'kelas 4', 'kelas 5', 'kelas 6'],
-      'smp': ['smp', 'mts', 'junior', 'menengah pertama', 'kelas 7', 'kelas 8', 'kelas 9'],
-      'sma': ['sma', 'smk', 'ma', 'senior', 'menengah atas', 'kelas 10', 'kelas 11', 'kelas 12'],
-      'perguruan_tinggi': ['universitas', 'college', 'tinggi', 'sarjana', 'semester']
-    };
-
-    if (!compatibility[jenjang]) {
-      return { compatible: true, reason: 'Unknown education level' };
+    
+    // Get kelas details for compatibility check
+    const kelasGabunganDetails = kelompok.kelas_gabungan_details || [];
+    
+    if (kelasGabunganDetails.length === 0) {
+      return { compatible: true, reason: 'No kelas data available' };
     }
-
-    const isCompatible = compatibility[jenjang].some(keyword => 
-      levelName.includes(keyword)
-    );
+    
+    // Check if child's jenjang matches any of the kelas gabungan
+    const isCompatible = kelasGabunganDetails.some(kelas => {
+      const kelasJenjang = kelas.jenjang?.nama_jenjang?.toLowerCase() || '';
+      return jenjang === kelasJenjang || 
+             (jenjang === 'tk' && kelasJenjang === 'paud') ||
+             (jenjang === 'paud' && kelasJenjang === 'tk');
+    });
 
     return {
       compatible: isCompatible,
-      reason: isCompatible ? 'Compatible' : `${jenjang.toUpperCase()} doesn't match ${levelName}`
+      reason: isCompatible ? 'Compatible' : `${jenjang.toUpperCase()} doesn't match kelompok's kelas`
     };
   };
 
-  const getLevelBadgeColor = (level) => {
-    if (!level) return '#95a5a6';
+  const getJenjangBadgeColor = (jenjang) => {
+    if (!jenjang) return '#95a5a6';
     
-    const levelName = level.nama_level_binaan?.toLowerCase() || '';
+    const jenjangLower = jenjang.toLowerCase();
     
-    if (levelName.includes('sd') || levelName.includes('dasar')) return '#3498db';
-    if (levelName.includes('smp') || levelName.includes('menengah pertama')) return '#f39c12';
-    if (levelName.includes('sma') || levelName.includes('menengah atas')) return '#e74c3c';
-    if (levelName.includes('tk') || levelName.includes('paud')) return '#9b59b6';
-    if (levelName.includes('universitas') || levelName.includes('tinggi')) return '#2ecc71';
+    if (jenjangLower.includes('sd')) return '#3498db';
+    if (jenjangLower.includes('smp')) return '#f39c12';
+    if (jenjangLower.includes('sma') || jenjangLower.includes('smk')) return '#e74c3c';
+    if (jenjangLower.includes('tk') || jenjangLower.includes('paud')) return '#9b59b6';
     
     return '#95a5a6';
   };
   
   const handleSubmit = async () => {
     if (selectedChildren.length === 0) {
-      Alert.alert('No Selection', 'Please select at least one child to add.');
+      Alert.alert('Tidah ada pilihan', 'Pilih minimal 1 anak.');
       return;
     }
     
@@ -176,9 +173,9 @@ const AddChildrenToKelompokScreen = () => {
       'Konfirmasi',
       `Tambah ${selectedChildren.length} Anak${selectedChildren.length > 1 ? '' : ''} ke kelompok?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'Batal', style: 'cancel' },
         { 
-          text: 'Add', 
+          text: 'Tambah', 
           onPress: async () => {
             setSubmitting(true);
             
@@ -199,13 +196,11 @@ const AddChildrenToKelompokScreen = () => {
                 } else {
                   Alert.alert('Success', `Successfully added ${added_count} children to the group!`);
                 }
+                
+                // Navigate back with refresh flag
+                navigation.navigate('KelompokDetail', { id: kelompokId, refresh: true });
               } else {
                 Alert.alert('Error', response.data.message || 'Failed to add children');
-              }
-              
-              navigation.goBack();
-              if (route.params?.onRefresh) {
-                route.params.onRefresh();
               }
             } catch (err) {
               console.error('Gagal masukkan anak:', err);
@@ -275,7 +270,7 @@ const AddChildrenToKelompokScreen = () => {
           ) : (
             <View style={styles.childImagePlaceholder}>
               <Ionicons 
-                name={child.jenis_kelamin === 'Laki-laki' ? 'Laki-laki' : 'Perempuan'} 
+                name={child.jenis_kelamin === 'Laki-laki' ? 'person' : 'person'} 
                 size={24} 
                 color="#666" 
               />
@@ -308,19 +303,11 @@ const AddChildrenToKelompokScreen = () => {
           )}
           
           <View style={styles.badgeContainer}>
-            {child.levelAnakBinaan && (
-              <View style={[
-                styles.levelBadge,
-                { backgroundColor: getLevelBadgeColor(child.levelAnakBinaan) }
-              ]}>
-                <Text style={styles.levelBadgeText}>
-                  Current: {child.levelAnakBinaan.nama_level_binaan}
-                </Text>
-              </View>
-            )}
-            
             {child.anakPendidikan && (
-              <View style={styles.educationBadge}>
+              <View style={[
+                styles.educationBadge,
+                { backgroundColor: getJenjangBadgeColor(child.anakPendidikan.jenjang) }
+              ]}>
                 <Text style={styles.educationBadgeText}>
                   {child.anakPendidikan.jenjang?.toUpperCase()}
                   {child.anakPendidikan.kelas ? ` ${child.anakPendidikan.kelas}` : ''}
@@ -460,30 +447,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-  },
-  kelompokInfoContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  kelompokInfoTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#666',
-    marginRight: 8,
-  },
-  targetLevelBadge: {
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-  },
-  targetLevelText: {
-    fontSize: 12,
-    color: '#ffffff',
-    fontWeight: '600',
   },
   searchContainer: {
     padding: 16,
@@ -629,25 +592,14 @@ const styles = StyleSheet.create({
     gap: 4,
     marginBottom: 4,
   },
-  levelBadge: {
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 10,
-  },
-  levelBadgeText: {
-    fontSize: 10,
-    color: '#ffffff',
-    fontWeight: '500',
-  },
   educationBadge: {
-    backgroundColor: '#ecf0f1',
     paddingVertical: 2,
     paddingHorizontal: 6,
     borderRadius: 10,
   },
   educationBadgeText: {
     fontSize: 10,
-    color: '#34495e',
+    color: '#ffffff',
     fontWeight: '500',
   },
   warningBadge: {
