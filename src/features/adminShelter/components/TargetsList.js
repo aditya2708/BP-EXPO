@@ -140,21 +140,18 @@ const TargetsList = ({
     </View>
   );
 
-// Update FlatList di line 108-116
-return (
-  <View style={styles.container}>
-    <FlatList
-      data={filteredTargets}
-      keyExtractor={(item) => `${item.type}_${item.id}`}
-      renderItem={renderTargetItem}
-      ListHeaderComponent={renderHeader}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.listContainer}
-      removeClippedSubviews={true}
-      nestedScrollEnabled={true} // Tambahkan ini
-    />
-  </View>
-);
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={filteredTargets}
+        keyExtractor={(item) => `${item.type}_${item.id}`}
+        renderItem={renderTargetItem}
+        ListHeaderComponent={renderHeader}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContainer}
+      />
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
