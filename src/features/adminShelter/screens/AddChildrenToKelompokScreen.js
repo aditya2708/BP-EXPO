@@ -74,7 +74,7 @@ const AddChildrenToKelompokScreen = () => {
   
   useEffect(() => {
     navigation.setOptions({
-      headerTitle: `Add to ${kelompokName || 'Group'}`
+      headerTitle: `Tambah ke ${kelompokName || 'kelompok'}`
     });
     Promise.all([
       fetchKelompokDetails(),
@@ -458,7 +458,7 @@ const AddChildrenToKelompokScreen = () => {
       {selectedChildren.length > 0 && (
         <View style={styles.submitContainer}>
           <Button
-            title={`Add ${selectedChildren.length} Child${selectedChildren.length > 1 ? 'ren' : ''}`}
+            title={`Tambah ${selectedChildren.length} Anak${selectedChildren.length > 1 ? '' : ''}`}
             onPress={handleSubmit}
             loading={submitting}
             disabled={submitting}
