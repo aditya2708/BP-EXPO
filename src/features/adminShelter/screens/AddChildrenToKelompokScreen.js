@@ -260,7 +260,7 @@ const AddChildrenToKelompokScreen = () => {
         age--;
       }
       
-      return `${age}y`;
+      return `${age} Tahun`;
     } catch (error) {
       return '';
     }
@@ -292,7 +292,7 @@ const AddChildrenToKelompokScreen = () => {
           ) : (
             <View style={styles.childImagePlaceholder}>
               <Ionicons 
-                name={child.jenis_kelamin === 'Laki-laki' ? 'man' : 'woman'} 
+                name={child.jenis_kelamin === 'Laki-laki' ? 'Laki-laki' : 'Perempuan'} 
                 size={24} 
                 color="#666" 
               />
@@ -316,7 +316,7 @@ const AddChildrenToKelompokScreen = () => {
           </View>
           
           <Text style={styles.childDetails}>
-            {child.jenis_kelamin === 'Laki-laki' ? 'L' : 'P'}
+            {child.jenis_kelamin === 'Laki-laki' ? 'Laki-laki' : 'Perempuan'}
             {child.tanggal_lahir && ` • ${calculateAge(child.tanggal_lahir)}`}
           </Text>
           
@@ -388,26 +388,12 @@ const AddChildrenToKelompokScreen = () => {
         />
       )}
       
-      {kelompokDetails && (
-        <View style={styles.kelompokInfoContainer}>
-          <Text style={styles.kelompokInfoTitle}>Target Group Level:</Text>
-          <View style={[
-            styles.targetLevelBadge,
-            { backgroundColor: getLevelBadgeColor(kelompokDetails.level_anak_binaan) }
-          ]}>
-            <Text style={styles.targetLevelText}>
-              {kelompokDetails.level_anak_binaan?.nama_level_binaan || 'No Level'}
-            </Text>
-          </View>
-        </View>
-      )}
-      
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Ionicons name="search" size={20} color="#666" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by name or NIK..."
+            placeholder="Cari berdasarkan nama..."
             value={searchQuery}
             onChangeText={setSearchQuery}
             returnKeyType="search"
@@ -423,7 +409,7 @@ const AddChildrenToKelompokScreen = () => {
       {filteredChildren.length > 0 && (
         <View style={styles.selectionBar}>
           <Text style={styles.selectionText}>
-            {selectedChildren.length} of {filteredChildren.length} selected
+            {selectedChildren.length} dari {filteredChildren.length} dipilih
           </Text>
           <View style={styles.selectionActions}>
             <TouchableOpacity
@@ -435,7 +421,7 @@ const AddChildrenToKelompokScreen = () => {
                 styles.selectionButtonText,
                 selectedChildren.length === filteredChildren.length && styles.disabledText
               ]}>
-                Select All
+                Pilih semua
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -447,7 +433,7 @@ const AddChildrenToKelompokScreen = () => {
                 styles.selectionButtonText,
                 selectedChildren.length === 0 && styles.disabledText
               ]}>
-                Clear
+                Batal
               </Text>
             </TouchableOpacity>
           </View>
