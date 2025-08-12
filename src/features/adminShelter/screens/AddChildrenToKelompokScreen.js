@@ -52,12 +52,10 @@ const AddChildrenToKelompokScreen = () => {
     try {
       setError(null);
       
-      const response = await adminShelterKelompokApi.getAvailableChildren(
-        shelterId || profile?.shelter?.id_shelter
-      );
+      const response = await adminShelterKelompokApi.getAvailableAnak(kelompokId);
       
       if (response.data.success) {
-        const children = response.data.data || [];
+        const children = response.data.data.available_anak || [];
         setAvailableChildren(children);
         setFilteredChildren(children);
       } else {
@@ -185,44 +183,29 @@ const AddChildrenToKelompokScreen = () => {
             setSubmitting(true);
             
             try {
-              const results = [];
-              const errors = [];
+              const response = await adminShelterKelompokApi.addAnak(
+                kelompokId,
+                { anak_ids: selectedChildren }
+              );
               
-              for (const childId of selectedChildren) {
-                try {
-                  const response = await adminShelterKelompokApi.addChildToGroup(
-                    kelompokId,
-                    { id_anak: childId }
+              if (response.data.success) {
+                const { added_count, errors } = response.data.data;
+                
+                if (errors && errors.length > 0) {
+                  Alert.alert(
+                    'Partial Success', 
+                    `Added ${added_count} children, but ${errors.length} failed:\n${errors.join('\n')}`
                   );
-                  results.push(response);
-                } catch (err) {
-                  errors.push({ childId, error: err });
-                  console.error(`Error adding child ${childId}:`, err);
+                } else {
+                  Alert.alert('Success', `Successfully added ${added_count} children to the group!`);
                 }
+              } else {
+                Alert.alert('Error', response.data.message || 'Failed to add children');
               }
               
-              if (errors.length === 0) {
-                Alert.alert(
-                  'Success',
-                  `${results.length} child${results.length > 1 ? 'ren' : ''} added successfully`,
-                  [
-                    {
-                      text: 'OK',
-                      onPress: () => {
-                        navigation.goBack();
-                        if (route.params?.onRefresh) {
-                          route.params.onRefresh();
-                        }
-                      }
-                    }
-                  ]
-                );
-              } else {
-                Alert.alert(
-                  'Partial Success',
-                  `Added ${results.length} child${results.length > 1 ? 'ren' : ''}, but ${errors.length} failed.`,
-                  [{ text: 'OK' }]
-                );
+              navigation.goBack();
+              if (route.params?.onRefresh) {
+                route.params.onRefresh();
               }
             } catch (err) {
               console.error('Gagal masukkan anak:', err);
