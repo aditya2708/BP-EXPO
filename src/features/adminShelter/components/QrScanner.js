@@ -1,49 +1,82 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { 
   View, 
   StyleSheet,
   Text,
   TouchableOpacity,
   ActivityIndicator,
-  Dimensions
+  Dimensions,
+  AppState
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 const SCANNER_SIZE = width * 0.7;
 
-const QrScanner = ({ onScan, onClose, isLoading = false }) => {
+const QrScanner = ({ onScan, onClose, isLoading = false, disabled = false }) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [cameraActive, setCameraActive] = useState(false);
+  const isFocused = useIsFocused();
+  const appState = useRef(AppState.currentState);
+  const scanTimeout = useRef(null);
 
-  // Check permissions every time the screen comes into focus
+  // Handle app state changes
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        setCameraActive(isFocused);
+      } else if (nextAppState.match(/inactive|background/)) {
+        setCameraActive(false);
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => subscription?.remove();
+  }, [isFocused]);
+
+  // Camera lifecycle management
   useFocusEffect(
     useCallback(() => {
-      const checkPermission = async () => {
-        await requestPermission();
+      let isActive = true;
+
+      const setupCamera = async () => {
+        if (isActive && !disabled) {
+          await requestPermission();
+          setCameraActive(true);
+          setScanned(false);
+        }
       };
-      
-      checkPermission();
-    }, [requestPermission])
+
+      setupCamera();
+
+      return () => {
+        isActive = false;
+        setCameraActive(false);
+        setScanned(false);
+        if (scanTimeout.current) {
+          clearTimeout(scanTimeout.current);
+          scanTimeout.current = null;
+        }
+      };
+    }, [requestPermission, disabled])
   );
 
-  const handleBarCodeScanned = ({ type, data }) => {
-    if (scanned || isLoading) return;
+  const handleBarCodeScanned = useCallback(({ type, data }) => {
+    if (scanned || isLoading || disabled) return;
     
     setScanned(true);
     
     try {
-      // Try to parse as JSON
       const qrData = JSON.parse(data);
       onScan(qrData);
     } catch (error) {
-      // If not JSON, check for token format
       if (data.includes('token')) {
         try {
           const tokenMatch = data.match(/"token":"([^"]+)"/);
-          if (tokenMatch && tokenMatch[1]) {
+          if (tokenMatch?.[1]) {
             onScan({ token: tokenMatch[1] });
             return;
           }
@@ -51,21 +84,20 @@ const QrScanner = ({ onScan, onClose, isLoading = false }) => {
           console.error('Error extracting token:', err);
         }
       }
-      
-      // Default fallback
       onScan({ token: data });
     }
     
-    // Reset scanned state after delay
-    setTimeout(() => {
-      setScanned(false);
+    // Reset with timeout ref
+    scanTimeout.current = setTimeout(() => {
+      if (cameraActive) setScanned(false);
+      scanTimeout.current = null;
     }, 2000);
-  };
+  }, [scanned, isLoading, disabled, onScan, cameraActive]);
 
   if (!permission) {
     return (
       <View style={styles.container}>
-        <Text style={styles.permissionText}>Requesting camera permission...</Text>
+        <Text style={styles.permissionText}>Meminta izin kamera...</Text>
       </View>
     );
   }
@@ -73,34 +105,51 @@ const QrScanner = ({ onScan, onClose, isLoading = false }) => {
   if (!permission.granted) {
     return (
       <View style={styles.container}>
-        <Text style={styles.permissionText}>No access to camera</Text>
+        <Text style={styles.permissionText}>Tidak ada akses kamera</Text>
         <TouchableOpacity 
           style={styles.permissionButton}
           onPress={requestPermission}
         >
-          <Text style={styles.permissionButtonText}>Grant Permission</Text>
+          <Text style={styles.permissionButtonText}>Berikan Izin</Text>
         </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (disabled) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.disabledContainer}>
+          <Ionicons name="qr-code-outline" size={80} color="rgba(255,255,255,0.3)" />
+          <Text style={styles.disabledText}>Scanner tidak aktif</Text>
+        </View>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <CameraView
-        style={StyleSheet.absoluteFillObject}
-        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-        barcodeScannerSettings={{
-          barcodeTypes: ['qr']
-        }}
-        facing="back"
-      />
+      {cameraActive && isFocused ? (
+        <CameraView
+          style={StyleSheet.absoluteFillObject}
+          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+          barcodeScannerSettings={{
+            barcodeTypes: ['qr']
+          }}
+          facing="back"
+        />
+      ) : (
+        <View style={styles.inactiveCamera}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={styles.inactiveCameraText}>Mengaktifkan kamera...</Text>
+        </View>
+      )}
       
       <View style={styles.overlay}>
         <View style={styles.unfocusedContainer}></View>
         <View style={styles.middleContainer}>
           <View style={styles.unfocusedContainer}></View>
           <View style={styles.focusedContainer}>
-            {/* Scanner corners */}
             <View style={[styles.cornerTopLeft, styles.corner]} />
             <View style={[styles.cornerTopRight, styles.corner]} />
             <View style={[styles.cornerBottomLeft, styles.corner]} />
@@ -109,21 +158,23 @@ const QrScanner = ({ onScan, onClose, isLoading = false }) => {
           <View style={styles.unfocusedContainer}></View>
         </View>
         <View style={styles.unfocusedContainer}>
-          <Text style={styles.scanText}>Position QR code within frame</Text>
+          <Text style={styles.scanText}>Posisikan kode QR dalam bingkai</Text>
         </View>
       </View>
       
-      <TouchableOpacity
-        style={styles.closeButton}
-        onPress={onClose}
-      >
-        <Ionicons name="close" size={28} color="#fff" />
-      </TouchableOpacity>
+      {onClose && (
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={onClose}
+        >
+          <Ionicons name="close" size={28} color="#fff" />
+        </TouchableOpacity>
+      )}
       
       {isLoading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.loadingText}>Processing...</Text>
+          <Text style={styles.loadingText}>Memproses...</Text>
         </View>
       )}
     </View>
@@ -234,6 +285,27 @@ const styles = StyleSheet.create({
   permissionButtonText: {
     color: '#fff',
     fontSize: 16,
+  },
+  inactiveCamera: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  inactiveCameraText: {
+    color: '#fff',
+    fontSize: 16,
+    marginTop: 10,
+  },
+  disabledContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  disabledText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 16,
+    marginTop: 10,
   }
 });
 
