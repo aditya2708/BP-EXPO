@@ -17,6 +17,8 @@ import AttendanceReportScreen from '../features/adminShelter/screens/attendance/
 import ActivitiesListScreen from '../features/adminShelter/screens/attendance/ActivitiesListScreen';
 import ActivityFormScreen from '../features/adminShelter/screens/attendance/ActivityFormScreen';
 import ActivityDetailScreen from '../features/adminShelter/screens/attendance/ActivityDetailScreen';
+import ActivityReportScreen from '../features/adminShelter/screens/attendance/ActivityReportScreen';
+import ViewReportScreen from '../features/adminShelter/screens/attendance/ViewReportScreen';
 import QrTokenGenerationScreen from '../features/adminShelter/screens/attendance/QrTokenGenerationScreen';
 import AttendanceManagementScreen from '../features/adminShelter/screens/attendance/AttendanceManagementScreen';
 
@@ -186,6 +188,16 @@ const AttendanceStackNavigator = () => (
       name="AttendanceReport" 
       component={AttendanceReportScreen} 
       options={{ headerTitle: 'Attendance Report' }} 
+    />
+    <AttendanceStack.Screen 
+      name="ActivityReport" 
+      component={ActivityReportScreen} 
+      options={{ headerTitle: 'Laporan Kegiatan' }} 
+    />
+    <AttendanceStack.Screen 
+      name="ViewReportScreen" 
+      component={ViewReportScreen} 
+      options={{ headerTitle: 'Lihat Laporan' }} 
     />
     <AttendanceStack.Screen 
       name="QrTokenGeneration" 
