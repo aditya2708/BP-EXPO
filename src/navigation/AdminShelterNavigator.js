@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import AdminShelterDashboardScreen from '../features/adminShelter/screens/AdminShelterDashboardScreen';
 import AdminShelterProfileScreen from '../features/adminShelter/screens/AdminShelterProfileScreen';
+import ShelterGpsSettingScreen from '../features/adminShelter/screens/ShelterGpsSettingScreen';
 import AnakManagementScreen from '../features/adminShelter/screens/AnakManagementScreen';
 import AnakDetailScreen from '../features/adminShelter/screens/AnakDetailScreen';
 import AnakFormScreen from '../features/adminShelter/screens/AnakFormScreen';
@@ -592,6 +593,11 @@ const ProfileStackNavigator = () => (
       name="Profile" 
       component={AdminShelterProfileScreen} 
       options={{ headerTitle: 'Profil' }} 
+    />
+    <ProfileStack.Screen 
+      name="ShelterGpsSettingScreen" 
+      component={ShelterGpsSettingScreen} 
+      options={{ headerTitle: 'GPS Setting Shelter' }} 
     />
   </ProfileStack.Navigator>
 );
