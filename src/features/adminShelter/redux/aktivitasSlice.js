@@ -10,6 +10,7 @@ const initialState = {
   aktivitasDetail: null,
   loading: false,
   error: null,
+  conflicts: null,
   kelompokDetail: null,
   kelompokLoading: false,
   kelompokError: null,
@@ -103,7 +104,13 @@ export const createAktivitas = createAsyncThunk(
       const response = await aktivitasApi.createAktivitas(aktivitasData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Gagal membuat aktivitas');
+      // Preserve full error response for conflict handling
+      const errorPayload = {
+        message: error.response?.data?.message || 'Gagal membuat aktivitas',
+        conflicts: error.response?.data?.conflicts || null,
+        fullResponse: error.response?.data
+      };
+      return rejectWithValue(errorPayload);
     }
   }
 );
@@ -115,7 +122,13 @@ export const updateAktivitas = createAsyncThunk(
       const response = await aktivitasApi.updateAktivitas(id, aktivitasData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Gagal memperbarui aktivitas');
+      // Preserve full error response for conflict handling
+      const errorPayload = {
+        message: error.response?.data?.message || 'Gagal memperbarui aktivitas',
+        conflicts: error.response?.data?.conflicts || null,
+        fullResponse: error.response?.data
+      };
+      return rejectWithValue(errorPayload);
     }
   }
 );
@@ -234,6 +247,7 @@ const aktivitasSlice = createSlice({
     },
     resetAktivitasError: (state) => {
       state.error = null;
+      state.conflicts = null;
     },
     resetAktivitasList: (state) => {
       state.aktivitasList = [];
@@ -258,6 +272,7 @@ const aktivitasSlice = createSlice({
           state.loading = true;
         }
         state.error = null;
+        state.conflicts = null;
       })
       .addCase(fetchAllAktivitas.fulfilled, (state, action) => {
         state.loading = false;
@@ -296,6 +311,7 @@ const aktivitasSlice = createSlice({
       .addCase(fetchAktivitasDetail.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.conflicts = null;
       })
       .addCase(fetchAktivitasDetail.fulfilled, (state, action) => {
         state.loading = false;
@@ -340,6 +356,7 @@ const aktivitasSlice = createSlice({
       .addCase(createAktivitas.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.conflicts = null;
       })
       .addCase(createAktivitas.fulfilled, (state, action) => {
         state.loading = false;
@@ -348,13 +365,21 @@ const aktivitasSlice = createSlice({
       })
       .addCase(createAktivitas.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Failed to create activity';
+        // Store error message as string and conflicts separately
+        if (typeof action.payload === 'object') {
+          state.error = action.payload.message || 'Failed to create activity';
+          state.conflicts = action.payload.conflicts || null;
+        } else {
+          state.error = action.payload || 'Failed to create activity';
+          state.conflicts = null;
+        }
       })
       
       // updateAktivitas
       .addCase(updateAktivitas.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.conflicts = null;
       })
       .addCase(updateAktivitas.fulfilled, (state, action) => {
         state.loading = false;
@@ -394,13 +419,21 @@ const aktivitasSlice = createSlice({
       })
       .addCase(updateAktivitas.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || 'Failed to update activity';
+        // Store error message as string and conflicts separately
+        if (typeof action.payload === 'object') {
+          state.error = action.payload.message || 'Failed to update activity';
+          state.conflicts = action.payload.conflicts || null;
+        } else {
+          state.error = action.payload || 'Failed to update activity';
+          state.conflicts = null;
+        }
       })
       
       // deleteAktivitas
       .addCase(deleteAktivitas.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.conflicts = null;
       })
       .addCase(deleteAktivitas.fulfilled, (state, action) => {
         state.loading = false;
@@ -543,6 +576,7 @@ export const selectAktivitasList = (state) => state.aktivitas.aktivitasList;
 export const selectAktivitasDetail = (state) => state.aktivitas.aktivitasDetail;
 export const selectAktivitasLoading = (state) => state.aktivitas.loading;
 export const selectAktivitasError = (state) => state.aktivitas.error;
+export const selectAktivitasConflicts = (state) => state.aktivitas.conflicts;
 export const selectAktivitasPagination = (state) => state.aktivitas.pagination;
 export const selectKelompokDetail = (state) => state.aktivitas.kelompokDetail?.data;
 export const selectKelompokLoading = (state) => state.aktivitas.kelompokLoading;
