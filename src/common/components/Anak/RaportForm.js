@@ -111,7 +111,7 @@ const RaportForm = ({
 
       // Launch image picker
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ImagePicker.MediaType.Images,
         allowsMultipleSelection: true,
         quality: 0.7,
         aspect: [4, 3],

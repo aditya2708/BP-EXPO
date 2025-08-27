@@ -96,7 +96,14 @@ const GpsPermissionModal = ({
         
         // Check accuracy
         if (location.accuracy > requiredAccuracy) {
-          setError(`GPS accuracy is ${location.accuracy}m. Required: ${requiredAccuracy}m or better. Please wait for better GPS signal.`);
+          const suggestions = [
+            '• Coba di luar ruangan untuk signal GPS yang lebih baik',
+            '• Tunggu beberapa detik untuk GPS lock yang lebih akurat', 
+            '• Pastikan Location Services aktif penuh',
+            '• Hindari area dengan banyak gedung tinggi'
+          ];
+          
+          setError(`Akurasi GPS (${location.accuracy.toFixed(1)}m) kurang baik.\n\nDiperlukan: ${requiredAccuracy}m atau lebih baik.\n\nTips untuk GPS yang lebih akurat:\n${suggestions.join('\n')}`);
           setStep('error');
         } else {
           setStep('success');
@@ -457,7 +464,8 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 14,
     color: '#c0392b',
-    lineHeight: 20,
+    lineHeight: 22,
+    textAlign: 'left',
   },
   buttonContainer: {
     flexDirection: 'row',
