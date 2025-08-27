@@ -10,6 +10,8 @@ import { id } from 'date-fns/locale';
 import LoadingSpinner from '../../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../../common/components/ErrorMessage';
 import GroupStudentsList from '../../components/GroupStudentsList';
+import { useGpsNavigation } from '../../../../common/hooks/useGpsNavigation';
+import { qrTokenApi } from '../../api/qrTokenApi';
 
 import {
   fetchAktivitasDetail, deleteAktivitas, selectAktivitasDetail,
@@ -26,10 +28,81 @@ const ActivityDetailScreen = ({ navigation, route }) => {
   const error = useSelector(selectAktivitasError);
   const kelompokDetail = useSelector(selectKelompokDetail);
   const { activityReport } = useSelector(state => state.aktivitas);
+  const { profile } = useSelector(state => state.auth);
   
   const [activePhoto, setActivePhoto] = useState(0);
+  
+  // GPS Navigation hook
+  const { checkGpsAndNavigate, isCheckingGps, gpsError } = useGpsNavigation();
+  
+
+  // Get shelter GPS config from profile with multiple fallback paths
+  const getShelterGpsConfig = () => {
+    // Try different possible paths for shelter data
+    const shelterPaths = [
+      profile?.shelter,           // Direct shelter
+      profile?.data?.shelter,     // Nested in data
+      profile?.shelter_info,      // Alternative naming
+      profile?.user?.shelter,     // User nested
+      profile?.shelterData        // Alternative structure
+    ];
+
+    for (let i = 0; i < shelterPaths.length; i++) {
+      const shelter = shelterPaths[i];
+      if (shelter) {
+        // Check if this shelter has GPS configuration
+        const hasGpsCoords = shelter.latitude && shelter.longitude;
+        const hasGpsRequirement = shelter.require_gps || hasGpsCoords; // GPS required if coords exist
+        
+        if (hasGpsRequirement || hasGpsCoords) {
+          const config = {
+            require_gps: shelter.require_gps || hasGpsCoords,
+            latitude: shelter.latitude,
+            longitude: shelter.longitude,
+            max_distance_meters: shelter.max_distance_meters || 50,
+            location_name: shelter.location_name || shelter.nama_shelter
+          };
+          return config;
+        }
+      }
+    }
+    
+    return null;
+  };
+
+  const shelterGpsConfig = getShelterGpsConfig();
   const [reportExists, setReportExists] = useState(false);
   const [checkingReport, setCheckingReport] = useState(false);
+  const [dynamicGpsConfig, setDynamicGpsConfig] = useState(null);
+  const [loadingGpsConfig, setLoadingGpsConfig] = useState(false);
+
+  // Fetch GPS config from API if not available in profile
+  useEffect(() => {
+    const fetchGpsConfig = async () => {
+      if (shelterGpsConfig || !id_aktivitas) {
+        return;
+      }
+
+      try {
+        setLoadingGpsConfig(true);
+        const result = await qrTokenApi.getActivityGpsConfig(id_aktivitas);
+        const apiData = result.data; // Axios response
+
+        if (apiData.success && apiData.data) {
+          setDynamicGpsConfig(apiData.data);
+        }
+      } catch (error) {
+        console.error('Error fetching GPS config:', error);
+      } finally {
+        setLoadingGpsConfig(false);
+      }
+    };
+
+    fetchGpsConfig();
+  }, [id_aktivitas, shelterGpsConfig]);
+
+  // Get final GPS config (profile first, then API fallback)
+  const finalGpsConfig = shelterGpsConfig || dynamicGpsConfig;
   
   // Parse time string (backend format like "09:35") - memoized
   const parseTimeForStatus = useCallback((timeInput) => {
@@ -157,54 +230,74 @@ const ActivityDetailScreen = ({ navigation, route }) => {
   
   const handleRecordAttendance = () => {
     if (!activity) return;
-    navigation.navigate('AttendanceManagement', {
-      id_aktivitas,
-      activityName: activity.jenis_kegiatan,
-      activityDate: activity.tanggal ? format(new Date(activity.tanggal), 'EEEE, dd MMMM yyyy', { locale: id }) : null,
-      activityType: activity.jenis_kegiatan,
-      kelompokId: activity.selectedKelompokId || kelompokDetail?.id_kelompok || null,
-      kelompokName: activity.nama_kelompok || null
-    });
+    
+    const navigationCallback = () => {
+      navigation.navigate('AttendanceManagement', {
+        id_aktivitas,
+        activityName: activity.jenis_kegiatan,
+        activityDate: activity.tanggal ? format(new Date(activity.tanggal), 'EEEE, dd MMMM yyyy', { locale: id }) : null,
+        activityType: activity.jenis_kegiatan,
+        kelompokId: activity.selectedKelompokId || kelompokDetail?.id_kelompok || null,
+        kelompokName: activity.nama_kelompok || null
+      });
+    };
+    
+    checkGpsAndNavigate(navigationCallback, id_aktivitas, activity.jenis_kegiatan, finalGpsConfig);
   };
   
   const handleManualAttendance = () => {
     if (!activity) return;
-    navigation.navigate('ManualAttendance', {
-      id_aktivitas,
-      activityName: activity.jenis_kegiatan,
-      activityDate: activity.tanggal ? format(new Date(activity.tanggal), 'EEEE, dd MMMM yyyy', { locale: id }) : null,
-      activityType: activity.jenis_kegiatan,
-      kelompokId: activity.selectedKelompokId || kelompokDetail?.id_kelompok || null,
-      kelompokName: activity.nama_kelompok || null
-    });
+    
+    const navigationCallback = () => {
+      navigation.navigate('ManualAttendance', {
+        id_aktivitas,
+        activityName: activity.jenis_kegiatan,
+        activityDate: activity.tanggal ? format(new Date(activity.tanggal), 'EEEE, dd MMMM yyyy', { locale: id }) : null,
+        activityType: activity.jenis_kegiatan,
+        kelompokId: activity.selectedKelompokId || kelompokDetail?.id_kelompok || null,
+        kelompokName: activity.nama_kelompok || null
+      });
+    };
+    
+    checkGpsAndNavigate(navigationCallback, id_aktivitas, activity.jenis_kegiatan, finalGpsConfig);
   };
   
   const handleViewAttendanceRecords = () => {
     if (!activity) return;
-    navigation.navigate('AttendanceManagement', {
-      id_aktivitas,
-      activityName: activity.jenis_kegiatan,
-      activityDate: activity.tanggal ? format(new Date(activity.tanggal), 'EEEE, dd MMMM yyyy', { locale: id }) : null,
-      activityType: activity.jenis_kegiatan,
-      kelompokId: activity.selectedKelompokId || kelompokDetail?.id_kelompok || null,
-      kelompokName: activity.nama_kelompok || null,
-      initialTab: 'AttendanceList'
-    });
+    
+    const navigationCallback = () => {
+      navigation.navigate('AttendanceManagement', {
+        id_aktivitas,
+        activityName: activity.jenis_kegiatan,
+        activityDate: activity.tanggal ? format(new Date(activity.tanggal), 'EEEE, dd MMMM yyyy', { locale: id }) : null,
+        activityType: activity.jenis_kegiatan,
+        kelompokId: activity.selectedKelompokId || kelompokDetail?.id_kelompok || null,
+        kelompokName: activity.nama_kelompok || null,
+        initialTab: 'AttendanceList'
+      });
+    };
+    
+    checkGpsAndNavigate(navigationCallback, id_aktivitas, activity.jenis_kegiatan, finalGpsConfig);
   };
   
   const handleGenerateQrCodes = () => {
     if (!activity) return;
-    navigation.navigate('AttendanceManagement', {
-      id_aktivitas,
-      activityName: activity.jenis_kegiatan,
-      activityDate: activity.tanggal ? format(new Date(activity.tanggal), 'EEEE, dd MMMM yyyy', { locale: id }) : null,
-      activityType: activity.jenis_kegiatan,
-      kelompokId: activity.selectedKelompokId || kelompokDetail?.id_kelompok || null,
-      kelompokName: activity.nama_kelompok || null,
-      level: activity.level || null,
-      completeActivity: activity,
-      initialTab: 'QrTokenGeneration'
-    });
+    
+    const navigationCallback = () => {
+      navigation.navigate('AttendanceManagement', {
+        id_aktivitas,
+        activityName: activity.jenis_kegiatan,
+        activityDate: activity.tanggal ? format(new Date(activity.tanggal), 'EEEE, dd MMMM yyyy', { locale: id }) : null,
+        activityType: activity.jenis_kegiatan,
+        kelompokId: activity.selectedKelompokId || kelompokDetail?.id_kelompok || null,
+        kelompokName: activity.nama_kelompok || null,
+        level: activity.level || null,
+        completeActivity: activity,
+        initialTab: 'QrTokenGeneration'
+      });
+    };
+    
+    checkGpsAndNavigate(navigationCallback, id_aktivitas, activity.jenis_kegiatan, finalGpsConfig);
   };
   
   const handleActivityReport = () => {

@@ -252,7 +252,10 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
   };
 
   const requestGpsLocationForSubmit = async (submitData) => {
-    if (!activityDetails?.require_gps) {
+    // For Bimbel activities, GPS is always required if shelter has GPS config
+    const isGpsRequired = activityDetails?.require_gps || (isBimbel && activityDetails);
+    
+    if (!isGpsRequired) {
       // GPS not required, proceed directly
       return proceedWithSubmit(submitData, null);
     }
@@ -717,12 +720,12 @@ const ManualAttendanceScreen = ({ navigation, route }) => {
           </View>
         )}
         
-        {activityDetails?.require_gps && (
+        {(activityDetails?.require_gps || (isBimbel && activityDetails)) && (
           <View style={styles.gpsRequiredIndicator}>
             <Ionicons name="location" size={18} color="#fff" />
             <Text style={styles.gpsRequiredText}>
-              GPS diperlukan - Radius maksimal: {activityDetails.max_distance_meters || 50}m
-              {activityDetails.location_name && ` di ${activityDetails.location_name}`}
+              GPS diperlukan{isBimbel && !activityDetails?.require_gps ? ' (Aktivitas Bimbel)' : ''} - Radius maksimal: {activityDetails?.max_distance_meters || 50}m
+              {activityDetails?.location_name && ` di ${activityDetails.location_name}`}
             </Text>
           </View>
         )}
