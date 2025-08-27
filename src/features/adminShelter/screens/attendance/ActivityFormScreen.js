@@ -9,13 +9,14 @@ import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
 
 import Button from '../../../../common/components/Button';
 import LoadingSpinner from '../../../../common/components/LoadingSpinner';
 import ErrorMessage from '../../../../common/components/ErrorMessage';
 
 import {
-  createAktivitas, updateAktivitas, selectAktivitasLoading, selectAktivitasError,
+  createAktivitas, updateAktivitas, selectAktivitasLoading, selectAktivitasError, selectAktivitasConflicts,
   fetchAllMateri, setSelectedMateri, selectMateriCache, selectMateriCacheLoading,
   selectSelectedMateri, clearSelectedMateri
 } from '../../redux/aktivitasSlice';
@@ -31,6 +32,7 @@ const ActivityFormScreen = ({ navigation, route }) => {
   
   const loading = useSelector(selectAktivitasLoading);
   const error = useSelector(selectAktivitasError);
+  const conflicts = useSelector(selectAktivitasConflicts);
   
   // NEW: Kurikulum selectors
   const materiCache = useSelector(selectMateriCache);
@@ -54,6 +56,7 @@ const ActivityFormScreen = ({ navigation, route }) => {
     kelompok: false, tutor: false
   });
   const [errors, setErrors] = useState({ kelompok: null, tutor: null });
+  const [conflictWarning, setConflictWarning] = useState(null);
   
   useEffect(() => {
     if (isEditing && activity) initializeEditForm();
@@ -213,6 +216,12 @@ const ActivityFormScreen = ({ navigation, route }) => {
       if (value !== 'Bimbel') {
         setUIState(prev => ({ ...prev, useCustomMateri: false }));
       }
+      // Clear conflict warning when activity type changes
+      setConflictWarning(null);
+    } else if (name === 'id_tutor' || name === 'tanggal') {
+      setFormData(prev => ({ ...prev, [name]: value }));
+      // Clear conflict warning when tutor or date changes
+      setConflictWarning(null);
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -233,6 +242,8 @@ const ActivityFormScreen = ({ navigation, route }) => {
     
     // Clear selected materi when kelompok changes
     dispatch(clearSelectedMateri());
+    // Clear conflict warning when kelompok changes
+    setConflictWarning(null);
   };
   
   // NEW: Handle materi selection from SmartMateriSelector
@@ -268,6 +279,8 @@ const ActivityFormScreen = ({ navigation, route }) => {
     setUIState(prev => ({ ...prev, [pickerField]: false }));
     if (selectedTime) {
       setFormData(prev => ({ ...prev, [field]: selectedTime }));
+      // Clear any existing conflict warning when time changes
+      setConflictWarning(null);
     }
   };
   
@@ -285,6 +298,43 @@ const ActivityFormScreen = ({ navigation, route }) => {
   
   
   const formatTime = (time) => !time ? 'Belum diatur' : format(time, 'HH:mm');
+  
+  // Check conflicts when relevant form data changes
+  useEffect(() => {
+    const checkPotentialConflicts = () => {
+      // Clear warning if required fields are not complete
+      if (!formData.tanggal || !formData.start_time || !formData.end_time || !formData.id_tutor) {
+        setConflictWarning(null);
+        return;
+      }
+      
+      const isValidTimeRange = formData.start_time < formData.end_time;
+      if (!isValidTimeRange) {
+        setConflictWarning(null);
+        return;
+      }
+      
+      // Show advisory warning when all required data is present
+      const selectedTutor = tutorList.find(t => t.id_tutor === formData.id_tutor);
+      const tutorName = selectedTutor?.nama || 'Tutor terpilih';
+      const timeRange = `${formatTime(formData.start_time)} - ${formatTime(formData.end_time)}`;
+      const dateStr = format(formData.tanggal, 'dd/MM/yyyy', { locale: id });
+      
+      setConflictWarning(
+        `Pastikan tidak ada konflik: ${tutorName} pada ${dateStr} jam ${timeRange}${
+          formData.jenis_kegiatan === 'Bimbel' && formData.nama_kelompok 
+            ? ` untuk kelompok ${formData.nama_kelompok}` 
+            : ''
+        }`
+      );
+    };
+
+    const timeoutId = setTimeout(() => {
+      checkPotentialConflicts();
+    }, 1000); // Debounce to avoid too many checks
+    
+    return () => clearTimeout(timeoutId);
+  }, [formData.tanggal, formData.start_time, formData.end_time, formData.id_tutor, formData.nama_kelompok, formData.jenis_kegiatan, tutorList]);
   
   const validateForm = () => {
     if (!formData.jenis_kegiatan || !formData.tanggal) {
@@ -420,18 +470,34 @@ const ActivityFormScreen = ({ navigation, route }) => {
     } catch (err) {
       console.error('Error menyimpan aktivitas:', err);
       
-      // Handle conflict validation errors from backend
-      if (err.response && err.response.data && err.response.data.conflicts) {
-        const conflicts = err.response.data.conflicts;
-        const conflictMessage = conflicts.join('\n\n');
+      // Handle conflict validation errors from backend (both from direct API and Redux)
+      // Priority: thrown payload > direct API response > Redux store (for race condition)
+      const errorConflicts = err?.conflicts || err?.response?.data?.conflicts || conflicts;
+      const errorMessage = err?.message || err?.response?.data?.message || error || 'Gagal menyimpan aktivitas';
+      
+      if (errorConflicts && errorConflicts.length > 0) {
+        // Format conflict messages with better structure
+        const conflictList = errorConflicts.map((conflict, index) => 
+          `${index + 1}. ${conflict}`
+        ).join('\n');
+        
+        const suggestions = [
+          '• Pilih waktu yang berbeda',
+          '• Pilih tutor lain yang tersedia', 
+          '• Untuk Bimbel, pilih kelompok yang berbeda'
+        ];
         
         Alert.alert(
-          'Konflik Jadwal Ditemukan', 
-          `${err.response.data.message}:\n\n${conflictMessage}\n\nSilakan ubah waktu atau pilih tutor/kelompok lain.`,
-          [{ text: 'Oke' }]
+          'Jadwal Bentrok Ditemukan', 
+          `${errorMessage}\n\nDetail konflik:\n${conflictList}\n\nSaran penyelesaian:\n${suggestions.join('\n')}`,
+          [{ text: 'Mengerti', style: 'default' }]
         );
       } else {
-        Alert.alert('Error', err.response?.data?.message || err.message || 'Gagal menyimpan aktivitas');
+        Alert.alert(
+          'Gagal Menyimpan', 
+          errorMessage,
+          [{ text: 'Oke' }]
+        );
       }
     }
   };
@@ -718,6 +784,15 @@ const ActivityFormScreen = ({ navigation, route }) => {
         )}
       </View>
       
+      {/* NEW: Conflict warning display */}
+      {conflictWarning && (
+        <View style={styles.warningContainer}>
+          <View style={styles.warningIcon}>
+            <Ionicons name="warning" size={20} color="#f39c12" />
+          </View>
+          <Text style={styles.warningText}>{conflictWarning}</Text>
+        </View>
+      )}
       
       <View style={styles.buttonContainer}>
         <Button
@@ -823,7 +898,18 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#ddd'
   },
   loadingText: { marginLeft: 8, color: '#7f8c8d' },
-  errorContainer: { marginVertical: 0 }
+  errorContainer: { marginVertical: 0 },
+  // NEW: Warning styles
+  warningContainer: {
+    flexDirection: 'row', alignItems: 'flex-start',
+    backgroundColor: '#fff3cd', borderWidth: 1, borderColor: '#ffeaa7',
+    borderRadius: 8, padding: 12, marginBottom: 16
+  },
+  warningIcon: { marginRight: 8, marginTop: 2 },
+  warningText: {
+    flex: 1, fontSize: 14, color: '#856404',
+    lineHeight: 18
+  }
 });
 
 export default ActivityFormScreen;
