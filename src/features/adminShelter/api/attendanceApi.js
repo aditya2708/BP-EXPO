@@ -56,7 +56,8 @@ export const attendanceApi = {
    */
   recordAttendanceByQr: async (id_anak, id_aktivitas, status, token, arrival_time = null, gps_data = null) => {
     const params = {
-      id_anak,
+      type: 'student',
+      target_id: id_anak,
       id_aktivitas,
       token
     };
@@ -76,7 +77,7 @@ export const attendanceApi = {
       params.gps_data = gps_data;
     }
     
-    return await api.post('/admin-shelter/attendance/record-by-qr', params);
+    return await api.post('/admin-shelter/attendance/record', params);
   },
 
   /**
@@ -91,7 +92,8 @@ export const attendanceApi = {
    */
   recordAttendanceManually: async (id_anak, id_aktivitas, status, notes = '', arrival_time = null, gps_data = null) => {
     const params = {
-      id_anak,
+      type: 'student',
+      target_id: id_anak,
       id_aktivitas,
       notes
     };
@@ -111,7 +113,7 @@ export const attendanceApi = {
       params.gps_data = gps_data;
     }
     
-    return await api.post('/admin-shelter/attendance/record-manual-student', params);
+    return await api.post('/admin-shelter/attendance/record-manual', params);
   },
 
   /**
