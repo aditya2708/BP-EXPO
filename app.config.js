@@ -19,7 +19,7 @@ export default {
       bundleIdentifier: IS_DEV ? "com.anonymous.BPEXPO2.dev" : "com.anonymous.BPEXPO2",
       infoPlist: {
         NSCameraUsageDescription: "This app uses the camera to scan QR codes for attendance tracking."
-      }
+      },
     },
     android: {
       adaptiveIcon: {
@@ -32,8 +32,10 @@ export default {
         "CAMERA",
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
-      ]
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
     },
     web: {
       favicon: "./assets/favicon.png"
@@ -46,6 +48,12 @@ export default {
           cameraPermission: "Allow $(PRODUCT_NAME) to access your camera",
           microphonePermission: "Allow $(PRODUCT_NAME) to access your microphone",
           recordAudioAndroid: true
+        }
+      ],
+      [
+        "expo-location",
+        {
+          locationAlwaysAndWhenInUsePermission: "This app uses location to verify attendance at shelter activities."
         }
       ],
       "expo-audio"
