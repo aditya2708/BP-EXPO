@@ -37,7 +37,7 @@ const AppNavigator = () => {
 
   // Show loading screen while initializing
   if (initializing) {
-    return <LoadingScreen message="" />;
+    return <LoadingScreen message="Starting application..." />;
   }
 
   // Render the appropriate navigator based on auth state and user role

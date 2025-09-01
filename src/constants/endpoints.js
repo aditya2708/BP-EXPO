@@ -98,6 +98,12 @@ export const ADMIN_PUSAT_ENDPOINTS = {
 };
 
 export const ADMIN_CABANG_ENDPOINTS = {
+  GPS_APPROVAL: {
+    LIST: '/admin-cabang/gps-approval',
+    DETAIL: '/admin-cabang/gps-approval/:id',
+    APPROVE: '/admin-cabang/gps-approval/:id/approve',
+    REJECT: '/admin-cabang/gps-approval/:id/reject',
+  },
   DASHBOARD: '/admin-cabang/dashboard',
   PROFILE: '/admin-cabang/profile',
   SURVEY_APPROVAL: {
