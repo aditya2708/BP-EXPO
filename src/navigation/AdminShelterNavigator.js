@@ -98,6 +98,9 @@ import LaporanAnakBinaanScreen from '../features/adminShelter/screens/reports/La
 import LaporanHistoriAnakScreen from '../features/adminShelter/screens/reports/LaporanHistoriAnakScreen';
 import LaporanKegiatanMainScreen from '../features/adminShelter/screens/reports/LaporanKegiatanMainScreen';
 
+// Testing screens
+import CampaignTestScreen from '../features/adminShelter/screens/testing/CampaignTestScreen';
+
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
 const ProfileStack = createStackNavigator();
@@ -173,6 +176,9 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="LaporanSuratAnak" component={LaporanSuratAnakScreen} options={{ headerTitle: 'Laporan Surat Anak' }} />
     <HomeStack.Screen name="LaporanAnakBinaan" component={LaporanAnakBinaanScreen} options={{ headerTitle: 'Laporan Anak Binaan' }} />
     <HomeStack.Screen name="LaporanHistoriAnak" component={LaporanHistoriAnakScreen} options={{ headerTitle: 'Laporan Histori Anak' }} />
+    
+    {/* Testing screens */}
+    <HomeStack.Screen name="CampaignTest" component={CampaignTestScreen} options={{ headerTitle: 'Test Campaign API' }} />
   </HomeStack.Navigator>
 );
 
