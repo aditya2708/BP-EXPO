@@ -18,12 +18,13 @@ const AdminShelterDashboardScreen = () => {
   const [error, setError] = useState(null);
 
   const menuItems = [
-    { title: 'Keluarga', icon: 'home', color: '#1abc9c', onPress: () => navigation.navigate('KeluargaManagement') },
-    { title: 'Anak Binaan', icon: 'people', color: '#e74c3c', onPress: () => navigation.navigate('AnakManagement') },
-    { title: 'Tutor', icon: 'school', color: '#2ecc71', onPress: () => navigation.navigate('TutorManagement') },
-    { title: 'Keuangan', icon: 'wallet', color: '#f39c12', onPress: () => navigation.navigate('KeuanganList') },
+    { title: 'Keluarga', icon: 'home', color: '#1abc9c', onPress: () => navigation.navigate('Management', { screen: 'KeluargaManagement' }) },
+    { title: 'Anak Binaan', icon: 'people', color: '#e74c3c', onPress: () => navigation.navigate('Management', { screen: 'AnakManagement' }) },
+    { title: 'Tutor', icon: 'school', color: '#2ecc71', onPress: () => navigation.navigate('Management', { screen: 'TutorManagement' }) },
+    { title: 'Keuangan', icon: 'wallet', color: '#f39c12', onPress: () => navigation.navigate('Management', { screen: 'KeuanganList' }) },
     { title: 'Kelola Kurikulum', icon: 'library', color: '#9b59b6', onPress: () => navigation.navigate('KurikulumHome') },
-    { title: 'Laporan Kegiatan', icon: 'bar-chart', color: '#e67e22', onPress: () => navigation.navigate('LaporanKegiatanMain') }
+    { title: 'Laporan Kegiatan', icon: 'bar-chart', color: '#e67e22', onPress: () => navigation.navigate('Management', { screen: 'LaporanKegiatanMain' }) },
+    { title: 'Test Campaign API', icon: 'bug', color: '#34495e', onPress: () => navigation.navigate('CampaignTest') }
   ];
 
   const fetchDashboardData = async () => {
