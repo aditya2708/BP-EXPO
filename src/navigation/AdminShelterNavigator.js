@@ -27,7 +27,7 @@ import AnakDetailScreen from '../features/adminShelter/screens/AnakDetailScreen'
 import AnakFormScreen from '../features/adminShelter/screens/AnakFormScreen';
 
 // Attendance screens
-import AttendanceListScreen from '../features/adminShelter/screens/attendance/AttendanceListScreen';
+
 import AttendanceDetailScreen from '../features/adminShelter/screens/attendance/AttendanceDetailScreen';
 import ManualAttendanceScreen from '../features/adminShelter/screens/attendance/ManualAttendanceScreen';
 import ActivitiesListScreen from '../features/adminShelter/screens/attendance/ActivitiesListScreen';
@@ -99,7 +99,7 @@ import LaporanHistoriAnakScreen from '../features/adminShelter/screens/reports/L
 import LaporanKegiatanMainScreen from '../features/adminShelter/screens/reports/LaporanKegiatanMainScreen';
 
 // Testing screens
-import CampaignTestScreen from '../features/adminShelter/screens/testing/CampaignTestScreen';
+
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
@@ -125,7 +125,7 @@ const HomeStackNavigator = () => (
     
     
     {/* Attendance screens */}
-    <HomeStack.Screen name="AttendanceList" component={AttendanceListScreen} options={{ headerTitle: 'Daftar Kehadiran' }} />
+
     <HomeStack.Screen name="AttendanceDetail" component={AttendanceDetailScreen} options={{ headerTitle: 'Detail Kehadiran' }} />
     <HomeStack.Screen name="ManualAttendance" component={ManualAttendanceScreen} options={{ headerTitle: 'Absen Manual' }} />
     <HomeStack.Screen name="ActivitiesList" component={ActivitiesListScreen} options={{ headerTitle: 'Daftar Aktivitas' }} />
@@ -178,7 +178,7 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="LaporanHistoriAnak" component={LaporanHistoriAnakScreen} options={{ headerTitle: 'Laporan Histori Anak' }} />
     
     {/* Testing screens */}
-    <HomeStack.Screen name="CampaignTest" component={CampaignTestScreen} options={{ headerTitle: 'Test Campaign API' }} />
+    
   </HomeStack.Navigator>
 );
 

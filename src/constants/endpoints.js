@@ -177,7 +177,10 @@ export const ADMIN_SHELTER_ENDPOINTS = {
     LIST: '/admin-shelter/kurikulum',
     DETAIL: (id) => `/admin-shelter/kurikulum/${id}`,
     PREVIEW: (id) => `/admin-shelter/kurikulum/${id}/preview`,
-    DROPDOWN: '/admin-shelter/kurikulum-dropdown'
+    DROPDOWN: '/admin-shelter/kurikulum-dropdown',
+    DASHBOARD: '/admin-shelter/kurikulum/dashboard',
+    SEMESTER_INFO: '/admin-shelter/kurikulum/semester-info',
+    TODAY_ACTIVITIES: '/admin-shelter/kurikulum/today-activities'
   },
   RAPORT: {
     LIST: (childId) => `/admin-shelter/anak/${childId}/raport`,
