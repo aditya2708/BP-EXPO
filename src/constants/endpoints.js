@@ -119,6 +119,17 @@ export const ADMIN_CABANG_ENDPOINTS = {
     ASSIGN_DONATUR: '/admin-cabang/pengajuan-donatur/assign-donatur',
     CHILD_DETAIL: (id) => `/admin-cabang/pengajuan-donatur/child-detail/${id}`
   },
+  USERS: {
+    LIST: '/admin-cabang/users',
+    CREATE: '/admin-cabang/create-user',
+    DETAIL: (id) => `/admin-cabang/users/${id}`,
+    UPDATE: (id) => `/admin-cabang/users/${id}`,
+    DROPDOWN: {
+      KACAB: '/admin-cabang/kacab',
+      WILBIN: (kacabId) => `/admin-cabang/kacab/${kacabId}/wilbin`,
+      SHELTER_BY_WILBIN: (wilbinId) => `/admin-cabang/wilbin/${wilbinId}/shelter`
+    }
+  },
   DONATUR: {
     LIST: '/admin-cabang/donatur',
     CREATE: '/admin-cabang/donatur',
@@ -183,10 +194,19 @@ export const ADMIN_SHELTER_ENDPOINTS = {
     TODAY_ACTIVITIES: '/admin-shelter/kurikulum/today-activities'
   },
   RAPORT: {
-    LIST: (childId) => `/admin-shelter/anak/${childId}/raport`,
-    CREATE: (childId) => `/admin-shelter/anak/${childId}/raport/create`,
-    DETAIL: (childId, raportId) => `/admin-shelter/anak/${childId}/raport/${raportId}`,
-    UPDATE: (childId, raportId) => `/admin-shelter/anak/${childId}/raport/${raportId}/update`
+    LIST: '/admin-shelter/raport',
+    BY_CHILD: (childId) => `/admin-shelter/raport/anak/${childId}`,
+    DETAIL: (id) => `/admin-shelter/raport/${id}`,
+    GENERATE: '/admin-shelter/raport/generate',
+    UPDATE: (id) => `/admin-shelter/raport/${id}`,
+    PUBLISH: (id) => `/admin-shelter/raport/${id}/publish`,
+    ARCHIVE: (id) => `/admin-shelter/raport/${id}/archive`,
+    DELETE: (id) => `/admin-shelter/raport/${id}`,
+    PREVIEW: (childId, semesterId) => `/admin-shelter/raport/preview/${childId}/${semesterId}`,
+    CHECK_EXISTING: (childId, semesterId) => `/admin-shelter/raport/check-existing/${childId}/${semesterId}`,
+    UPDATE_DETAIL: (raportId, detailId) => `/admin-shelter/raport/${raportId}/detail/${detailId}`,
+    EXPORT_PDF: (id) => `/admin-shelter/raport/${id}/export-pdf`,
+    RANKING: (semesterId) => `/admin-shelter/raport/ranking/${semesterId}`
   },
   PRESTASI: {
     LIST: (childId) => `/admin-shelter/anak/${childId}/prestasi`,

@@ -27,7 +27,6 @@ import AnakDetailScreen from '../features/adminShelter/screens/AnakDetailScreen'
 import AnakFormScreen from '../features/adminShelter/screens/AnakFormScreen';
 
 // Attendance screens
-
 import AttendanceDetailScreen from '../features/adminShelter/screens/attendance/AttendanceDetailScreen';
 import ManualAttendanceScreen from '../features/adminShelter/screens/attendance/ManualAttendanceScreen';
 import ActivitiesListScreen from '../features/adminShelter/screens/attendance/ActivitiesListScreen';
@@ -38,9 +37,6 @@ import AttendanceManagementScreen from '../features/adminShelter/screens/attenda
 
 // AnakDetail module screens
 import InformasiAnakScreen from '../features/adminShelter/screens/anakDetail/InformasiAnakScreen';
-import RaportScreen from '../features/adminShelter/screens/anakDetail/RaportScreen';
-import AddRaportScreen from '../features/adminShelter/screens/anakDetail/AddRaportScreen';
-import RaportDetailScreen from '../features/adminShelter/screens/anakDetail/RaportDetailScreen';
 import PrestasiScreen from '../features/adminShelter/screens/anakDetail/PrestasiScreen';
 import PrestasiDetailScreen from '../features/adminShelter/screens/anakDetail/PrestasiDetailScreen';
 import PrestasiFormScreen from '../features/adminShelter/screens/anakDetail/PrestasiFormScreen';
@@ -80,6 +76,8 @@ import LaporanAktivitasScreen from '../features/adminShelter/screens/reports/Lap
 import PenilaianListScreen from '../features/adminShelter/screens/PenilaianListScreen';
 import PenilaianFormScreen from '../features/adminShelter/screens/PenilaianFormScreen';
 import SemesterManagementScreen from '../features/adminShelter/screens/SemesterManagementScreen';
+import NilaiSikapScreen from '../features/adminShelter/screens/NilaiSikapScreen';
+import NilaiSikapFormScreen from '../features/adminShelter/screens/NilaiSikapFormScreen';
 
 // Management & Utility screens
 import PengajuanAnakSearchScreen from '../features/adminShelter/screens/PengajuanAnakSearchScreen';
@@ -98,7 +96,6 @@ import LaporanAnakBinaanScreen from '../features/adminShelter/screens/reports/La
 import LaporanHistoriAnakScreen from '../features/adminShelter/screens/reports/LaporanHistoriAnakScreen';
 import LaporanKegiatanMainScreen from '../features/adminShelter/screens/reports/LaporanKegiatanMainScreen';
 
-// Testing screens
 
 
 const Tab = createBottomTabNavigator();
@@ -125,7 +122,6 @@ const HomeStackNavigator = () => (
     
     
     {/* Attendance screens */}
-
     <HomeStack.Screen name="AttendanceDetail" component={AttendanceDetailScreen} options={{ headerTitle: 'Detail Kehadiran' }} />
     <HomeStack.Screen name="ManualAttendance" component={ManualAttendanceScreen} options={{ headerTitle: 'Absen Manual' }} />
     <HomeStack.Screen name="ActivitiesList" component={ActivitiesListScreen} options={{ headerTitle: 'Daftar Aktivitas' }} />
@@ -133,27 +129,6 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="ActivityDetail" component={ActivityDetailScreen} options={{ headerTitle: 'Detail Aktivitas' }} />
     <HomeStack.Screen name="ActivityReport" component={ActivityReportScreen} options={{ headerTitle: 'Laporan Aktivitas' }} />
     <HomeStack.Screen name="AttendanceManagement" component={AttendanceManagementScreen} options={{ headerTitle: 'Kelola Presensi' }} />
-    
-    {/* AnakDetail module */}
-    <HomeStack.Screen name="InformasiAnak" component={InformasiAnakScreen} options={{ headerTitle: 'Informasi Anak' }} />
-    <HomeStack.Screen name="Raport" component={RaportScreen} options={{ headerTitle: 'Raport' }} />
-    <HomeStack.Screen name="AddRaport" component={AddRaportScreen} options={{ headerTitle: 'Tambah Raport' }} />
-    <HomeStack.Screen name="RaportDetail" component={RaportDetailScreen} options={{ headerTitle: 'Detail Raport' }} />
-    <HomeStack.Screen name="Prestasi" component={PrestasiScreen} options={{ headerTitle: 'Prestasi' }} />
-    <HomeStack.Screen name="PrestasiDetail" component={PrestasiDetailScreen} options={{ headerTitle: 'Detail Prestasi' }} />
-    <HomeStack.Screen name="PrestasiForm" component={PrestasiFormScreen} options={{ headerTitle: 'Form Prestasi' }} />
-    <HomeStack.Screen name="Surat" component={SuratScreen} options={{ headerTitle: 'Surat' }} />
-    <HomeStack.Screen name="SuratList" component={SuratListScreen} options={{ headerTitle: 'Daftar Surat' }} />
-    <HomeStack.Screen name="SuratDetail" component={SuratDetailScreen} options={{ headerTitle: 'Detail Surat' }} />
-    <HomeStack.Screen name="SuratForm" component={SuratFormScreen} options={{ headerTitle: 'Form Surat' }} />
-    <HomeStack.Screen name="Riwayat" component={RiwayatScreen} options={{ headerTitle: 'Riwayat' }} />
-    <HomeStack.Screen name="RiwayatDetail" component={RiwayatDetailScreen} options={{ headerTitle: 'Detail Riwayat' }} />
-    <HomeStack.Screen name="RiwayatForm" component={RiwayatFormScreen} options={{ headerTitle: 'Form Riwayat' }} />
-    <HomeStack.Screen name="NilaiAnak" component={NilaiAnakScreen} options={{ headerTitle: 'Nilai Anak' }} />
-    <HomeStack.Screen name="RaporShelter" component={RaporShelterScreen} options={{ headerTitle: 'Rapor Shelter' }} />
-    <HomeStack.Screen name="RaportFormal" component={RaportFormalScreen} options={{ headerTitle: 'Raport Formal' }} />
-    <HomeStack.Screen name="RaportFormalDetail" component={RaportFormalDetailScreen} options={{ headerTitle: 'Detail Raport Formal' }} />
-    <HomeStack.Screen name="RaportFormalForm" component={RaportFormalFormScreen} options={{ headerTitle: 'Form Raport Formal' }} />
     
     
     {/* Kelompok & Activity module */}
@@ -163,8 +138,6 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="AddChildrenToKelompok" component={AddChildrenToKelompokScreen} options={{ headerTitle: 'Tambah Anak ke Kelompok' }} />
     <HomeStack.Screen name="KelompokReporting" component={KelompokReportingScreen} options={{ headerTitle: 'Laporan Kelompok' }} />
     <HomeStack.Screen name="LaporanAktivitas" component={LaporanAktivitasScreen} options={{ headerTitle: 'Laporan Aktivitas' }} />
-    <HomeStack.Screen name="PenilaianList" component={PenilaianListScreen} options={{ headerTitle: 'Daftar Penilaian' }} />
-    <HomeStack.Screen name="PenilaianForm" component={PenilaianFormScreen} options={{ headerTitle: 'Form Penilaian' }} />
     <HomeStack.Screen name="SemesterManagement" component={SemesterManagementScreen} options={{ headerTitle: 'Kelola Semester' }} />
     
     {/* Management & Utility screens */}
@@ -177,8 +150,7 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="LaporanAnakBinaan" component={LaporanAnakBinaanScreen} options={{ headerTitle: 'Laporan Anak Binaan' }} />
     <HomeStack.Screen name="LaporanHistoriAnak" component={LaporanHistoriAnakScreen} options={{ headerTitle: 'Laporan Histori Anak' }} />
     
-    {/* Testing screens */}
-    
+   
   </HomeStack.Navigator>
 );
 
@@ -204,36 +176,39 @@ const ManagementStackNavigator = () => (
     <ManagementStack.Screen name="TutorManagement" component={TutorManagementScreen} options={{ headerTitle: 'Tutor Management' }} />
     <ManagementStack.Screen name="KeuanganList" component={KeuanganListScreen} options={{ headerTitle: 'Daftar Keuangan' }} />
     <ManagementStack.Screen name="LaporanKegiatanMain" component={LaporanKegiatanMainScreen} options={{ headerTitle: 'Laporan Kegiatan' }} />
-    
+    <ManagementStack.Screen name="RaportGenerate" component={RaportGenerateScreen} options={{ headerTitle: 'Generate Raport' }} />
+    <ManagementStack.Screen name="RaportView" component={RaportViewScreen} options={{ headerTitle: 'View Raport' }} />
+
     {/* Keluarga related screens */}
     <ManagementStack.Screen name="KeluargaDetail" component={KeluargaDetailScreen} options={{ headerTitle: 'Detail Keluarga' }} />
     <ManagementStack.Screen name="KeluargaForm" component={KeluargaFormScreen} options={{ headerTitle: 'Form Keluarga' }} />
     
-    {/* Anak Management related screens */}
-    <ManagementStack.Screen name="AnakDetail" component={AnakDetailScreen} options={{ headerTitle: 'Detail Anak' }} />
-    <ManagementStack.Screen name="AnakForm" component={AnakFormScreen} options={{ headerTitle: 'Form Anak' }} />
-    
-    {/* AnakDetail module screens */}
-    <ManagementStack.Screen name="InformasiAnak" component={InformasiAnakScreen} options={{ headerTitle: 'Informasi Anak' }} />
-    <ManagementStack.Screen name="Raport" component={RaportScreen} options={{ headerTitle: 'Raport' }} />
-    <ManagementStack.Screen name="AddRaport" component={AddRaportScreen} options={{ headerTitle: 'Tambah Raport' }} />
-    <ManagementStack.Screen name="RaportDetail" component={RaportDetailScreen} options={{ headerTitle: 'Detail Raport' }} />
-    <ManagementStack.Screen name="Prestasi" component={PrestasiScreen} options={{ headerTitle: 'Prestasi' }} />
-    <ManagementStack.Screen name="PrestasiDetail" component={PrestasiDetailScreen} options={{ headerTitle: 'Detail Prestasi' }} />
-    <ManagementStack.Screen name="PrestasiForm" component={PrestasiFormScreen} options={{ headerTitle: 'Form Prestasi' }} />
-    <ManagementStack.Screen name="Surat" component={SuratScreen} options={{ headerTitle: 'Surat' }} />
-    <ManagementStack.Screen name="SuratList" component={SuratListScreen} options={{ headerTitle: 'Daftar Surat' }} />
-    <ManagementStack.Screen name="SuratDetail" component={SuratDetailScreen} options={{ headerTitle: 'Detail Surat' }} />
-    <ManagementStack.Screen name="SuratForm" component={SuratFormScreen} options={{ headerTitle: 'Form Surat' }} />
-    <ManagementStack.Screen name="Riwayat" component={RiwayatScreen} options={{ headerTitle: 'Riwayat' }} />
-    <ManagementStack.Screen name="RiwayatDetail" component={RiwayatDetailScreen} options={{ headerTitle: 'Detail Riwayat' }} />
-    <ManagementStack.Screen name="RiwayatForm" component={RiwayatFormScreen} options={{ headerTitle: 'Form Riwayat' }} />
-    <ManagementStack.Screen name="NilaiAnak" component={NilaiAnakScreen} options={{ headerTitle: 'Nilai Anak' }} />
-    <ManagementStack.Screen name="RaporShelter" component={RaporShelterScreen} options={{ headerTitle: 'Rapor Shelter' }} />
-    <ManagementStack.Screen name="RaportFormal" component={RaportFormalScreen} options={{ headerTitle: 'Raport Formal' }} />
-    <ManagementStack.Screen name="RaportFormalDetail" component={RaportFormalDetailScreen} options={{ headerTitle: 'Detail Raport Formal' }} />
-    <ManagementStack.Screen name="RaportFormalForm" component={RaportFormalFormScreen} options={{ headerTitle: 'Form Raport Formal' }} />
-    
+  {/* Anak Management related screens */}
+  <ManagementStack.Screen name="AnakDetail" component={AnakDetailScreen} options={{ headerTitle: 'Detail Anak' }} />
+  <ManagementStack.Screen name="AnakForm" component={AnakFormScreen} options={{ headerTitle: 'Form Anak' }} />
+
+  {/* AnakDetail module */}
+  <ManagementStack.Screen name="InformasiAnak" component={InformasiAnakScreen} options={{ headerTitle: 'Informasi Anak' }} />
+  <ManagementStack.Screen name="Prestasi" component={PrestasiScreen} options={{ headerTitle: 'Prestasi' }} />
+  <ManagementStack.Screen name="PrestasiDetail" component={PrestasiDetailScreen} options={{ headerTitle: 'Detail Prestasi' }} />
+  <ManagementStack.Screen name="PrestasiForm" component={PrestasiFormScreen} options={{ headerTitle: 'Form Prestasi' }} />
+  <ManagementStack.Screen name="Surat" component={SuratScreen} options={{ headerTitle: 'Surat' }} />
+  <ManagementStack.Screen name="SuratList" component={SuratListScreen} options={{ headerTitle: 'Daftar Surat' }} />
+  <ManagementStack.Screen name="SuratDetail" component={SuratDetailScreen} options={{ headerTitle: 'Detail Surat' }} />
+  <ManagementStack.Screen name="SuratForm" component={SuratFormScreen} options={{ headerTitle: 'Form Surat' }} />
+  <ManagementStack.Screen name="Riwayat" component={RiwayatScreen} options={{ headerTitle: 'Riwayat' }} />
+  <ManagementStack.Screen name="RiwayatDetail" component={RiwayatDetailScreen} options={{ headerTitle: 'Detail Riwayat' }} />
+  <ManagementStack.Screen name="RiwayatForm" component={RiwayatFormScreen} options={{ headerTitle: 'Form Riwayat' }} />
+  <ManagementStack.Screen name="NilaiAnak" component={NilaiAnakScreen} options={{ headerTitle: 'Nilai Anak' }} />
+  <ManagementStack.Screen name="NilaiSikap" component={NilaiSikapScreen} options={{ headerTitle: 'Nilai Sikap' }} />
+  <ManagementStack.Screen name="NilaiSikapForm" component={NilaiSikapFormScreen} options={{ headerTitle: 'Form Nilai Sikap' }} />
+  <ManagementStack.Screen name="RaporShelter" component={RaporShelterScreen} options={{ headerTitle: 'Rapor Shelter' }} />
+  <ManagementStack.Screen name="RaportFormal" component={RaportFormalScreen} options={{ headerTitle: 'Raport Formal' }} />
+  <ManagementStack.Screen name="RaportFormalDetail" component={RaportFormalDetailScreen} options={{ headerTitle: 'Detail Raport Formal' }} />
+  <ManagementStack.Screen name="RaportFormalForm" component={RaportFormalFormScreen} options={{ headerTitle: 'Form Raport Formal' }} />
+  <ManagementStack.Screen name="PenilaianList" component={PenilaianListScreen} options={{ headerTitle: 'Daftar Penilaian' }} />
+  <ManagementStack.Screen name="PenilaianForm" component={PenilaianFormScreen} options={{ headerTitle: 'Form Penilaian' }} />
+
     {/* Tutor related screens */}
     <ManagementStack.Screen name="TutorDetail" component={TutorDetailScreen} options={{ headerTitle: 'Detail Tutor' }} />
     <ManagementStack.Screen name="TutorForm" component={TutorFormScreen} options={{ headerTitle: 'Form Tutor' }} />

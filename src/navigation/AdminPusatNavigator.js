@@ -8,6 +8,10 @@ import AdminPusatDashboardScreen from '../features/adminPusat/screens/AdminPusat
 import AdminPusatProfileScreen from '../features/adminPusat/screens/AdminPusatProfileScreen';
 import TutorHonorSettingsScreen from '../features/adminPusat/screens/TutorHonorSettingsScreen';
 
+// User Management Screens
+import UserManagementScreen from '../features/adminPusat/screens/user/UserManagementScreen';
+import UserFormScreen from '../features/adminPusat/screens/user/UserFormScreen';
+import UserDetailScreen from '../features/adminPusat/screens/user/UserDetailScreen'; // NEW
 
 // Template Screens
 import TemplateHomeScreen from '../features/adminPusat/screens/template/TemplateHomeScreen';
@@ -40,6 +44,25 @@ const HomeStackNavigator = () => {
         name="TutorHonorSettings" 
         component={TutorHonorSettingsScreen} 
         options={{ headerTitle: 'Setting Honor Tutor' }}
+      />
+
+      {/* User Management */}
+      <Stack.Screen
+        name="UserManagement"
+        component={UserManagementScreen}
+        options={{ headerTitle: 'Manajemen User' }}
+      />
+      <Stack.Screen
+        name="UserForm"
+        component={UserFormScreen}
+        options={{ headerTitle: 'Form User' }}
+      />
+      <Stack.Screen
+        name="UserDetail"
+        component={UserDetailScreen}
+        options={({ route }) => ({
+          headerTitle: route?.params?.title ?? 'Detail User',
+        })}
       />
     </Stack.Navigator>
   );
@@ -101,8 +124,6 @@ const TemplateStackNavigator = () => {
     </Stack.Navigator>
   );
 };
-
-
 
 // Profile Stack Navigator
 const ProfileStackNavigator = () => {

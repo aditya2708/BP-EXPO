@@ -17,6 +17,9 @@ import AdminCabangDonaturDetailScreen from '../features/adminCabang/screens/Admi
 import DonaturFilterScreen from '../features/adminCabang/screens/DonaturFilterScreen';
 import GpsApprovalScreen from '../features/adminCabang/screens/GpsApprovalScreen';
 import GpsApprovalDetailScreen from '../features/adminCabang/screens/GpsApprovalDetailScreen';
+import AdminCabangUserManagementScreen from '../features/adminCabang/screens/user/UserManagementScreen';
+import AdminCabangUserFormScreen from '../features/adminCabang/screens/user/UserFormScreen';
+import AdminCabangUserDetailScreen from '../features/adminCabang/screens/user/UserDetailScreen';
 
 // Kurikulum screens
 import KurikulumHomeScreen from '../features/adminCabang/screens/kurikulum/KurikulumHomeScreen';
@@ -25,6 +28,8 @@ import KelasSelectionScreen from '../features/adminCabang/screens/kurikulum/Kela
 import MataPelajaranListScreen from '../features/adminCabang/screens/kurikulum/MataPelajaranListScreen';
 import MateriManagementScreen from '../features/adminCabang/screens/kurikulum/MateriManagementScreen';
 import MateriFormScreen from '../features/adminCabang/screens/kurikulum/MateriFormScreen';
+import SelectKurikulumScreen from '../features/adminCabang/screens/kurikulum/SelectKurikulumScreen';
+import CreateKurikulumScreen from '../features/adminCabang/screens/kurikulum/CreateKurikulumScreen';
 import SemesterManagementScreen from '../features/adminCabang/screens/kurikulum/SemesterManagementScreen';
 import TemplateAdoptionScreen from '../features/adminCabang/screens/kurikulum/TemplateAdoptionScreen';
 import MasterDataScreen from '../features/adminCabang/screens/kurikulum/MasterDataScreen';
@@ -98,6 +103,21 @@ const DashboardStackNavigator = () => (
       component={GpsApprovalDetailScreen}
       options={{ headerTitle: 'Detail Persetujuan GPS' }}
     />
+    <DashboardStack.Screen
+      name="AdminCabangUserManagement"
+      component={AdminCabangUserManagementScreen}
+      options={{ headerTitle: 'Manajemen User Cabang' }}
+    />
+    <DashboardStack.Screen
+      name="AdminCabangUserForm"
+      component={AdminCabangUserFormScreen}
+      options={{ headerTitle: 'Form User Cabang' }}
+    />
+    <DashboardStack.Screen
+      name="AdminCabangUserDetail"
+      component={AdminCabangUserDetailScreen}
+      options={{ headerTitle: 'Detail User Cabang' }}
+    />
   </DashboardStack.Navigator>
 );
 
@@ -108,6 +128,16 @@ const KurikulumStackNavigator = () => (
       name="KurikulumHome"
       component={KurikulumHomeScreen}
       options={{ headerTitle: 'Kurikulum' }}
+    />
+    <KurikulumStack.Screen
+      name="SelectKurikulum"
+      component={SelectKurikulumScreen}
+      options={{ headerTitle: 'Pilih Kurikulum' }}
+    />
+    <KurikulumStack.Screen
+      name="CreateKurikulum"
+      component={CreateKurikulumScreen}
+      options={{ headerTitle: 'Buat Kurikulum' }}
     />
     <KurikulumStack.Screen
       name="JenjangSelection"
